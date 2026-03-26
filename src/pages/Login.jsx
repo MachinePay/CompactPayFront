@@ -13,7 +13,7 @@ export default function Login() {
     try {
       const data = await loginApi(email, password);
       login(data.access_token);
-      window.location.href = "/dashboard";
+      window.location.href = "/";
     } catch {
       // Mensagem de erro será exibida pelo Toast global
     }
