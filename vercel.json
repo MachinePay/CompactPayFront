@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.svg"
+    },
+    {
+      "source": "/((?!assets/|icons.svg|favicon.svg|vite.svg).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
