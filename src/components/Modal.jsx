@@ -12,11 +12,12 @@ export default function Modal({ open, onClose, children }) {
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-bgcard rounded shadow-lg p-6 min-w-[320px] relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(14,25,17,0.46)] p-4 backdrop-blur-sm">
+      <div className="relative w-full max-w-3xl rounded-[30px] border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(245,248,242,0.97))] p-6 shadow-[0_30px_80px_rgba(23,43,29,0.20)] md:p-8">
         <button
-          className="absolute top-2 right-2 text-white hover:text-error"
+          className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-white text-[var(--color-text-soft)] transition hover:border-[var(--color-error)] hover:text-[var(--color-error)]"
           onClick={onClose}
+          type="button"
         >
           ×
         </button>
