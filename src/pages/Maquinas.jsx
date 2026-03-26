@@ -21,11 +21,13 @@ const emptyForm = {
   id_hardware: "",
   nome: "",
   localizacao: "",
+  cliente_id: "",
 };
 
 export default function Maquinas() {
   const { user } = useAuth();
   const [maquinas, setMaquinas] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(false);
   const [periodo, setPeriodo] = useState("mes");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
@@ -52,9 +54,19 @@ export default function Maquinas() {
     }
   };
 
+  const loadUsuarios = async () => {
+    if (user?.role !== "admin") return;
+    const res = await api.get("/usuarios");
+    setUsuarios(res.data.filter((item) => item.role === "cliente"));
+  };
+
   useEffect(() => {
     loadMaquinas();
   }, [user, periodo, dateRange]);
+
+  useEffect(() => {
+    loadUsuarios();
+  }, [user]);
 
   const generateId = async () => {
     setGeneratingId(true);
@@ -78,8 +90,15 @@ export default function Maquinas() {
     setSaving(true);
     try {
       await api.post("/maquinas", {
-        ...form,
-        cliente_id: user.cliente_id,
+        id_hardware: form.id_hardware,
+        nome: form.nome,
+        localizacao: form.localizacao,
+        cliente_id:
+          user?.role === "admin"
+            ? form.cliente_id === ""
+              ? null
+              : Number(form.cliente_id)
+            : user.cliente_id,
       });
       setShowModal(false);
       setForm(emptyForm);
@@ -288,6 +307,29 @@ export default function Maquinas() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
+              {user?.role === "admin" ? (
+                <label className="block md:col-span-2">
+                  <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+                    Vincular ao usuario
+                  </span>
+                  <select
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    value={form.cliente_id || ""}
+                    onChange={(e) =>
+                      setForm((current) => ({ ...current, cliente_id: e.target.value }))
+                    }
+                    required
+                  >
+                    <option value="">Selecione um usuario/cliente</option>
+                    {usuarios.map((item) => (
+                      <option key={item.id} value={item.cliente_id ?? ""}>
+                        {(item.nome || item.email) + (item.cliente_id ? ` - cliente ${item.cliente_id}` : "")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                   Nome da maquina
