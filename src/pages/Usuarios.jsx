@@ -99,7 +99,7 @@ export default function Usuarios() {
     <div className="flex min-h-full flex-col gap-4">
       <SectionHeader
         title="Usuarios"
-        description="Gerencie acessos administrativos e operadores clientes em um painel claro e rapido."
+        description="Gerencie acessos administrativos e operadores clientes em um painel claro, rapido e organizado."
         actions={
           <Button
             className="justify-center"
@@ -120,7 +120,7 @@ export default function Usuarios() {
           icon={<Users size={18} />}
           label="Usuarios ativos"
           value={String(usuarios.length)}
-          helper="Contas visiveis no painel"
+          helper="Total de contas visiveis no painel"
         />
         <SummaryCard
           icon={<ShieldCheck size={18} />}
@@ -133,7 +133,7 @@ export default function Usuarios() {
           icon={<UserRoundCog size={18} />}
           label="Clientes"
           value={String(clientCount)}
-          helper="Operadores vinculados"
+          helper="Operadores vinculados a clientes"
         />
       </div>
 
@@ -150,11 +150,11 @@ export default function Usuarios() {
               <table className="min-w-full">
                 <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
                   <tr>
-                    <th className="px-5 py-4">Nome</th>
-                    <th className="px-5 py-4">Email</th>
-                    <th className="px-5 py-4">Perfil</th>
-                    <th className="px-5 py-4">Cliente</th>
-                    <th className="px-5 py-4">Acoes</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Nome</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Email</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Perfil</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Cliente</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Acoes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -163,14 +163,14 @@ export default function Usuarios() {
                       key={item.id}
                       className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
                     >
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 min-w-[180px]">
                         <div className="font-semibold">{item.nome || "Sem nome"}</div>
                         <div className="mt-1 text-xs text-[var(--color-text-soft)]">
                           ID interno #{item.id}
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-[var(--color-text-soft)]">{item.email}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 min-w-[220px] text-[var(--color-text-soft)]">{item.email}</td>
+                      <td className="px-5 py-4 min-w-[120px]">
                         <span
                           className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
                             item.role === "admin"
@@ -181,10 +181,10 @@ export default function Usuarios() {
                           {item.role}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                      <td className="px-5 py-4 min-w-[110px] text-[var(--color-text-soft)]">
                         {item.cliente_id ?? "--"}
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-5 py-4 min-w-[190px]">
                         <div className="flex flex-wrap gap-2">
                           <button
                             className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
@@ -238,7 +238,7 @@ export default function Usuarios() {
               <Field label="Nome">
                 <input
                   className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                  placeholder="Nome completo"
+                  placeholder="Nome completo do usuario"
                   value={form.nome}
                   onChange={(e) => setForm((current) => ({ ...current, nome: e.target.value }))}
                 />
@@ -258,7 +258,7 @@ export default function Usuarios() {
               <Field label={editUser ? "Nova senha (opcional)" : "Senha"}>
                 <input
                   className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                  placeholder={editUser ? "Atualize so se precisar" : "Digite a senha"}
+                  placeholder={editUser ? "Atualize somente se precisar" : "Digite a senha de acesso"}
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
@@ -281,7 +281,7 @@ export default function Usuarios() {
             <Field label="Cliente ID">
               <input
                 className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                placeholder="Numero do cliente"
+                placeholder="Numero do cliente vinculado"
                 value={form.cliente_id}
                 onChange={(e) => setForm((current) => ({ ...current, cliente_id: e.target.value }))}
                 required={form.role === "cliente"}

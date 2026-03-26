@@ -118,7 +118,7 @@ export default function Maquinas() {
     <div className="flex min-h-full flex-col gap-4">
       <CardSectionHeader
         title="Maquinas"
-        description="Cadastre novas unidades, gere IDs para o ESP e acompanhe o status do parque."
+        description="Cadastre novas unidades, gere IDs para o ESP e acompanhe o status de cada maquina."
         actions={
           user?.role === "admin" ? (
             <Button
@@ -141,20 +141,20 @@ export default function Maquinas() {
           icon={<Server size={18} />}
           label="Maquinas cadastradas"
           value={String(maquinas.length)}
-          helper="Total visivel neste painel"
+          helper="Total visivel no painel"
         />
         <SummaryCard
           icon={<CheckCircle2 size={18} />}
           label="Ativas agora"
           value={String(onlineCount)}
-          helper="Ultimo sinal dentro de 3 minutos"
+          helper="Ultimo sinal recebido nos ultimos 3 minutos"
           featured
         />
         <SummaryCard
           icon={<Cpu size={18} />}
           label="Prontas para ESP"
           value={String(maquinas.length)}
-          helper="IDs disponiveis para vinculacao"
+          helper="IDs prontos para vinculacao no ESP"
         />
       </div>
 
@@ -197,11 +197,11 @@ export default function Maquinas() {
               <table className="min-w-full">
                 <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
                   <tr>
-                    <th className="px-5 py-4">ID da maquina</th>
-                    <th className="px-5 py-4">Nome</th>
-                    <th className="px-5 py-4">Status</th>
-                    <th className="px-5 py-4">Localizacao</th>
-                    <th className="px-5 py-4">Faturamento</th>
+                    <th className="px-5 py-4 whitespace-nowrap">ID da maquina</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Nome</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Status</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Localizacao</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Faturamento</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -215,14 +215,14 @@ export default function Maquinas() {
                         key={m.id_hardware}
                         className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
                       >
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 min-w-[220px]">
                           <div className="font-semibold">{m.id_hardware}</div>
                           <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                            Use este valor na configuracao do ESP
+                            Use este ID na configuracao do ESP
                           </div>
                         </td>
-                        <td className="px-5 py-4 font-medium">{m.nome || "--"}</td>
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 min-w-[180px] font-medium">{m.nome || "--"}</td>
+                        <td className="px-5 py-4 min-w-[140px]">
                           {online ? (
                             <span className="inline-flex items-center gap-2 rounded-full bg-[var(--color-primary-soft)] px-3 py-2 text-xs font-semibold text-[var(--color-success)]">
                               <CheckCircle2 size={15} /> Online
@@ -233,10 +233,10 @@ export default function Maquinas() {
                             </span>
                           )}
                         </td>
-                        <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                        <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
                           {m.localizacao || "--"}
                         </td>
-                        <td className="px-5 py-4 font-semibold">
+                        <td className="px-5 py-4 min-w-[140px] font-semibold">
                           {m.faturamento?.toFixed ? `R$ ${m.faturamento.toFixed(2)}` : "--"}
                         </td>
                       </tr>
@@ -259,7 +259,7 @@ export default function Maquinas() {
               Gerar ID e vincular ao ESP
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-              Gere um ID unico, copie esse valor e coloque no firmware ou no portal de configuracao do ESP antes de instalar a maquina.
+              Gere um ID unico, copie esse valor e use no firmware ou no portal de configuracao do ESP antes de instalar a maquina.
             </p>
           </div>
 
@@ -271,7 +271,7 @@ export default function Maquinas() {
               <div className="mt-3 flex flex-col gap-3 md:flex-row">
                 <input
                   className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                  placeholder="Clique em gerar ID"
+                  placeholder="Clique em gerar um ID"
                   value={form.id_hardware}
                   onChange={(e) =>
                     setForm((current) => ({ ...current, id_hardware: e.target.value.toUpperCase() }))
@@ -297,7 +297,7 @@ export default function Maquinas() {
                 </button>
               </div>
               <div className="mt-3 text-xs text-[var(--color-text-soft)]">
-                Exemplo: <span className="font-semibold text-[var(--color-text)]">CPM-A1B2C3</span>
+                Exemplo de identificador: <span className="font-semibold text-[var(--color-text)]">CPM-A1B2C3</span>
               </div>
               {copyFeedback ? (
                 <div className="mt-3 text-sm font-medium text-[var(--color-success)]">
@@ -310,7 +310,7 @@ export default function Maquinas() {
               {user?.role === "admin" ? (
                 <label className="block md:col-span-2">
                   <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                    Vincular ao usuario
+                    Vincular ao cliente
                   </span>
                   <select
                     className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
@@ -320,7 +320,7 @@ export default function Maquinas() {
                     }
                     required
                   >
-                    <option value="">Selecione um usuario/cliente</option>
+                    <option value="">Selecione o cliente responsavel</option>
                     {usuarios.map((item) => (
                       <option key={item.id} value={item.cliente_id ?? ""}>
                         {(item.nome || item.email) + (item.cliente_id ? ` - cliente ${item.cliente_id}` : "")}
