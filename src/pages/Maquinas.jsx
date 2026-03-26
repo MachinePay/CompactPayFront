@@ -25,7 +25,7 @@ export default function Maquinas() {
     if (!user) return;
     setLoading(true);
     const params = [];
-    params.push(`cliente_id=${user.cliente_id}`);
+    if (user.cliente_id != null) params.push(`cliente_id=${user.cliente_id}`);
     if (periodo) params.push(`periodo=${periodo}`);
     if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
     if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
@@ -80,7 +80,9 @@ export default function Maquinas() {
               // Recarregar lista
               setLoading(true);
               const params = [];
-              params.push(`cliente_id=${user.cliente_id}`);
+              if (user.cliente_id != null) {
+                params.push(`cliente_id=${user.cliente_id}`);
+              }
               if (periodo) params.push(`periodo=${periodo}`);
               if (dateRange.start)
                 params.push(`data_inicio=${dateRange.start}`);
@@ -151,10 +153,10 @@ export default function Maquinas() {
                 }
                 return (
                   <tr
-                    key={m.id}
+                    key={m.id_hardware}
                     className="border-b border-bgdarker hover:bg-bgdarker/50"
                   >
-                    <td className="px-4 py-2 text-white">{m.id}</td>
+                    <td className="px-4 py-2 text-white">{m.id_hardware}</td>
                     <td className="px-4 py-2 text-white">
                       {m.id_hardware || "--"}
                     </td>

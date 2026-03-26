@@ -1,36 +1,34 @@
-import { Home, Server, Users, LogOut } from "lucide-react";
+import { Home, LogOut, Server, Users } from "lucide-react";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
+
+  const linkClassName = ({ isActive }) =>
+    `flex items-center gap-2 px-4 py-2 text-white rounded transition ${
+      isActive ? "bg-primary" : "hover:bg-primary"
+    }`;
+
   return (
     <aside className="bg-bgcard h-screen w-56 flex flex-col justify-between">
       <nav className="mt-8">
         <ul>
           <li>
-            <a
-              href="/dashboard"
-              className="flex items-center gap-2 px-4 py-2 text-white hover:bg-primary rounded transition"
-            >
+            <NavLink to="/" end className={linkClassName}>
               <Home /> Dashboard
-            </a>
+            </NavLink>
           </li>
           <li>
-            <a
-              href="/maquinas"
-              className="flex items-center gap-2 px-4 py-2 text-white hover:bg-primary rounded transition"
-            >
-              <Server /> Máquinas
-            </a>
+            <NavLink to="/maquinas" className={linkClassName}>
+              <Server /> Maquinas
+            </NavLink>
           </li>
           {user?.role === "admin" && (
             <li>
-              <a
-                href="/usuarios"
-                className="flex items-center gap-2 px-4 py-2 text-white hover:bg-primary rounded transition"
-              >
-                <Users /> Usuários
-              </a>
+              <NavLink to="/usuarios" className={linkClassName}>
+                <Users /> Usuarios
+              </NavLink>
             </li>
           )}
         </ul>

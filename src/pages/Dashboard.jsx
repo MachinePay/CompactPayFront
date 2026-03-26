@@ -31,7 +31,7 @@ export default function Dashboard() {
     const params = [];
     if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
     if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
-    params.push(`cliente_id=${user.cliente_id}`);
+    if (user.cliente_id != null) params.push(`cliente_id=${user.cliente_id}`);
     const paramStr = params.length ? `?${params.join("&")}` : "";
     Promise.all([
       api.get(`/dashboard/stats${paramStr}`),

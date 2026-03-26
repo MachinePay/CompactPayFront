@@ -13,6 +13,7 @@ export default function Usuarios() {
   const [form, setForm] = useState({
     email: "",
     nome: "",
+    password: "",
     role: "cliente",
     cliente_id: "",
   });
@@ -30,19 +31,30 @@ export default function Usuarios() {
     fetchUsuarios();
   }, [user]);
 
+  const resetForm = () => {
+    setForm({
+      email: "",
+      nome: "",
+      password: "",
+      role: "cliente",
+      cliente_id: "",
+    });
+  };
+
   const handleEdit = (u) => {
     setEditUser(u);
     setForm({
       email: u.email,
-      nome: u.nome,
+      nome: u.nome || "",
+      password: "",
       role: u.role,
-      cliente_id: u.cliente_id,
+      cliente_id: u.cliente_id ?? "",
     });
     setShowModal(true);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir este usuário?")) return;
+    if (!window.confirm("Tem certeza que deseja excluir este usuario?")) return;
     await api.delete(`/usuarios/${id}`);
     fetchUsuarios();
   };
@@ -50,34 +62,41 @@ export default function Usuarios() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    const payload = {
+      ...form,
+      cliente_id: form.cliente_id === "" ? null : Number(form.cliente_id),
+    };
+
     if (editUser) {
-      await api.put(`/usuarios/${editUser.id}`, form);
+      await api.put(`/usuarios/${editUser.id}`, payload);
     } else {
-      await api.post("/usuarios", form);
+      await api.post("/usuarios", payload);
     }
+
     setShowModal(false);
-    setForm({ email: "", nome: "", role: "cliente", cliente_id: "" });
+    resetForm();
     setEditUser(null);
     fetchUsuarios();
     setSaving(false);
   };
 
-  if (user?.role !== "admin")
+  if (user?.role !== "admin") {
     return <div className="p-8 text-white">Acesso restrito.</div>;
+  }
 
   return (
     <div className="p-8 bg-bgmain min-h-screen">
       <h1 className="text-2xl text-white mb-6 flex items-center gap-4">
-        Usuários
+        Usuarios
         <button
           className="bg-primary text-white px-4 py-2 rounded hover:bg-blue-600 transition text-base"
           onClick={() => {
             setShowModal(true);
             setEditUser(null);
-            setForm({ email: "", nome: "", role: "cliente", cliente_id: "" });
+            resetForm();
           }}
         >
-          Novo Usuário
+          Novo Usuario
         </button>
       </h1>
       <div className="overflow-x-auto">
@@ -92,7 +111,7 @@ export default function Usuarios() {
                 <th className="px-4 py-2 text-left text-white">E-mail</th>
                 <th className="px-4 py-2 text-left text-white">Perfil</th>
                 <th className="px-4 py-2 text-left text-white">Cliente</th>
-                <th className="px-4 py-2 text-left text-white">Ações</th>
+                <th className="px-4 py-2 text-left text-white">Acoes</th>
               </tr>
             </thead>
             <tbody>
@@ -102,27 +121,23 @@ export default function Usuarios() {
                   className="border-b border-bgdarker hover:bg-bgdarker/50"
                 >
                   <td className="px-4 py-2 text-white">{u.id}</td>
-                  <td className="px-4 py-2 text-white">{u.nome}</td>
+                  <td className="px-4 py-2 text-white">{u.nome || "--"}</td>
                   <td className="px-4 py-2 text-white">{u.email}</td>
                   <td className="px-4 py-2 text-white">{u.role}</td>
-                  <td className="px-4 py-2 text-white">{u.cliente_id}</td>
+                  <td className="px-4 py-2 text-white">{u.cliente_id ?? "--"}</td>
                   <td className="px-4 py-2 text-white flex gap-2">
-                    {user?.role === "admin" && (
-                      <>
-                        <button
-                          className="bg-primary px-2 py-1 rounded text-white"
-                          onClick={() => handleEdit(u)}
-                        >
-                          Editar
-                        </button>
-                        <button
-                          className="bg-error px-2 py-1 rounded text-white"
-                          onClick={() => handleDelete(u.id)}
-                        >
-                          Excluir
-                        </button>
-                      </>
-                    )}
+                    <button
+                      className="bg-primary px-2 py-1 rounded text-white"
+                      onClick={() => handleEdit(u)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="bg-error px-2 py-1 rounded text-white"
+                      onClick={() => handleDelete(u.id)}
+                    >
+                      Excluir
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -138,7 +153,7 @@ export default function Usuarios() {
         }}
       >
         <h2 className="text-xl text-white mb-4">
-          {editUser ? "Editar Usuário" : "Novo Usuário"}
+          {editUser ? "Editar Usuario" : "Novo Usuario"}
         </h2>
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <input
@@ -146,7 +161,6 @@ export default function Usuarios() {
             placeholder="Nome"
             value={form.nome}
             onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-            required
           />
           <input
             className="p-2 rounded bg-bgmain text-white border border-slate-700 focus:outline-primary"
@@ -155,6 +169,16 @@ export default function Usuarios() {
             value={form.email}
             onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
             required
+          />
+          <input
+            className="p-2 rounded bg-bgmain text-white border border-slate-700 focus:outline-primary"
+            placeholder={editUser ? "Nova senha (opcional)" : "Senha"}
+            type="password"
+            value={form.password}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, password: e.target.value }))
+            }
+            required={!editUser}
           />
           <select
             className="p-2 rounded bg-bgmain text-white border border-slate-700 focus:outline-primary"
