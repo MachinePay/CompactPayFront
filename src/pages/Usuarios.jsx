@@ -18,7 +18,6 @@ export default function Usuarios() {
     nome: "",
     password: "",
     role: "cliente",
-    cliente_id: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -43,7 +42,6 @@ export default function Usuarios() {
       nome: "",
       password: "",
       role: "cliente",
-      cliente_id: "",
     });
   };
 
@@ -54,7 +52,6 @@ export default function Usuarios() {
       nome: currentUser.nome || "",
       password: "",
       role: currentUser.role,
-      cliente_id: currentUser.cliente_id ?? "",
     });
     setShowModal(true);
   };
@@ -70,7 +67,7 @@ export default function Usuarios() {
     setSaving(true);
     const payload = {
       ...form,
-      cliente_id: form.cliente_id === "" ? null : Number(form.cliente_id),
+      cliente_id: null,
     };
 
     try {
@@ -278,15 +275,11 @@ export default function Usuarios() {
               </Field>
             </div>
 
-            <Field label="Cliente ID">
-              <input
-                className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                placeholder="Numero do cliente vinculado"
-                value={form.cliente_id}
-                onChange={(e) => setForm((current) => ({ ...current, cliente_id: e.target.value }))}
-                required={form.role === "cliente"}
-              />
-            </Field>
+            {form.role === "cliente" ? (
+              <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)]">
+                O cliente vinculado sera criado automaticamente pelo sistema ao salvar este usuario.
+              </div>
+            ) : null}
 
             <Button type="submit" className="w-full justify-center" disabled={saving}>
               {saving ? "Salvando usuario..." : editUser ? "Salvar alteracoes" : "Criar usuario"}
