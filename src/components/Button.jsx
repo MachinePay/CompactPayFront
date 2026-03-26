@@ -1,7 +1,7 @@
 export default function Button({ children, className = "", ...props }) {
   return (
     <button
-      className={`px-4 py-2 rounded bg-primary text-white hover:bg-blue-600 transition ${className}`}
+      className={`pill-button pill-button--primary inline-flex items-center gap-2 px-5 py-3 font-semibold ${className}`}
       {...props}
     >
       {children}

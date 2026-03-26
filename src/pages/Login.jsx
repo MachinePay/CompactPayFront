@@ -15,35 +15,101 @@ export default function Login() {
       login(data.access_token);
       window.location.href = "/";
     } catch {
-      // Mensagem de erro será exibida pelo Toast global
+      // Mensagem de erro sera exibida pelo Toast global
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bgmain">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-bgcard p-8 rounded shadow w-96 flex flex-col gap-4"
-      >
-        <h1 className="text-2xl text-white font-bold mb-4">CompactPay Login</h1>
-        <input
-          className="p-2 rounded bg-bgmain text-white border border-slate-700 focus:outline-primary"
-          type="email"
-          placeholder="E-mail"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          className="p-2 rounded bg-bgmain text-white border border-slate-700 focus:outline-primary"
-          type="password"
-          placeholder="Senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <Button type="submit">Entrar</Button>
-      </form>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(219,237,224,0.95),transparent_34%),linear-gradient(145deg,#f5f6ef_0%,#edf0e8_52%,#e8ede4_100%)] p-4 md:p-8">
+      <div className="mx-auto grid min-h-[calc(100vh-2rem)] max-w-6xl gap-4 rounded-[36px] border border-white/70 bg-white/60 p-4 shadow-[0_30px_100px_rgba(44,66,49,0.14)] backdrop-blur-xl lg:grid-cols-[1.12fr_0.88fr] lg:p-5">
+        <section className="relative overflow-hidden rounded-[30px] bg-[radial-gradient(circle_at_top_left,_rgba(61,154,103,0.42),transparent_36%),linear-gradient(150deg,#082313_0%,#0f3a23_44%,#145634_100%)] p-8 text-white md:p-10">
+          <div className="absolute right-[-80px] top-[-40px] h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute bottom-[-90px] left-[-40px] h-64 w-64 rounded-full bg-emerald-300/10 blur-2xl" />
+          <div className="relative flex h-full flex-col justify-between">
+            <div>
+              <div className="inline-flex items-center gap-3 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-sm text-white/80">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/18 font-bold">C</span>
+                CompactPay Control
+              </div>
+              <h1 className="mt-10 max-w-md text-4xl font-extrabold leading-tight tracking-[-0.04em] text-white md:text-6xl">
+                Gestao clara para operacao de maquinas.
+              </h1>
+              <p className="mt-5 max-w-lg text-base leading-7 text-white/74 md:text-lg">
+                Monitore faturamento, disponibilidade e equipe em um painel unico,
+                com visual mais limpo e decisao mais rapida.
+              </p>
+            </div>
+
+            <div className="grid gap-3 pt-12 md:grid-cols-3">
+              <div className="rounded-[24px] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                <div className="text-3xl font-bold">24h</div>
+                <div className="mt-1 text-sm text-white/70">sinais e eventos em leitura continua</div>
+              </div>
+              <div className="rounded-[24px] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                <div className="text-3xl font-bold">Pix</div>
+                <div className="mt-1 text-sm text-white/70">autenticacao e cobranca no mesmo fluxo</div>
+              </div>
+              <div className="rounded-[24px] border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
+                <div className="text-3xl font-bold">Live</div>
+                <div className="mt-1 text-sm text-white/70">saude operacional e resumo financeiro</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="app-panel flex items-center justify-center rounded-[30px] bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(245,248,242,0.96))] p-6 md:p-10">
+          <form onSubmit={handleSubmit} className="w-full max-w-md">
+            <div className="mb-8">
+              <div className="text-sm font-semibold uppercase tracking-[0.26em] text-[var(--color-text-soft)]">
+                Acesso seguro
+              </div>
+              <h2 className="mt-3 text-4xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
+                Entrar no painel
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-[var(--color-text-soft)]">
+                Use seu email administrativo ou de cliente para abrir o painel da operacao.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+                  E-mail
+                </span>
+                <input
+                  className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus:shadow-[0_0_0_4px_rgba(31,122,76,0.10)]"
+                  type="email"
+                  placeholder="admin@compactpay.com.br"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+                  Senha
+                </span>
+                <input
+                  className="w-full rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus:shadow-[0_0_0_4px_rgba(31,122,76,0.10)]"
+                  type="password"
+                  placeholder="Digite sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </label>
+            </div>
+
+            <Button type="submit" className="mt-6 w-full justify-center">
+              Entrar no painel
+            </Button>
+
+            <div className="mt-6 rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)]">
+              Ambiente orientado para operacao, faturamento e disponibilidade das maquinas.
+            </div>
+          </form>
+        </section>
+      </div>
     </div>
   );
 }
