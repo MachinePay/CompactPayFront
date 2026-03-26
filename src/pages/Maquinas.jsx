@@ -6,6 +6,7 @@ import {
   Cpu,
   Plus,
   RefreshCcw,
+  Rocket,
   Server,
   XCircle,
 } from "lucide-react";
@@ -36,6 +37,7 @@ export default function Maquinas() {
   const [saving, setSaving] = useState(false);
   const [generatingId, setGeneratingId] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState("");
+  const [sendingCreditId, setSendingCreditId] = useState("");
 
   const loadMaquinas = async () => {
     if (!user) return;
@@ -106,6 +108,15 @@ export default function Maquinas() {
       await loadMaquinas();
     } finally {
       setSaving(false);
+    }
+  };
+
+  const sendTestCredit = async (machineId) => {
+    setSendingCreditId(machineId);
+    try {
+      await api.post(`/maquinas/${machineId}/credito-teste`);
+    } finally {
+      setSendingCreditId("");
     }
   };
 
@@ -202,6 +213,7 @@ export default function Maquinas() {
                     <th className="px-5 py-4 whitespace-nowrap">Status</th>
                     <th className="px-5 py-4 whitespace-nowrap">Localizacao</th>
                     <th className="px-5 py-4 whitespace-nowrap">Faturamento</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Teste</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -238,6 +250,17 @@ export default function Maquinas() {
                         </td>
                         <td className="px-5 py-4 min-w-[140px] font-semibold">
                           {m.faturamento?.toFixed ? `R$ ${m.faturamento.toFixed(2)}` : "--"}
+                        </td>
+                        <td className="px-5 py-4 min-w-[170px]">
+                          <button
+                            type="button"
+                            className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold"
+                            onClick={() => sendTestCredit(m.id_hardware)}
+                            disabled={sendingCreditId === m.id_hardware}
+                          >
+                            <Rocket size={15} />
+                            {sendingCreditId === m.id_hardware ? "Enviando..." : "Enviar credito"}
+                          </button>
                         </td>
                       </tr>
                     );
