@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function DateRangePicker({ value, onChange }) {
   const [start, setStart] = useState(value?.start || "");
   const [end, setEnd] = useState(value?.end || "");
+
+  useEffect(() => {
+    setStart(value?.start || "");
+    setEnd(value?.end || "");
+  }, [value?.start, value?.end]);
 
   const handleStart = (e) => {
     setStart(e.target.value);
