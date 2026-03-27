@@ -25,20 +25,19 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
-const mockTasks = [
-  { title: "Auditar maquinas com baixo sinal", status: "Prioridade", tone: "text-[var(--color-error)]" },
-  { title: "Revisar performance do caixa Pix", status: "Hoje", tone: "text-[var(--color-warning)]" },
-  { title: "Conferir clientes sem movimentacao", status: "Analise", tone: "text-[var(--color-primary)]" },
-  { title: "Atualizar rotina de atendimento", status: "Equipe", tone: "text-[var(--color-success)]" },
-];
-
 export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState({
-    faturamento_total_dia: 0,
+    faturamento_total: 0,
     premios_entregues: 0,
+    maquinas_ativas: 0,
+    total_maquinas: 0,
+    ticket_medio: 0,
+    percentual_ativas: 0,
+    alertas: 0,
   });
   const [chartData, setChartData] = useState([]);
+  const [alerts, setAlerts] = useState([]);
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [loading, setLoading] = useState(false);
 
@@ -48,45 +47,32 @@ export default function Dashboard() {
     const params = [];
     if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
     if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
-    if (user.cliente_id != null) params.push(`cliente_id=${user.cliente_id}`);
+    if (!dateRange.start || !dateRange.end) params.push("periodo=mes");
     const paramStr = params.length ? `?${params.join("&")}` : "";
 
-    Promise.all([
-      api.get(`/dashboard/stats${paramStr}`),
-      api.get(`/faturamento${paramStr}`),
-    ])
-      .then(([statsRes, faturamentoRes]) => {
-        const faturamentoDia =
-          statsRes.data?.faturamento_total_dia ?? faturamentoRes.data?.faturamento ?? 0;
-        const premios = statsRes.data?.premios_entregues ?? 0;
+    api
+      .get(`/dashboard/overview${paramStr}`)
+      .then(({ data }) => {
         setStats({
-          faturamento_total_dia: faturamentoDia,
-          premios_entregues: premios,
+          faturamento_total: data?.stats?.faturamento_total ?? 0,
+          premios_entregues: data?.stats?.premios_entregues ?? 0,
+          maquinas_ativas: data?.stats?.maquinas_ativas ?? 0,
+          total_maquinas: data?.stats?.total_maquinas ?? 0,
+          ticket_medio: data?.stats?.ticket_medio ?? 0,
+          percentual_ativas: data?.stats?.percentual_ativas ?? 0,
+          alertas: data?.stats?.alertas ?? 0,
         });
-        setChartData([
-          { dia: "Seg", valor: 12 },
-          { dia: "Ter", valor: 18 },
-          { dia: "Qua", valor: 14 },
-          { dia: "Qui", valor: 24 },
-          { dia: "Sex", valor: 17 },
-          { dia: "Sab", valor: 11 },
-          { dia: "Dom", valor: 16 },
-        ]);
+        setChartData(data?.chart_data ?? []);
+        setAlerts(data?.alerts ?? []);
       })
       .finally(() => setLoading(false));
   }, [user, dateRange]);
 
-  const machineEstimate = Math.max(4, Math.round(stats.premios_entregues / 2) || 4);
-  const ticketMedio =
-    stats.premios_entregues > 0
-      ? stats.faturamento_total_dia / stats.premios_entregues
-      : stats.faturamento_total_dia;
-
   const statCards = [
     {
-      label: "Faturamento Hoje",
-      value: `R$ ${stats.faturamento_total_dia.toFixed(2)}`,
-      caption: "Entrada consolidada do periodo",
+      label: "Faturamento",
+      value: `R$ ${stats.faturamento_total.toFixed(2)}`,
+      caption: "Entrada consolidada do periodo selecionado",
       icon: Wallet,
       featured: true,
     },
@@ -98,13 +84,13 @@ export default function Dashboard() {
     },
     {
       label: "Maquinas Ativas",
-      value: String(machineEstimate),
-      caption: "Estimativa visual do parque em operacao",
+      value: String(stats.maquinas_ativas),
+      caption: `${stats.total_maquinas} maquinas cadastradas no painel`,
       icon: MonitorSmartphone,
     },
     {
       label: "Ticket Medio",
-      value: `R$ ${ticketMedio.toFixed(2)}`,
+      value: `R$ ${stats.ticket_medio.toFixed(2)}`,
       caption: "Media por evento monitorado",
       icon: CreditCard,
     },
@@ -308,26 +294,23 @@ export default function Dashboard() {
                     Receita consolidada
                   </div>
                   <div className="mt-3 text-3xl font-extrabold tracking-[-0.05em] text-[var(--color-text)]">
-                    R$ {stats.faturamento_total_dia.toFixed(2)}
+                    R$ {stats.faturamento_total.toFixed(2)}
                   </div>
                 </div>
                 <div className="rounded-[24px] border border-[var(--color-border)] p-5">
                   <div className="text-sm font-semibold text-[var(--color-text-soft)]">
-                    Progresso estimado do dia
+                    Maquinas online
                   </div>
                   <div className="mt-4 h-3 rounded-full bg-[var(--color-bg-muted)]">
                     <div
                       className="h-3 rounded-full bg-[linear-gradient(135deg,var(--color-primary),var(--color-primary-strong))]"
                       style={{
-                        width: `${Math.min(
-                          100,
-                          Math.max(18, stats.premios_entregues * 8 + 22),
-                        )}%`,
+                        width: `${Math.min(100, Math.max(6, stats.percentual_ativas))}%`,
                       }}
                     />
                   </div>
                   <div className="mt-4 text-sm text-[var(--color-text-soft)]">
-                    Ritmo com base nos eventos registrados no periodo selecionado.
+                    {stats.maquinas_ativas} de {stats.total_maquinas} maquinas reportando nos ultimos 3 minutos.
                   </div>
                 </div>
               </div>
@@ -343,10 +326,10 @@ export default function Dashboard() {
                   Painel rapido
                 </div>
                 <div className="mt-3 text-3xl font-extrabold tracking-[-0.05em]">
-                  41%
+                  {stats.percentual_ativas.toFixed(0)}%
                 </div>
                 <div className="mt-2 max-w-xs text-sm leading-6 text-white/72">
-                  Meta visual de acompanhamento diario para faturamento e fluxo das maquinas.
+                  Percentual atual de maquinas online no parque monitorado.
                 </div>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/12 text-white">
@@ -356,16 +339,16 @@ export default function Dashboard() {
 
             <div className="mt-8 grid grid-cols-3 gap-3 text-sm">
               <div className="rounded-[22px] bg-white/8 p-4">
-                <div className="text-white/58">Pix</div>
-                <div className="mt-3 text-xl font-bold">+18%</div>
+                <div className="text-white/58">Faturamento</div>
+                <div className="mt-3 text-xl font-bold">R$ {stats.faturamento_total.toFixed(0)}</div>
               </div>
               <div className="rounded-[22px] bg-white/8 p-4">
-                <div className="text-white/58">Fluxo</div>
-                <div className="mt-3 text-xl font-bold">09</div>
+                <div className="text-white/58">Ativas</div>
+                <div className="mt-3 text-xl font-bold">{stats.maquinas_ativas}</div>
               </div>
               <div className="rounded-[22px] bg-white/8 p-4">
                 <div className="text-white/58">Alertas</div>
-                <div className="mt-3 text-xl font-bold">02</div>
+                <div className="mt-3 text-xl font-bold">{stats.alertas}</div>
               </div>
             </div>
           </Card>
@@ -379,12 +362,12 @@ export default function Dashboard() {
                 </div>
               </div>
               <span className="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-soft)]">
-                {mockTasks.length} itens
+                {alerts.length} itens
               </span>
             </div>
 
             <div className="mt-5 space-y-3">
-              {mockTasks.map((task) => (
+              {alerts.map((task) => (
                 <div
                   key={task.title}
                   className="flex items-center justify-between gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-4"
@@ -395,7 +378,17 @@ export default function Dashboard() {
                       Acao recomendada para manter o painel limpo e responsivo.
                     </div>
                   </div>
-                  <span className={`text-sm font-semibold ${task.tone}`}>{task.status}</span>
+                  <span
+                    className={`text-sm font-semibold ${
+                      task.tone === "error"
+                        ? "text-[var(--color-error)]"
+                        : task.tone === "warning"
+                          ? "text-[var(--color-warning)]"
+                          : "text-[var(--color-success)]"
+                    }`}
+                  >
+                    {task.status}
+                  </span>
                 </div>
               ))}
             </div>

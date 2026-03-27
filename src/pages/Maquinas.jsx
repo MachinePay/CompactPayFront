@@ -4,12 +4,15 @@ import {
   CheckCircle2,
   Copy,
   Cpu,
+  Pencil,
   Plus,
   RefreshCcw,
   Rocket,
   Server,
+  Trash2,
   XCircle,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
@@ -17,6 +20,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import DateRangePicker from "../components/DateRangePicker";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
+import Toast from "../components/Toast";
 
 const emptyForm = {
   id_hardware: "",
@@ -25,25 +29,34 @@ const emptyForm = {
   cliente_id: "",
 };
 
+const emptyDeleteState = {
+  open: false,
+  machineId: "",
+  confirmationText: "",
+};
+
 export default function Maquinas() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [maquinas, setMaquinas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(false);
   const [periodo, setPeriodo] = useState("mes");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [showModal, setShowModal] = useState(false);
+  const [editingMachineId, setEditingMachineId] = useState("");
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [generatingId, setGeneratingId] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState("");
   const [sendingCreditId, setSendingCreditId] = useState("");
+  const [toast, setToast] = useState({ message: "", type: "success" });
+  const [deleteState, setDeleteState] = useState(emptyDeleteState);
 
   const loadMaquinas = async () => {
     if (!user) return;
     setLoading(true);
     const params = [];
-    if (user.cliente_id != null) params.push(`cliente_id=${user.cliente_id}`);
     if (periodo) params.push(`periodo=${periodo}`);
     if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
     if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
@@ -91,8 +104,7 @@ export default function Maquinas() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.post("/maquinas", {
-        id_hardware: form.id_hardware,
+      const payload = {
         nome: form.nome,
         localizacao: form.localizacao,
         cliente_id:
@@ -101,8 +113,20 @@ export default function Maquinas() {
               ? null
               : Number(form.cliente_id)
             : user.cliente_id,
-      });
+      };
+
+      if (editingMachineId) {
+        await api.put(`/maquinas/${editingMachineId}`, payload);
+        setToast({ message: "Maquina atualizada com sucesso.", type: "success" });
+      } else {
+        await api.post("/maquinas", {
+          id_hardware: form.id_hardware,
+          ...payload,
+        });
+        setToast({ message: "Maquina cadastrada com sucesso.", type: "success" });
+      }
       setShowModal(false);
+      setEditingMachineId("");
       setForm(emptyForm);
       setCopyFeedback("");
       await loadMaquinas();
@@ -111,10 +135,39 @@ export default function Maquinas() {
     }
   };
 
+  const handleEditMachine = (machine) => {
+    setEditingMachineId(machine.id_hardware);
+    setForm({
+      id_hardware: machine.id_hardware,
+      nome: machine.nome || "",
+      localizacao: machine.localizacao || "",
+      cliente_id: machine.cliente_id == null ? "" : String(machine.cliente_id),
+    });
+    setCopyFeedback("");
+    setShowModal(true);
+  };
+
+  const requestDeleteMachine = (machineId) => {
+    setDeleteState({
+      open: true,
+      machineId,
+      confirmationText: "",
+    });
+  };
+
+  const handleDeleteMachine = async () => {
+    if (deleteState.confirmationText.trim().toLowerCase() !== "confirmar") return;
+    await api.delete(`/maquinas/${deleteState.machineId}`);
+    setToast({ message: "Maquina excluida com sucesso.", type: "success" });
+    setDeleteState(emptyDeleteState);
+    await loadMaquinas();
+  };
+
   const sendTestCredit = async (machineId) => {
     setSendingCreditId(machineId);
     try {
       await api.post(`/maquinas/${machineId}/credito-teste`);
+      setToast({ message: `Credito de teste enviado para ${machineId}.`, type: "success" });
     } finally {
       setSendingCreditId("");
     }
@@ -127,6 +180,12 @@ export default function Maquinas() {
 
   return (
     <div className="flex min-h-full flex-col gap-4">
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ message: "", type: toast.type })}
+      />
+
       <CardSectionHeader
         title="Maquinas"
         description="Cadastre novas unidades, gere IDs para o ESP e acompanhe o status de cada maquina."
@@ -135,6 +194,7 @@ export default function Maquinas() {
             <Button
               className="justify-center"
               onClick={() => {
+                setEditingMachineId("");
                 setForm(emptyForm);
                 setCopyFeedback("");
                 setShowModal(true);
@@ -214,13 +274,14 @@ export default function Maquinas() {
                     <th className="px-5 py-4 whitespace-nowrap">Localizacao</th>
                     <th className="px-5 py-4 whitespace-nowrap">Faturamento</th>
                     <th className="px-5 py-4 whitespace-nowrap">Teste</th>
+                    {user?.role === "admin" ? (
+                      <th className="px-5 py-4 whitespace-nowrap">Gerenciar</th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
                   {maquinas.map((m) => {
-                    const online =
-                      m.ultimo_sinal &&
-                      dayjs().diff(dayjs(m.ultimo_sinal), "minute") < 3;
+                    const online = Boolean(m.status_online);
 
                     return (
                       <tr
@@ -228,9 +289,17 @@ export default function Maquinas() {
                         className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
                       >
                         <td className="px-5 py-4 min-w-[220px]">
-                          <div className="font-semibold">{m.id_hardware}</div>
+                          <button
+                            type="button"
+                            className="text-left"
+                            onClick={() => navigate(`/maquinas/${m.id_hardware}`)}
+                          >
+                            <div className="font-semibold text-[var(--color-primary-strong)] hover:underline">
+                              {m.id_hardware}
+                            </div>
+                          </button>
                           <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                            Use este ID na configuracao do ESP
+                            Clique para abrir pagamentos e testes da maquina
                           </div>
                         </td>
                         <td className="px-5 py-4 min-w-[180px] font-medium">{m.nome || "--"}</td>
@@ -262,6 +331,28 @@ export default function Maquinas() {
                             {sendingCreditId === m.id_hardware ? "Enviando..." : "Enviar credito"}
                           </button>
                         </td>
+                        {user?.role === "admin" ? (
+                          <td className="px-5 py-4 min-w-[220px]">
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                                onClick={() => handleEditMachine(m)}
+                              >
+                                <Pencil size={15} />
+                                Editar
+                              </button>
+                              <button
+                                type="button"
+                                className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
+                                onClick={() => requestDeleteMachine(m.id_hardware)}
+                              >
+                                <Trash2 size={15} />
+                                Excluir
+                              </button>
+                            </div>
+                          </td>
+                        ) : null}
                       </tr>
                     );
                   })}
@@ -272,17 +363,25 @@ export default function Maquinas() {
         </div>
       </section>
 
-      <Modal open={showModal} onClose={() => setShowModal(false)}>
+      <Modal
+        open={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setEditingMachineId("");
+        }}
+      >
         <div className="space-y-5">
           <div>
             <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
               Cadastro de maquina
             </div>
             <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
-              Gerar ID e vincular ao ESP
+              {editingMachineId ? "Editar maquina" : "Gerar ID e vincular ao ESP"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-              Gere um ID unico, copie esse valor e use no firmware ou no portal de configuracao do ESP antes de instalar a maquina.
+              {editingMachineId
+                ? "Atualize os dados cadastrais da maquina e mantenha o cliente responsavel correto."
+                : "Gere um ID unico, copie esse valor e use no firmware ou no portal de configuracao do ESP antes de instalar a maquina."}
             </p>
           </div>
 
@@ -299,12 +398,13 @@ export default function Maquinas() {
                   onChange={(e) =>
                     setForm((current) => ({ ...current, id_hardware: e.target.value.toUpperCase() }))
                   }
+                  disabled={Boolean(editingMachineId)}
                 />
                 <button
                   type="button"
                   className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
                   onClick={generateId}
-                  disabled={generatingId}
+                  disabled={generatingId || Boolean(editingMachineId)}
                 >
                   <RefreshCcw size={16} className={generatingId ? "animate-spin" : ""} />
                   {generatingId ? "Gerando" : "Gerar ID"}
@@ -384,9 +484,66 @@ export default function Maquinas() {
             </div>
 
             <Button type="submit" className="w-full justify-center" disabled={saving}>
-              {saving ? "Salvando maquina..." : "Cadastrar maquina"}
+              {saving ? "Salvando maquina..." : editingMachineId ? "Salvar alteracoes" : "Cadastrar maquina"}
             </Button>
           </form>
+        </div>
+      </Modal>
+
+      <Modal
+        open={deleteState.open}
+        onClose={() => setDeleteState(emptyDeleteState)}
+      >
+        <div className="space-y-5">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
+              Exclusao de maquina
+            </div>
+            <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
+              Confirmar exclusao
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+              Esta acao remove a maquina <span className="font-semibold text-[var(--color-text)]">{deleteState.machineId}</span> e todo o historico vinculado.
+            </p>
+            <p className="mt-3 text-sm leading-6 text-[var(--color-text-soft)]">
+              Para continuar, digite <span className="font-semibold text-[var(--color-error)]">confirmar</span> no campo abaixo.
+            </p>
+          </div>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+              Confirmacao
+            </span>
+            <input
+              className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-error)]"
+              placeholder='Digite "confirmar"'
+              value={deleteState.confirmationText}
+              onChange={(e) =>
+                setDeleteState((current) => ({
+                  ...current,
+                  confirmationText: e.target.value,
+                }))
+              }
+            />
+          </label>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="pill-button inline-flex flex-1 items-center justify-center px-5 py-3 font-semibold"
+              onClick={() => setDeleteState(emptyDeleteState)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="inline-flex flex-1 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={handleDeleteMachine}
+              disabled={deleteState.confirmationText.trim().toLowerCase() !== "confirmar"}
+            >
+              Excluir maquina
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

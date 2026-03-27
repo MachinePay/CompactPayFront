@@ -1,4 +1,4 @@
-import { Home, LogOut, Server, Users } from "lucide-react";
+import { Activity, CreditCard, Home, LogOut, Server, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -40,6 +40,16 @@ export default function Sidebar() {
             <li>
               <NavLink to="/maquinas" className={linkClassName}>
                 <Server /> Maquinas
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/produtos" className={linkClassName}>
+                <CreditCard /> Produtos
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/transacoes" className={linkClassName}>
+                <Activity /> Transacoes
               </NavLink>
             </li>
             {user?.role === "admin" && (
