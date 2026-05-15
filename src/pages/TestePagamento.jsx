@@ -15,6 +15,7 @@ export default function TestePagamento() {
   const [feedback, setFeedback] = useState("");
   const [feedbackType, setFeedbackType] = useState("success");
   const [escutaAtiva, setEscutaAtiva] = useState(false);
+  const [escutasAtivas, setEscutasAtivas] = useState([]);
 
   const machineOptions = useMemo(
     () => maquinas.map((item) => ({ id: item.id_hardware, nome: item.nome || item.id_hardware })),
@@ -61,6 +62,22 @@ export default function TestePagamento() {
     loadMaquinas();
   }, []);
 
+  const carregarEscutas = async () => {
+    try {
+      const { data } = await api.get("/pagamentos/escuta");
+      const ativos = data?.ativos || [];
+      setEscutasAtivas(ativos);
+      const existeEscutaAtual = ativos.some((item) => item.terminal_id === terminalId && item.machine_id === machineId);
+      setEscutaAtiva(existeEscutaAtual);
+    } catch {
+      setEscutasAtivas([]);
+    }
+  };
+
+  useEffect(() => {
+    carregarEscutas();
+  }, []);
+
   const lancarPagamento = async (canal) => {
     if (!machineId) return;
     setLoading(true);
@@ -92,6 +109,7 @@ export default function TestePagamento() {
         terminal_id: terminalId,
       });
       setEscutaAtiva(true);
+      await carregarEscutas();
       setFeedbackType("success");
       setFeedback("Escuta ativada. Agora pague na maquininha vinculada: quando o pagamento aprovar, o pulso sera enviado automaticamente.");
     } catch {
@@ -111,6 +129,7 @@ export default function TestePagamento() {
         terminal_id: terminalId,
       });
       setEscutaAtiva(false);
+      await carregarEscutas();
       setFeedbackType("success");
       setFeedback("Escuta parada para este terminal.");
     } catch {
@@ -276,6 +295,55 @@ export default function TestePagamento() {
             {feedback}
           </div>
         ) : null}
+      </section>
+
+      <section className="app-panel rounded-[30px] p-5 md:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-extrabold tracking-[-0.03em] text-[var(--color-text)]">
+              Escutas ativas
+            </h2>
+            <p className="mt-1 text-sm text-[var(--color-text-soft)]">
+              Terminais vinculados no backend para liberar pulso apos pagamento aprovado.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="pill-button inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold"
+            onClick={carregarEscutas}
+          >
+            Atualizar
+          </button>
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-[20px] border border-[var(--color-border)] bg-white">
+          {escutasAtivas.length === 0 ? (
+            <div className="px-4 py-5 text-sm text-[var(--color-text-soft)]">
+              Nenhuma escuta ativa no momento.
+            </div>
+          ) : (
+            <table className="min-w-full text-sm">
+              <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
+                <tr>
+                  <th className="px-4 py-3">Terminal</th>
+                  <th className="px-4 py-3">Maquina</th>
+                  <th className="px-4 py-3">Atualizado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {escutasAtivas.map((item) => (
+                  <tr key={`${item.terminal_id}-${item.machine_id}`} className="border-t border-[var(--color-border)] text-[var(--color-text)]">
+                    <td className="px-4 py-3 font-semibold">{item.terminal_id}</td>
+                    <td className="px-4 py-3">{item.machine_id}</td>
+                    <td className="px-4 py-3 text-[var(--color-text-soft)]">
+                      {item.updated_at ? new Date(item.updated_at).toLocaleString("pt-BR") : "--"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </section>
     </div>
   );
