@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import MaquinaHistorico from "./pages/MaquinaHistorico";
 import Maquinas from "./pages/Maquinas";
 import Produtos from "./pages/Produtos";
+import TestePagamento from "./pages/TestePagamento";
 import Transacoes from "./pages/Transacoes";
 import Usuarios from "./pages/Usuarios";
 import Login from "./pages/Login";
@@ -56,6 +57,16 @@ export default function AppRoutes() {
             <PrivateRoute>
               <Layout>
                 <Produtos />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/teste-pagamento"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <TestePagamento />
               </Layout>
             </PrivateRoute>
           }

@@ -1,4 +1,4 @@
-import { Activity, CreditCard, Home, LogOut, Server, Users } from "lucide-react";
+import { Activity, CreditCard, Home, LogOut, QrCode, Server, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -45,6 +45,11 @@ export default function Sidebar() {
             <li>
               <NavLink to="/produtos" className={linkClassName}>
                 <CreditCard /> Produtos
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/teste-pagamento" className={linkClassName}>
+                <QrCode /> Teste Pagamento
               </NavLink>
             </li>
             <li>

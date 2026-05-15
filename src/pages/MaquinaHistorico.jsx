@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Download, FileDown, RefreshCcw, ShieldCheck, Sparkles, Trash2, Wallet } from "lucide-react";
+import { Download, FileDown, RefreshCcw, ShieldCheck, Sparkles, Trash2, Wallet, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api from "../api/axios";
@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
+import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 
 export default function MaquinaHistorico() {
@@ -34,19 +35,28 @@ export default function MaquinaHistorico() {
     totais_por_dia: [],
     fechamentos: [],
     auditoria: [],
+    observacoes: [],
+    timeline: [],
   });
   const [periodo, setPeriodo] = useState("mes");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [toast, setToast] = useState({ message: "", type: "success" });
+  const [observacao, setObservacao] = useState("");
+  const [savingObservacao, setSavingObservacao] = useState(false);
+  const [deleteState, setDeleteState] = useState({ open: false, confirmationText: "" });
+
+  const buildQuery = (selectedPeriodo = periodo, selectedRange = dateRange) => {
+    const params = [];
+    if (selectedPeriodo) params.push(`periodo=${selectedPeriodo}`);
+    if (selectedRange.start) params.push(`data_inicio=${selectedRange.start}`);
+    if (selectedRange.end) params.push(`data_fim=${selectedRange.end}`);
+    return params.length ? `?${params.join("&")}` : "";
+  };
 
   const fetchHistorico = async (options = {}) => {
     const currentPeriodo = options.periodo ?? periodo;
     const currentRange = options.dateRange ?? dateRange;
-    const params = [];
-    if (currentPeriodo) params.push(`periodo=${currentPeriodo}`);
-    if (currentRange.start) params.push(`data_inicio=${currentRange.start}`);
-    if (currentRange.end) params.push(`data_fim=${currentRange.end}`);
-    const query = params.length ? `?${params.join("&")}` : "";
+    const query = buildQuery(currentPeriodo, currentRange);
     const { data } = await api.get(`/maquinas/${machineId}/historico${query}`);
     return data;
   };
@@ -70,12 +80,7 @@ export default function MaquinaHistorico() {
   const handleExportPdf = (snapshot = historico, snapshotPeriodo = periodo, snapshotRange = dateRange) => {
     const maquina = snapshot.maquina;
     if (!maquina) return;
-    const periodoLabel =
-      snapshotRange.start || snapshotRange.end
-        ? `${snapshotRange.start || "inicio do periodo"} ate ${snapshotRange.end || "hoje"}`
-        : snapshotPeriodo === "dia"
-          ? "Hoje"
-          : "Mes atual";
+    const periodoLabel = formatPeriodoLabel(snapshotPeriodo, snapshotRange);
 
     const rowsPagamentos = snapshot.pagamentos
       .map(
@@ -183,26 +188,52 @@ export default function MaquinaHistorico() {
   };
 
   const handleDeleteHistorico = async () => {
-    if (!window.confirm("Deseja apagar todos os pagamentos e testes deste periodo para esta maquina?")) return;
-    const params = [];
-    if (periodo) params.push(`periodo=${periodo}`);
-    if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
-    if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
-    const query = params.length ? `?${params.join("&")}` : "";
+    const query = buildQuery();
     await api.delete(`/maquinas/${machineId}/historico${query}`);
     setToast({ message: "Historico apagado com sucesso.", type: "success" });
     await loadHistorico();
   };
 
-  const handleSalvarFechamento = async () => {
-    const params = [];
-    if (periodo) params.push(`periodo=${periodo}`);
-    if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
-    if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
-    const query = params.length ? `?${params.join("&")}` : "";
-    await api.post(`/maquinas/${machineId}/fechamentos${query}`);
-    setToast({ message: "Fechamento salvo com sucesso.", type: "success" });
-    await loadHistorico();
+  const handleSalvarObservacao = async () => {
+    if (!observacao.trim()) return;
+    setSavingObservacao(true);
+    try {
+      await api.post(`/maquinas/${machineId}/observacoes`, { descricao: observacao.trim() });
+      setObservacao("");
+      setToast({ message: "Observacao registrada com sucesso.", type: "success" });
+      await loadHistorico();
+    } catch (error) {
+      setToast({
+        message: error?.response?.data?.detail || "Nao foi possivel registrar a observacao.",
+        type: "error",
+      });
+    } finally {
+      setSavingObservacao(false);
+    }
+  };
+
+  const handleSalvarFechamento = async (
+    selectedPeriodo = periodo,
+    selectedRange = dateRange,
+    options = {},
+  ) => {
+    const { silentSuccess = false, silentError = false } = options;
+    try {
+      const query = buildQuery(selectedPeriodo, selectedRange);
+      await api.post(`/maquinas/${machineId}/fechamentos${query}`);
+      if (!silentSuccess) {
+        setToast({ message: "Fechamento salvo com sucesso.", type: "success" });
+      }
+      await loadHistorico();
+    } catch (error) {
+      if (!silentError) {
+        setToast({
+          message: error?.response?.data?.detail || "Nao foi possivel salvar o fechamento.",
+          type: "error",
+        });
+      }
+      throw error;
+    }
   };
 
   const handleExportCsv = () => {
@@ -232,6 +263,13 @@ export default function MaquinaHistorico() {
         "",
         item.descricao,
       ]),
+      ...(historico.observacoes || []).map((item) => [
+        "observacao",
+        dayjs(item.created_at).format("YYYY-MM-DD HH:mm:ss"),
+        "",
+        "",
+        item.descricao,
+      ]),
     ];
 
     const csv = rows
@@ -253,17 +291,29 @@ export default function MaquinaHistorico() {
     URL.revokeObjectURL(url);
   };
 
-  const handleFechamentoHoje = () => {
+  const handleFechamentoHoje = async () => {
     const hoje = dayjs().format("YYYY-MM-DD");
     const nextRange = { start: hoje, end: hoje };
     setPeriodo("dia");
     setDateRange(nextRange);
-    loadHistorico({ periodo: "dia", dateRange: nextRange }).then((data) => {
-      if (data) {
-        setHistorico(data);
-        handleExportPdf(data, "dia", nextRange);
+    try {
+      const data = await loadHistorico({ periodo: "dia", dateRange: nextRange });
+      if (!data) return;
+      setHistorico(data);
+      try {
+        await handleSalvarFechamento("dia", nextRange, { silentSuccess: true, silentError: true });
+        setToast({ message: "Fechamento de hoje salvo e PDF gerado com sucesso.", type: "success" });
+      } catch (error) {
+        if (error?.response?.status !== 409) throw error;
+        setToast({ message: "O fechamento de hoje ja estava salvo. PDF gerado com o mesmo recorte.", type: "success" });
       }
-    });
+      handleExportPdf(data, "dia", nextRange);
+    } catch (error) {
+      setToast({
+        message: error?.response?.data?.detail || "Nao foi possivel gerar o fechamento do dia.",
+        type: "error",
+      });
+    }
   };
 
   const maquina = historico.maquina;
@@ -275,6 +325,49 @@ export default function MaquinaHistorico() {
         type={toast.type}
         onClose={() => setToast({ message: "", type: toast.type })}
       />
+      <Modal open={deleteState.open} onClose={() => setDeleteState({ open: false, confirmationText: "" })}>
+        <div className="space-y-5">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
+              Exclusao de historico
+            </div>
+            <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
+              Confirmar apagamento
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+              Esta acao remove pagamentos e testes do periodo filtrado. Para continuar, digite <span className="font-semibold text-[var(--color-error)]">confirmar</span>.
+            </p>
+          </div>
+
+          <input
+            className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-error)]"
+            placeholder='Digite "confirmar"'
+            value={deleteState.confirmationText}
+            onChange={(event) => setDeleteState((current) => ({ ...current, confirmationText: event.target.value }))}
+          />
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="pill-button inline-flex flex-1 items-center justify-center px-5 py-3 font-semibold"
+              onClick={() => setDeleteState({ open: false, confirmationText: "" })}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="inline-flex flex-1 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={deleteState.confirmationText.trim().toLowerCase() !== "confirmar"}
+              onClick={async () => {
+                await handleDeleteHistorico();
+                setDeleteState({ open: false, confirmationText: "" });
+              }}
+            >
+              Apagar historico
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <section className="app-panel rounded-[30px] p-6 md:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -401,7 +494,7 @@ export default function MaquinaHistorico() {
             <button
               type="button"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-              onClick={handleDeleteHistorico}
+              onClick={() => setDeleteState({ open: true, confirmationText: "" })}
             >
               <Trash2 size={16} />
               Apagar historicos
@@ -422,6 +515,55 @@ export default function MaquinaHistorico() {
                 `R$ ${Number(item.total).toFixed(2)}`,
               ])}
             />
+
+            <div className="grid gap-4 xl:grid-cols-2">
+              <HistoryTable
+                title="Linha do tempo"
+                empty="Nenhum evento encontrado para essa maquina."
+                columns={["Data", "Tipo", "Titulo", "Descricao"]}
+                rows={(historico.timeline || []).map((item) => [
+                  dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                  item.tipo,
+                  item.titulo,
+                  item.descricao,
+                ])}
+              />
+              <div className="overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-white">
+                <div className="border-b border-[var(--color-border)] bg-[var(--color-bg-muted)] px-5 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+                  Observacoes e manutencao
+                </div>
+                <div className="space-y-4 p-5">
+                  <div className="rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">
+                    <div className="text-sm font-semibold text-[var(--color-text)]">Nova observacao</div>
+                    <textarea
+                      value={observacao}
+                      onChange={(event) => setObservacao(event.target.value)}
+                      rows={4}
+                      placeholder="Ex.: noteiro com pulso curto, limpeza feita, troca de sensor..."
+                      className="mt-3 w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    />
+                    <button
+                      type="button"
+                      className="pill-button mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                      onClick={handleSalvarObservacao}
+                      disabled={savingObservacao || !observacao.trim()}
+                    >
+                      <Wrench size={16} />
+                      {savingObservacao ? "Salvando..." : "Salvar observacao"}
+                    </button>
+                  </div>
+                  <HistoryTable
+                    title="Historico de observacoes"
+                    empty="Nenhuma observacao registrada."
+                    columns={["Data", "Descricao"]}
+                    rows={(historico.observacoes || []).map((item) => [
+                      dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                      item.descricao,
+                    ])}
+                  />
+                </div>
+              </div>
+            </div>
 
             <div className="grid gap-4 xl:grid-cols-2">
               <HistoryTable
@@ -551,6 +693,17 @@ function StatusCard({ maquina }) {
 function formatResumoData(value, label) {
   if (!value) return `${label}: nenhum registro no periodo`;
   return `${label}: ${dayjs(value).format("DD/MM/YYYY HH:mm:ss")}`;
+}
+
+function formatPeriodoLabel(periodo, range) {
+  if (range?.start && range?.end) {
+    const startLabel = dayjs(range.start).format("DD/MM/YYYY");
+    const endLabel = dayjs(range.end).format("DD/MM/YYYY");
+    return range.start === range.end ? startLabel : `${startLabel} ate ${endLabel}`;
+  }
+  if (range?.start) return `A partir de ${dayjs(range.start).format("DD/MM/YYYY")}`;
+  if (range?.end) return `Ate ${dayjs(range.end).format("DD/MM/YYYY")}`;
+  return periodo === "dia" ? dayjs().format("DD/MM/YYYY") : "Mes atual";
 }
 
 function HistoryTable({ title, columns, rows, empty }) {

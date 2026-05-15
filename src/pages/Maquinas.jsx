@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
   CheckCircle2,
@@ -38,11 +38,18 @@ const emptyDeleteState = {
 export default function Maquinas() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const persistedFilters = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("compactpay.maquinas.filters") || "{}");
+    } catch {
+      return {};
+    }
+  }, []);
   const [maquinas, setMaquinas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [periodo, setPeriodo] = useState("mes");
-  const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [periodo, setPeriodo] = useState(persistedFilters.periodo || "mes");
+  const [dateRange, setDateRange] = useState(persistedFilters.dateRange || { start: "", end: "" });
   const [showModal, setShowModal] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState("");
   const [form, setForm] = useState(emptyForm);
@@ -52,6 +59,13 @@ export default function Maquinas() {
   const [sendingCreditId, setSendingCreditId] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [deleteState, setDeleteState] = useState(emptyDeleteState);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "compactpay.maquinas.filters",
+      JSON.stringify({ periodo, dateRange }),
+    );
+  }, [dateRange, periodo]);
 
   const loadMaquinas = async () => {
     if (!user) return;
@@ -271,6 +285,7 @@ export default function Maquinas() {
                     <th className="px-5 py-4 whitespace-nowrap">ID da maquina</th>
                     <th className="px-5 py-4 whitespace-nowrap">Nome</th>
                     <th className="px-5 py-4 whitespace-nowrap">Status</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Ultima atividade</th>
                     <th className="px-5 py-4 whitespace-nowrap">Localizacao</th>
                     <th className="px-5 py-4 whitespace-nowrap">Faturamento</th>
                     <th className="px-5 py-4 whitespace-nowrap">Teste</th>
@@ -304,15 +319,48 @@ export default function Maquinas() {
                         </td>
                         <td className="px-5 py-4 min-w-[180px] font-medium">{m.nome || "--"}</td>
                         <td className="px-5 py-4 min-w-[140px]">
-                          {online ? (
-                            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--color-primary-soft)] px-3 py-2 text-xs font-semibold text-[var(--color-success)]">
-                              <CheckCircle2 size={15} /> Online
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-2 text-xs font-semibold text-[var(--color-error)]">
-                              <XCircle size={15} /> Offline
-                            </span>
-                          )}
+                          <span
+                            className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold"
+                            style={{
+                              backgroundColor:
+                                m.status_operacional === "operando"
+                                  ? "var(--color-primary-soft)"
+                                  : m.status_operacional === "atencao"
+                                    ? "#fff2d8"
+                                    : "#fee2e2",
+                              color:
+                                m.status_operacional === "operando"
+                                  ? "var(--color-success)"
+                                  : m.status_operacional === "atencao"
+                                    ? "var(--color-warning)"
+                                    : "var(--color-error)",
+                            }}
+                          >
+                            {m.status_operacional === "operando" ? (
+                              <CheckCircle2 size={15} />
+                            ) : (
+                              <XCircle size={15} />
+                            )}
+                            {m.status_operacional === "operando"
+                              ? "Operando"
+                              : m.status_operacional === "atencao"
+                                ? "Atencao"
+                                : "Offline"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
+                          {m.ultima_atividade_em
+                            ? dayjs(m.ultima_atividade_em).format("DD/MM/YYYY HH:mm:ss")
+                            : "Sem atividade"}
+                          <div className="mt-1 text-xs">
+                            {m.ultimo_pagamento_em
+                              ? `Pag.: ${dayjs(m.ultimo_pagamento_em).format("DD/MM HH:mm")}`
+                              : m.ultimo_teste_em
+                                ? `Teste: ${dayjs(m.ultimo_teste_em).format("DD/MM HH:mm")}`
+                                : m.ultima_saida_em
+                                  ? `Saida: ${dayjs(m.ultima_saida_em).format("DD/MM HH:mm")}`
+                                  : "Sem eventos recentes"}
+                          </div>
                         </td>
                         <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
                           {m.localizacao || "--"}
