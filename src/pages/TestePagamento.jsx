@@ -14,6 +14,7 @@ export default function TestePagamento() {
   const [sendingPulse, setSendingPulse] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [feedbackType, setFeedbackType] = useState("success");
+  const [escutaAtiva, setEscutaAtiva] = useState(false);
 
   const machineOptions = useMemo(
     () => maquinas.map((item) => ({ id: item.id_hardware, nome: item.nome || item.id_hardware })),
@@ -76,6 +77,45 @@ export default function TestePagamento() {
     } catch {
       setFeedbackType("error");
       setFeedback(`Falha ao processar pagamento ${canal}.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const iniciarEscuta = async () => {
+    if (!machineId || !terminalId) return;
+    setLoading(true);
+    setFeedback("");
+    try {
+      await api.post("/pagamentos/escuta/iniciar", {
+        maquina_id: machineId,
+        terminal_id: terminalId,
+      });
+      setEscutaAtiva(true);
+      setFeedbackType("success");
+      setFeedback("Escuta ativada. Agora pague na maquininha vinculada: quando o pagamento aprovar, o pulso sera enviado automaticamente.");
+    } catch {
+      setFeedbackType("error");
+      setFeedback("Falha ao iniciar escuta da maquininha.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pararEscuta = async () => {
+    if (!terminalId) return;
+    setLoading(true);
+    setFeedback("");
+    try {
+      await api.post("/pagamentos/escuta/parar", {
+        terminal_id: terminalId,
+      });
+      setEscutaAtiva(false);
+      setFeedbackType("success");
+      setFeedback("Escuta parada para este terminal.");
+    } catch {
+      setFeedbackType("error");
+      setFeedback("Falha ao parar escuta.");
     } finally {
       setLoading(false);
     }
@@ -207,21 +247,21 @@ export default function TestePagamento() {
           <button
             type="button"
             className="pill-button inline-flex items-center justify-center gap-2 px-5 py-4 text-sm font-semibold"
-            onClick={() => lancarPagamento("CARTAO_MAQUININHA")}
-            disabled={loading || !machineId}
+            onClick={iniciarEscuta}
+            disabled={loading || !machineId || !terminalId}
           >
             <CreditCard size={16} />
-            {loading ? "Processando..." : "Pagar com Cartao"}
+            {loading ? "Ativando..." : "Iniciar Escuta Maquininha"}
           </button>
 
           <button
             type="button"
             className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-5 py-4 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)]"
-            onClick={enviarPulsoDireto}
-            disabled={sendingPulse || !machineId}
+            onClick={pararEscuta}
+            disabled={loading || !terminalId || !escutaAtiva}
           >
             <Send size={16} />
-            {sendingPulse ? "Enviando..." : "Enviar so o pulso"}
+            Parar Escuta
           </button>
         </div>
 
