@@ -144,6 +144,12 @@ export default function Maquinas() {
       setForm(emptyForm);
       setCopyFeedback("");
       await loadMaquinas();
+    } catch (error) {
+      const detail = error?.response?.data?.detail;
+      setToast({
+        message: typeof detail === "string" ? detail : "Nao foi possivel salvar a maquina.",
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }

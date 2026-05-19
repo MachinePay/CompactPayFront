@@ -7,6 +7,36 @@ import Modal from "../components/Modal";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Button from "../components/Button";
 
+const brazilStates = [
+  "Acre",
+  "Alagoas",
+  "Amapá",
+  "Amazonas",
+  "Bahia",
+  "Ceará",
+  "Distrito Federal",
+  "Espírito Santo",
+  "Goiás",
+  "Maranhão",
+  "Mato Grosso",
+  "Mato Grosso do Sul",
+  "Minas Gerais",
+  "Paraná",
+  "Paraíba",
+  "Pará",
+  "Pernambuco",
+  "Piauí",
+  "Rio Grande do Norte",
+  "Rio Grande do Sul",
+  "Rio de Janeiro",
+  "Rondônia",
+  "Roraima",
+  "Santa Catarina",
+  "Sergipe",
+  "São Paulo",
+  "Tocantins",
+];
+
 export default function Usuarios() {
   const { user } = useAuth();
   const [usuarios, setUsuarios] = useState([]);
@@ -19,6 +49,12 @@ export default function Usuarios() {
     telefone: "",
     cpf: "",
     cnpj: "",
+    endereco_rua: "",
+    endereco_numero: "",
+    endereco_cidade: "",
+    endereco_estado: "São Paulo",
+    endereco_latitude: "",
+    endereco_longitude: "",
     password: "",
     role: "cliente",
     mp_public_key: "",
@@ -53,6 +89,12 @@ export default function Usuarios() {
       telefone: "",
       cpf: "",
       cnpj: "",
+      endereco_rua: "",
+      endereco_numero: "",
+      endereco_cidade: "",
+      endereco_estado: "São Paulo",
+      endereco_latitude: "",
+      endereco_longitude: "",
       password: "",
       role: "cliente",
       mp_public_key: "",
@@ -73,6 +115,12 @@ export default function Usuarios() {
       telefone: currentUser.telefone || "",
       cpf: currentUser.cpf || "",
       cnpj: currentUser.cnpj || "",
+      endereco_rua: currentUser.endereco_rua || "",
+      endereco_numero: currentUser.endereco_numero || "",
+      endereco_cidade: currentUser.endereco_cidade || "",
+      endereco_estado: currentUser.endereco_estado || "São Paulo",
+      endereco_latitude: currentUser.endereco_latitude ?? "",
+      endereco_longitude: currentUser.endereco_longitude ?? "",
       password: "",
       role: currentUser.role,
       mp_public_key: currentUser.mp_public_key || "",
@@ -103,6 +151,8 @@ export default function Usuarios() {
     setSaving(true);
     const payload = {
       ...form,
+      endereco_latitude: form.endereco_latitude === "" ? null : Number(form.endereco_latitude),
+      endereco_longitude: form.endereco_longitude === "" ? null : Number(form.endereco_longitude),
       cliente_id: null,
     };
 
@@ -363,6 +413,69 @@ export default function Usuarios() {
                   />
                 </Field>
 
+                <Field label="Rua">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="Rua do ponto/cliente"
+                    value={form.endereco_rua}
+                    onChange={(e) => setForm((current) => ({ ...current, endereco_rua: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="Numero">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="123"
+                    value={form.endereco_numero}
+                    onChange={(e) => setForm((current) => ({ ...current, endereco_numero: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="Cidade">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="São Paulo"
+                    value={form.endereco_cidade}
+                    onChange={(e) => setForm((current) => ({ ...current, endereco_cidade: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="Estado">
+                  <select
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    value={form.endereco_estado}
+                    onChange={(e) => setForm((current) => ({ ...current, endereco_estado: e.target.value }))}
+                  >
+                    {brazilStates.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="Latitude">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="-23.55052"
+                    type="number"
+                    step="any"
+                    value={form.endereco_latitude}
+                    onChange={(e) => setForm((current) => ({ ...current, endereco_latitude: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="Longitude">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="-46.633308"
+                    type="number"
+                    step="any"
+                    value={form.endereco_longitude}
+                    onChange={(e) => setForm((current) => ({ ...current, endereco_longitude: e.target.value }))}
+                  />
+                </Field>
+
                 <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
                   Preferencialmente use o botao Conectar MP na tabela depois de criar o usuario. O Mercado Pago devolve o token de producao pela aplicacao vinculada e o sistema salva automaticamente.
                 </div>
@@ -430,7 +543,7 @@ export default function Usuarios() {
                 </Field>
 
                 <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
-                  Ao salvar este usuario cliente, essas credenciais ficam vinculadas ao cliente. Ao criar uma maquina para ele, o sistema cria automaticamente um caixa no Mercado Pago.
+                  Ao salvar este usuario cliente, o endereço fica vinculado ao cliente e sera usado para criar a loja no Mercado Pago. Ao criar uma maquina para ele, o sistema cria automaticamente o caixa nessa loja.
                 </div>
               </div>
             ) : null}
