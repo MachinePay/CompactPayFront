@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, ShieldCheck, Trash2, UserRoundCog, Users } from "lucide-react";
+import { Link, Plus, ShieldCheck, Trash2, UserRoundCog, Users } from "lucide-react";
 
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
@@ -16,8 +16,18 @@ export default function Usuarios() {
   const [form, setForm] = useState({
     email: "",
     nome: "",
+    telefone: "",
+    cpf: "",
+    cnpj: "",
     password: "",
     role: "cliente",
+    mp_public_key: "",
+    mp_access_token: "",
+    mp_client_id: "",
+    mp_client_secret: "",
+    mp_user_id: "",
+    mp_store_id: "",
+    mp_store_external_id: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -40,8 +50,18 @@ export default function Usuarios() {
     setForm({
       email: "",
       nome: "",
+      telefone: "",
+      cpf: "",
+      cnpj: "",
       password: "",
       role: "cliente",
+      mp_public_key: "",
+      mp_access_token: "",
+      mp_client_id: "",
+      mp_client_secret: "",
+      mp_user_id: "",
+      mp_store_id: "",
+      mp_store_external_id: "",
     });
   };
 
@@ -50,8 +70,18 @@ export default function Usuarios() {
     setForm({
       email: currentUser.email,
       nome: currentUser.nome || "",
+      telefone: currentUser.telefone || "",
+      cpf: currentUser.cpf || "",
+      cnpj: currentUser.cnpj || "",
       password: "",
       role: currentUser.role,
+      mp_public_key: currentUser.mp_public_key || "",
+      mp_access_token: currentUser.mp_access_token || "",
+      mp_client_id: currentUser.mp_client_id || "",
+      mp_client_secret: currentUser.mp_client_secret || "",
+      mp_user_id: currentUser.mp_user_id || "",
+      mp_store_id: currentUser.mp_store_id || "",
+      mp_store_external_id: currentUser.mp_store_external_id || "",
     });
     setShowModal(true);
   };
@@ -60,6 +90,12 @@ export default function Usuarios() {
     if (!window.confirm("Tem certeza que deseja excluir este usuario?")) return;
     await api.delete(`/usuarios/${id}`);
     fetchUsuarios();
+  };
+
+  const handleConnectMercadoPago = async (clienteId) => {
+    if (!clienteId) return;
+    const { data } = await api.get(`/mercado-pago/oauth/url?cliente_id=${clienteId}`);
+    window.location.href = data.url;
   };
 
   const handleSubmit = async (e) => {
@@ -151,6 +187,7 @@ export default function Usuarios() {
                     <th className="px-5 py-4 whitespace-nowrap">Email</th>
                     <th className="px-5 py-4 whitespace-nowrap">Perfil</th>
                     <th className="px-5 py-4 whitespace-nowrap">Cliente</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Mercado Pago</th>
                     <th className="px-5 py-4 whitespace-nowrap">Acoes</th>
                   </tr>
                 </thead>
@@ -181,6 +218,17 @@ export default function Usuarios() {
                       <td className="px-5 py-4 min-w-[110px] text-[var(--color-text-soft)]">
                         {item.cliente_id ?? "--"}
                       </td>
+                      <td className="px-5 py-4 min-w-[150px]">
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
+                            item.mp_configurado
+                              ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
+                              : "bg-amber-50 text-[var(--color-warning)]"
+                          }`}
+                        >
+                          {item.mp_configurado ? "Configurado" : "Pendente"}
+                        </span>
+                      </td>
                       <td className="px-5 py-4 min-w-[190px]">
                         <div className="flex flex-wrap gap-2">
                           <button
@@ -191,6 +239,17 @@ export default function Usuarios() {
                             <UserRoundCog size={15} />
                             Editar
                           </button>
+                          {item.role === "cliente" ? (
+                            <button
+                              className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                              onClick={() => handleConnectMercadoPago(item.cliente_id)}
+                              type="button"
+                              disabled={!item.cliente_id}
+                            >
+                              <Link size={15} />
+                              Conectar MP
+                            </button>
+                          ) : null}
                           <button
                             className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
                             onClick={() => handleDelete(item.id)}
@@ -276,8 +335,103 @@ export default function Usuarios() {
             </div>
 
             {form.role === "cliente" ? (
-              <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)]">
-                O cliente vinculado sera criado automaticamente pelo sistema ao salvar este usuario.
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Telefone">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="(11) 99999-9999"
+                    value={form.telefone}
+                    onChange={(e) => setForm((current) => ({ ...current, telefone: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="CPF">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="000.000.000-00"
+                    value={form.cpf}
+                    onChange={(e) => setForm((current) => ({ ...current, cpf: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="CNPJ">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="00.000.000/0000-00"
+                    value={form.cnpj}
+                    onChange={(e) => setForm((current) => ({ ...current, cnpj: e.target.value }))}
+                  />
+                </Field>
+
+                <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
+                  Preferencialmente use o botao Conectar MP na tabela depois de criar o usuario. O Mercado Pago devolve o token de producao pela aplicacao vinculada e o sistema salva automaticamente.
+                </div>
+
+                <Field label="MP Public Key (fallback)">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="APP_USR..."
+                    value={form.mp_public_key}
+                    onChange={(e) => setForm((current) => ({ ...current, mp_public_key: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="MP Access Token (fallback)">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="APP_USR..."
+                    value={form.mp_access_token}
+                    onChange={(e) => setForm((current) => ({ ...current, mp_access_token: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="MP Client ID">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    value={form.mp_client_id}
+                    onChange={(e) => setForm((current) => ({ ...current, mp_client_id: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="MP Client Secret">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder={editUser ? "Preencha somente para trocar" : ""}
+                    value={form.mp_client_secret}
+                    onChange={(e) => setForm((current) => ({ ...current, mp_client_secret: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="MP User ID">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="Opcional, o sistema busca pelo token"
+                    value={form.mp_user_id}
+                    onChange={(e) => setForm((current) => ({ ...current, mp_user_id: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="MP Store ID">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="Opcional, se ja existir loja"
+                    value={form.mp_store_id}
+                    onChange={(e) => setForm((current) => ({ ...current, mp_store_id: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="MP Store External ID">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="Opcional, se ja existir loja"
+                    value={form.mp_store_external_id}
+                    onChange={(e) => setForm((current) => ({ ...current, mp_store_external_id: e.target.value }))}
+                  />
+                </Field>
+
+                <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
+                  Ao salvar este usuario cliente, essas credenciais ficam vinculadas ao cliente. Ao criar uma maquina para ele, o sistema cria automaticamente um caixa no Mercado Pago.
+                </div>
               </div>
             ) : null}
 

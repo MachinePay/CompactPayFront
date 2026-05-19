@@ -202,7 +202,7 @@ export default function Maquinas() {
 
       <CardSectionHeader
         title="Maquinas"
-        description="Cadastre novas unidades, gere IDs para o ESP e acompanhe o status de cada maquina."
+        description="Cadastre novas unidades, gere IDs para o ESP e crie automaticamente o caixa no Mercado Pago do cliente."
         actions={
           user?.role === "admin" ? (
             <Button
@@ -287,6 +287,7 @@ export default function Maquinas() {
                     <th className="px-5 py-4 whitespace-nowrap">Status</th>
                     <th className="px-5 py-4 whitespace-nowrap">Ultima atividade</th>
                     <th className="px-5 py-4 whitespace-nowrap">Localizacao</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Caixa MP</th>
                     <th className="px-5 py-4 whitespace-nowrap">Faturamento</th>
                     <th className="px-5 py-4 whitespace-nowrap">Teste</th>
                     {user?.role === "admin" ? (
@@ -295,10 +296,7 @@ export default function Maquinas() {
                   </tr>
                 </thead>
                 <tbody>
-                  {maquinas.map((m) => {
-                    const online = Boolean(m.status_online);
-
-                    return (
+                  {maquinas.map((m) => (
                       <tr
                         key={m.id_hardware}
                         className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
@@ -365,6 +363,12 @@ export default function Maquinas() {
                         <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
                           {m.localizacao || "--"}
                         </td>
+                        <td className="px-5 py-4 min-w-[170px]">
+                          <div className="font-semibold text-[var(--color-text)]">{m.mp_pos_external_id || "--"}</div>
+                          <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+                            {m.mp_pos_id ? `POS ${m.mp_pos_id}` : "Ainda nao criado"}
+                          </div>
+                        </td>
                         <td className="px-5 py-4 min-w-[140px] font-semibold">
                           {m.faturamento?.toFixed ? `R$ ${m.faturamento.toFixed(2)}` : "--"}
                         </td>
@@ -402,8 +406,7 @@ export default function Maquinas() {
                           </td>
                         ) : null}
                       </tr>
-                    );
-                  })}
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -429,7 +432,7 @@ export default function Maquinas() {
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
               {editingMachineId
                 ? "Atualize os dados cadastrais da maquina e mantenha o cliente responsavel correto."
-                : "Gere um ID unico, copie esse valor e use no firmware ou no portal de configuracao do ESP antes de instalar a maquina."}
+                : "Escolha o usuario cliente. Ao cadastrar, o sistema gera o ID e cria automaticamente um caixa no Mercado Pago com o nome do ponto."}
             </p>
           </div>
 
@@ -441,7 +444,7 @@ export default function Maquinas() {
               <div className="mt-3 flex flex-col gap-3 md:flex-row">
                 <input
                   className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                  placeholder="Clique em gerar um ID"
+                  placeholder="Gerado automaticamente se ficar vazio"
                   value={form.id_hardware}
                   onChange={(e) =>
                     setForm((current) => ({ ...current, id_hardware: e.target.value.toUpperCase() }))
@@ -468,7 +471,7 @@ export default function Maquinas() {
                 </button>
               </div>
               <div className="mt-3 text-xs text-[var(--color-text-soft)]">
-                Exemplo de identificador: <span className="font-semibold text-[var(--color-text)]">CPM-A1B2C3</span>
+                Se deixar vazio, o backend gera automaticamente. Exemplo: <span className="font-semibold text-[var(--color-text)]">CPM-A1B2C3</span>
               </div>
               {copyFeedback ? (
                 <div className="mt-3 text-sm font-medium text-[var(--color-success)]">
@@ -495,6 +498,7 @@ export default function Maquinas() {
                     {usuarios.map((item) => (
                       <option key={item.id} value={item.cliente_id ?? ""}>
                         {(item.nome || item.email) + (item.cliente_id ? ` - cliente ${item.cliente_id}` : "")}
+                        {item.mp_configurado ? "" : " - Mercado Pago pendente"}
                       </option>
                     ))}
                   </select>
@@ -503,7 +507,7 @@ export default function Maquinas() {
 
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                  Nome da maquina
+                  Nome do ponto
                 </span>
                 <input
                   className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
