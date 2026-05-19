@@ -62,6 +62,7 @@ export default function Usuarios() {
     mp_client_id: "",
     mp_client_secret: "",
     mp_user_id: "",
+    mp_pos_category: "7994",
     mp_store_id: "",
     mp_store_external_id: "",
   });
@@ -102,6 +103,7 @@ export default function Usuarios() {
       mp_client_id: "",
       mp_client_secret: "",
       mp_user_id: "",
+      mp_pos_category: "7994",
       mp_store_id: "",
       mp_store_external_id: "",
     });
@@ -128,6 +130,7 @@ export default function Usuarios() {
       mp_client_id: currentUser.mp_client_id || "",
       mp_client_secret: currentUser.mp_client_secret || "",
       mp_user_id: currentUser.mp_user_id || "",
+      mp_pos_category: currentUser.mp_pos_category ?? "7994",
       mp_store_id: currentUser.mp_store_id || "",
       mp_store_external_id: currentUser.mp_store_external_id || "",
     });
@@ -153,6 +156,7 @@ export default function Usuarios() {
       ...form,
       endereco_latitude: form.endereco_latitude === "" ? null : Number(form.endereco_latitude),
       endereco_longitude: form.endereco_longitude === "" ? null : Number(form.endereco_longitude),
+      mp_pos_category: form.mp_pos_category === "" ? null : Number(form.mp_pos_category),
       cliente_id: null,
     };
 
@@ -521,6 +525,16 @@ export default function Usuarios() {
                     placeholder="Opcional, o sistema busca pelo token"
                     value={form.mp_user_id}
                     onChange={(e) => setForm((current) => ({ ...current, mp_user_id: e.target.value }))}
+                  />
+                </Field>
+
+                <Field label="Categoria/MCC do caixa MP">
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="7994"
+                    type="number"
+                    value={form.mp_pos_category}
+                    onChange={(e) => setForm((current) => ({ ...current, mp_pos_category: e.target.value }))}
                   />
                 </Field>
 
