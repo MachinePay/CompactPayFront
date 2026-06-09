@@ -63,8 +63,6 @@ export default function Usuarios() {
     mp_client_secret: "",
     mp_user_id: "",
     mp_pos_category: "7994",
-    mp_store_id: "",
-    mp_store_external_id: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -104,8 +102,6 @@ export default function Usuarios() {
       mp_client_secret: "",
       mp_user_id: "",
       mp_pos_category: "7994",
-      mp_store_id: "",
-      mp_store_external_id: "",
     });
   };
 
@@ -131,8 +127,6 @@ export default function Usuarios() {
       mp_client_secret: currentUser.mp_client_secret || "",
       mp_user_id: currentUser.mp_user_id || "",
       mp_pos_category: currentUser.mp_pos_category ?? "7994",
-      mp_store_id: currentUser.mp_store_id || "",
-      mp_store_external_id: currentUser.mp_store_external_id || "",
     });
     setShowModal(true);
   };
@@ -538,26 +532,8 @@ export default function Usuarios() {
                   />
                 </Field>
 
-                <Field label="MP Store ID">
-                  <input
-                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                    placeholder="Opcional, se ja existir loja"
-                    value={form.mp_store_id}
-                    onChange={(e) => setForm((current) => ({ ...current, mp_store_id: e.target.value }))}
-                  />
-                </Field>
-
-                <Field label="MP Store External ID">
-                  <input
-                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                    placeholder="Opcional, se ja existir loja"
-                    value={form.mp_store_external_id}
-                    onChange={(e) => setForm((current) => ({ ...current, mp_store_external_id: e.target.value }))}
-                  />
-                </Field>
-
                 <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
-                  Ao salvar este usuario cliente, o endereço fica vinculado ao cliente e sera usado para criar a loja no Mercado Pago. Ao criar uma maquina para ele, o sistema cria automaticamente o caixa nessa loja.
+                  Ao salvar este usuario cliente, o endereco fica vinculado ao cliente. Ao criar uma maquina para ele, o sistema cria uma nova loja no Mercado Pago e o caixa dessa maquina dentro dela.
                 </div>
               </div>
             ) : null}
