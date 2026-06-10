@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import api from "../api/axios";
+import api, { getApiErrorMessage } from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import DateRangePicker from "../components/DateRangePicker";
@@ -187,9 +187,8 @@ export default function Maquinas() {
       setCopyFeedback("");
       await loadMaquinas();
     } catch (error) {
-      const detail = error?.response?.data?.detail;
       setToast({
-        message: typeof detail === "string" ? detail : "Nao foi possivel salvar a maquina.",
+        message: getApiErrorMessage(error, "Nao foi possivel salvar a maquina."),
         type: "error",
       });
     } finally {

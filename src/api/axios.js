@@ -1,8 +1,53 @@
 import axios from "axios";
 
 const listeners = [];
+
 export function addApiErrorListener(fn) {
   listeners.push(fn);
+  return () => {
+    const index = listeners.indexOf(fn);
+    if (index >= 0) listeners.splice(index, 1);
+  };
+}
+
+function normalizeDetail(detail) {
+  if (!detail) return "";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => item?.msg || item?.message || JSON.stringify(item))
+      .filter(Boolean)
+      .join(" ");
+  }
+  return detail.message || detail.error || JSON.stringify(detail);
+}
+
+export function getApiErrorMessage(error, fallback = "Erro inesperado. Tente novamente.") {
+  if (error?.compactpayMessage) return error.compactpayMessage;
+
+  const status = error?.response?.status;
+  const data = error?.response?.data;
+  const detail = normalizeDetail(data?.detail || data?.message || data?.error || data);
+
+  if (status === 401) return "Sessao expirada. Faca login novamente.";
+  if (status === 403) return detail || "Voce nao tem permissao para executar esta acao.";
+  if (status === 404) return detail || "Registro nao encontrado.";
+  if (status === 409) return detail || "Esta operacao conflita com dados ja cadastrados.";
+  if (status >= 500) {
+    return detail
+      ? `Falha no servidor (${status}): ${detail}`
+      : `Falha no servidor (${status}). Tente novamente ou verifique os logs da Render.`;
+  }
+  if (detail) return detail;
+
+  if (error?.code === "ECONNABORTED") {
+    return "A requisicao demorou demais para responder. Tente novamente.";
+  }
+  if (error?.message === "Network Error" || !error?.response) {
+    return "Nao foi possivel conectar ao backend. Verifique se a API esta online, se a URL esta correta e se o CORS permite este dominio.";
+  }
+
+  return fallback;
 }
 
 const api = axios.create({
@@ -20,20 +65,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    let message = "Erro inesperado. Tente novamente.";
-    if (error.response) {
-      if (error.response.status === 401) {
-        message = "Sessão expirada. Faça login novamente.";
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      } else if (error.response.data?.detail) {
-        message = error.response.data.detail;
-      } else if (typeof error.response.data === "string") {
-        message = error.response.data;
-      }
-    } else if (error.message === "Network Error") {
-      message = "Servidor indisponível. Tente novamente mais tarde.";
+    const message = getApiErrorMessage(error);
+    error.compactpayMessage = message;
+
+    if (error.response?.status === 401) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
     }
+
     listeners.forEach((fn) => fn(message));
     return Promise.reject(error);
   },

@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import api from "../api/axios";
+import api, { getApiErrorMessage } from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 import DateRangePicker from "../components/DateRangePicker";
@@ -259,7 +259,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       await loadHistorico();
     } catch (error) {
       setToast({
-        message: error?.response?.data?.detail || "Nao foi possivel solicitar o extorno.",
+        message: getApiErrorMessage(error, "Nao foi possivel solicitar o extorno."),
         type: "error",
       });
     } finally {
@@ -277,7 +277,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       await loadHistorico();
     } catch (error) {
       setToast({
-        message: error?.response?.data?.detail || "Nao foi possivel registrar a observacao.",
+        message: getApiErrorMessage(error, "Nao foi possivel registrar a observacao."),
         type: "error",
       });
     } finally {
@@ -301,7 +301,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     } catch (error) {
       if (!silentError) {
         setToast({
-          message: error?.response?.data?.detail || "Nao foi possivel salvar o fechamento.",
+          message: getApiErrorMessage(error, "Nao foi possivel salvar o fechamento."),
           type: "error",
         });
       }
@@ -383,7 +383,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       handleExportPdf(data, "dia", nextRange);
     } catch (error) {
       setToast({
-        message: error?.response?.data?.detail || "Nao foi possivel gerar o fechamento do dia.",
+        message: getApiErrorMessage(error, "Nao foi possivel gerar o fechamento do dia."),
         type: "error",
       });
     }

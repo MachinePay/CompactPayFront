@@ -10,9 +10,10 @@ export default function App() {
   const [toast, setToast] = useState("");
 
   useEffect(() => {
-    addApiErrorListener((msg) => {
+    const removeListener = addApiErrorListener((msg) => {
       setToast(msg);
     });
+    return removeListener;
   }, []);
 
   return (
