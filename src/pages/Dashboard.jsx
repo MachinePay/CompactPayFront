@@ -201,7 +201,7 @@ export default function Dashboard() {
     {
       label: "Ticket Medio",
       value: `R$ ${stats.ticket_medio.toFixed(2)}`,
-      caption: "Media por evento monitorado",
+      caption: "Media por venda real",
       icon: CreditCard,
     },
   ];
