@@ -6,6 +6,7 @@ import Button from "../components/Button";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
+import ConfirmModal from "../components/ConfirmModal";
 import { useAuth } from "../context/AuthContext";
 
 const emptyForm = {
@@ -25,6 +26,8 @@ export default function Produtos() {
   const [saving, setSaving] = useState(false);
   const [sendingProductId, setSendingProductId] = useState(null);
   const [toast, setToast] = useState({ message: "", type: "success" });
+  const [deleteProduct, setDeleteProduct] = useState(null);
+  const [deletingProduct, setDeletingProduct] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -84,11 +87,17 @@ export default function Produtos() {
     setShowModal(true);
   };
 
-  const handleDelete = async (produtoId) => {
-    if (!window.confirm("Tem certeza que deseja excluir este produto?")) return;
-    await api.delete(`/produtos/${produtoId}`);
-    setToast({ message: "Produto removido com sucesso.", type: "success" });
-    await loadData();
+  const handleDelete = async () => {
+    if (!deleteProduct) return;
+    setDeletingProduct(true);
+    try {
+      await api.delete(`/produtos/${deleteProduct.id}`);
+      setDeleteProduct(null);
+      setToast({ message: "Produto removido com sucesso.", type: "success" });
+      await loadData();
+    } finally {
+      setDeletingProduct(false);
+    }
   };
 
   const handleLancarPagamento = async (produto) => {
@@ -115,6 +124,16 @@ export default function Produtos() {
         message={toast.message}
         type={toast.type}
         onClose={() => setToast({ message: "", type: toast.type })}
+      />
+
+      <ConfirmModal
+        open={Boolean(deleteProduct)}
+        title="Excluir produto"
+        description={`Esta acao remove o produto ${deleteProduct?.nome || ""} da maquina ${deleteProduct?.maquina_nome || deleteProduct?.maquina_id || ""}. A operacao sera registrada na auditoria.`}
+        confirmLabel="Excluir produto"
+        loading={deletingProduct}
+        onCancel={() => setDeleteProduct(null)}
+        onConfirm={handleDelete}
       />
 
       <SectionHeader
@@ -215,7 +234,7 @@ export default function Produtos() {
                           <button
                             type="button"
                             className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-                            onClick={() => handleDelete(produto.id)}
+                            onClick={() => setDeleteProduct(produto)}
                           >
                             <Trash2 size={15} />
                             Excluir

@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import Modal from "../components/Modal";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Button from "../components/Button";
+import ConfirmModal from "../components/ConfirmModal";
 
 const brazilStates = [
   "Acre",
@@ -44,6 +45,8 @@ export default function Usuarios() {
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [deleteUser, setDeleteUser] = useState(null);
+  const [deletingUser, setDeletingUser] = useState(false);
   const [form, setForm] = useState({
     email: "",
     nome: "",
@@ -148,10 +151,16 @@ export default function Usuarios() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir este usuario?")) return;
-    await api.delete(`/usuarios/${id}`);
-    fetchUsuarios();
+  const handleDelete = async () => {
+    if (!deleteUser) return;
+    setDeletingUser(true);
+    try {
+      await api.delete(`/usuarios/${deleteUser.id}`);
+      setDeleteUser(null);
+      fetchUsuarios();
+    } finally {
+      setDeletingUser(false);
+    }
   };
 
   const handleConnectMercadoPago = async (clienteId) => {
@@ -353,7 +362,7 @@ export default function Usuarios() {
                           ) : null}
                           <button
                             className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-                            onClick={() => handleDelete(item.id)}
+                            onClick={() => setDeleteUser(item)}
                             type="button"
                           >
                             <Trash2 size={15} />
@@ -369,6 +378,16 @@ export default function Usuarios() {
           )}
         </div>
       </section>
+
+      <ConfirmModal
+        open={Boolean(deleteUser)}
+        title="Excluir usuario"
+        description={`Esta acao remove o usuario ${deleteUser?.nome || deleteUser?.email || ""}. A operacao sera registrada na auditoria do sistema.`}
+        confirmLabel="Excluir usuario"
+        loading={deletingUser}
+        onCancel={() => setDeleteUser(null)}
+        onConfirm={handleDelete}
+      />
 
       <Modal
         open={showModal}
