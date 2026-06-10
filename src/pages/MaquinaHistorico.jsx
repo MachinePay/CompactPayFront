@@ -11,10 +11,13 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 
-export default function MaquinaHistorico() {
-  const { machineId } = useParams();
+export default function MaquinaHistorico({ detailed = false, selectable = false }) {
+  const { machineId: routeMachineId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [machineOptions, setMachineOptions] = useState([]);
+  const [selectedMachineId, setSelectedMachineId] = useState(routeMachineId || "");
+  const machineId = selectable ? selectedMachineId : routeMachineId;
   const [loading, setLoading] = useState(false);
   const [historico, setHistorico] = useState({
     maquina: null,
@@ -39,8 +42,11 @@ export default function MaquinaHistorico() {
     timeline: [],
     vendas: [],
   });
-  const [periodo, setPeriodo] = useState("mes");
-  const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [periodo, setPeriodo] = useState("");
+  const [dateRange, setDateRange] = useState({
+    start: dayjs().subtract(30, "day").format("YYYY-MM-DD"),
+    end: dayjs().format("YYYY-MM-DD"),
+  });
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [observacao, setObservacao] = useState("");
   const [savingObservacao, setSavingObservacao] = useState(false);
@@ -58,6 +64,7 @@ export default function MaquinaHistorico() {
   };
 
   const fetchHistorico = async (options = {}) => {
+    if (!machineId) return null;
     const currentPeriodo = options.periodo ?? periodo;
     const currentRange = options.dateRange ?? dateRange;
     const query = buildQuery(currentPeriodo, currentRange);
@@ -66,6 +73,7 @@ export default function MaquinaHistorico() {
   };
 
   const loadHistorico = async (options = {}) => {
+    if (!machineId) return null;
     setLoading(true);
     try {
       const data = await fetchHistorico(options);
@@ -80,6 +88,18 @@ export default function MaquinaHistorico() {
     if (!machineId) return;
     loadHistorico();
   }, [machineId, periodo, dateRange]);
+
+  useEffect(() => {
+    if (!selectable || !user) return;
+    const loadMachineOptions = async () => {
+      const { data } = await api.get("/maquinas?periodo=mes");
+      setMachineOptions(data);
+      if (!selectedMachineId && data.length) {
+        setSelectedMachineId(data[0].id_hardware);
+      }
+    };
+    loadMachineOptions();
+  }, [selectable, user, selectedMachineId]);
 
   const handleExportPdf = (snapshot = historico, snapshotPeriodo = periodo, snapshotRange = dateRange) => {
     const maquina = snapshot.maquina;
@@ -444,13 +464,15 @@ export default function MaquinaHistorico() {
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
-              Maquina
+              {detailed ? "Relatorio detalhado" : "Relatorio de vendas"}
             </div>
             <h1 className="mt-3 text-4xl font-extrabold tracking-[-0.05em] text-[var(--color-text)] md:text-5xl">
               {maquina?.nome || machineId}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
-              Historico de pagamentos e testes da maquina, com fechamento por periodo.
+              {detailed
+                ? "Escolha a maquina e consulte vendas, historico, observacoes, fechamentos e auditoria."
+                : "Pagamentos e testes dos ultimos 30 dias. Selecione uma data para consultar outro periodo."}
             </p>
             <div className="mt-3 text-sm text-[var(--color-text-soft)]">
               {maquina?.id_hardware || machineId} {maquina?.localizacao ? ` - ${maquina.localizacao}` : ""}
@@ -458,6 +480,23 @@ export default function MaquinaHistorico() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {selectable ? (
+              <label className="flex min-w-[260px] items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
+                Maquina
+                <select
+                  className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none"
+                  value={selectedMachineId}
+                  onChange={(event) => setSelectedMachineId(event.target.value)}
+                >
+                  <option value="">Selecione uma maquina</option>
+                  {machineOptions.map((item) => (
+                    <option key={item.id_hardware} value={item.id_hardware}>
+                      {(item.nome || item.id_hardware) + ` - ${item.id_hardware}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label className="flex items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
               Periodo
               <select
@@ -465,8 +504,9 @@ export default function MaquinaHistorico() {
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value)}
               >
-                <option value="dia">Dia</option>
-                <option value="mes">Mes</option>
+                <option value="">Ultimos 30 dias / data selecionada</option>
+                <option value="dia">Hoje</option>
+                <option value="mes">Mes atual</option>
               </select>
             </label>
             <DateRangePicker value={dateRange} onChange={setDateRange} />
@@ -483,6 +523,7 @@ export default function MaquinaHistorico() {
         </div>
       </section>
 
+      {detailed ? (
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard
           label="Total pagamentos"
@@ -501,7 +542,9 @@ export default function MaquinaHistorico() {
           featured
         />
       </div>
+      ) : null}
 
+      {detailed ? (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
           label="Total digital"
@@ -521,6 +564,7 @@ export default function MaquinaHistorico() {
         />
         <StatusCard maquina={maquina} />
       </div>
+      ) : null}
 
       <section className="app-panel rounded-[30px] p-5 md:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -528,6 +572,7 @@ export default function MaquinaHistorico() {
             <Button type="button" className="justify-center" onClick={() => navigate("/maquinas")}>
               Voltar para maquinas
             </Button>
+            {detailed ? (
             <button
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
@@ -536,6 +581,8 @@ export default function MaquinaHistorico() {
               <ShieldCheck size={16} />
               Salvar fechamento
             </button>
+            ) : null}
+            {detailed ? (
             <button
               type="button"
               className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
@@ -544,6 +591,7 @@ export default function MaquinaHistorico() {
               <FileDown size={16} />
               Fechamento do dia
             </button>
+            ) : null}
             <button
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
@@ -555,6 +603,7 @@ export default function MaquinaHistorico() {
           </div>
 
           <div className="flex flex-wrap gap-3">
+            {detailed ? (
             <button
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
@@ -563,6 +612,8 @@ export default function MaquinaHistorico() {
               <Download size={16} />
               Exportar CSV
             </button>
+            ) : null}
+            {detailed ? (
             <button
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
@@ -571,6 +622,8 @@ export default function MaquinaHistorico() {
               <FileDown size={16} />
               Fechamento PDF
             </button>
+            ) : null}
+            {detailed ? (
             <button
               type="button"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
@@ -579,6 +632,7 @@ export default function MaquinaHistorico() {
               <Trash2 size={16} />
               Apagar historicos
             </button>
+            ) : null}
           </div>
         </div>
 
@@ -594,6 +648,8 @@ export default function MaquinaHistorico() {
               refundingId={refundingId}
             />
 
+            {detailed ? (
+            <>
             <HistoryTable
               title="Resumo diario"
               empty="Nenhum pagamento encontrado para compor o fechamento diario."
@@ -709,6 +765,8 @@ export default function MaquinaHistorico() {
                 ])}
               />
             </div>
+            </>
+            ) : null}
           </div>
         )}
       </section>

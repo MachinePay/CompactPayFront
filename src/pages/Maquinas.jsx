@@ -66,6 +66,7 @@ export default function Maquinas() {
   const [loading, setLoading] = useState(false);
   const [periodo, setPeriodo] = useState(persistedFilters.periodo || "mes");
   const [dateRange, setDateRange] = useState(persistedFilters.dateRange || { start: "", end: "" });
+  const [selectedClienteId, setSelectedClienteId] = useState(persistedFilters.cliente_id || "");
   const [showModal, setShowModal] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState("");
   const [form, setForm] = useState(emptyForm);
@@ -81,17 +82,25 @@ export default function Maquinas() {
   useEffect(() => {
     localStorage.setItem(
       "compactpay.maquinas.filters",
-      JSON.stringify({ periodo, dateRange }),
+      JSON.stringify({ periodo, dateRange, cliente_id: selectedClienteId }),
     );
-  }, [dateRange, periodo]);
+  }, [dateRange, periodo, selectedClienteId]);
 
   const loadMaquinas = async () => {
     if (!user) return;
+    if (user.role === "admin" && !selectedClienteId) {
+      setMaquinas([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const params = [];
     if (periodo) params.push(`periodo=${periodo}`);
     if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
     if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
+    if (user.role === "admin" && selectedClienteId) {
+      params.push(`cliente_id=${encodeURIComponent(selectedClienteId)}`);
+    }
     const paramStr = params.length ? `?${params.join("&")}` : "";
     try {
       const res = await api.get(`/maquinas${paramStr}`);
@@ -109,7 +118,7 @@ export default function Maquinas() {
 
   useEffect(() => {
     loadMaquinas();
-  }, [user, periodo, dateRange]);
+  }, [user, periodo, dateRange, selectedClienteId]);
 
   useEffect(() => {
     loadUsuarios();
@@ -128,7 +137,13 @@ export default function Maquinas() {
 
   const openCreateMachineModal = () => {
     setEditingMachineId("");
-    setForm(emptyForm);
+    const cliente = usuarios.find((item) => String(item.cliente_id) === String(selectedClienteId));
+    const providers = getPaymentProviders(cliente);
+    setForm({
+      ...emptyForm,
+      cliente_id: selectedClienteId || "",
+      banco_pagamento: providers[0] || "",
+    });
     setCopyFeedback("");
     setShowModal(true);
     generateId();
@@ -275,6 +290,23 @@ export default function Maquinas() {
       <section className="app-panel rounded-[30px] p-5 md:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-3">
+            {user?.role === "admin" ? (
+              <label className="flex min-w-[260px] items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
+                Cliente
+                <select
+                  className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none"
+                  value={selectedClienteId}
+                  onChange={(event) => setSelectedClienteId(event.target.value)}
+                >
+                  <option value="">Selecione um cliente</option>
+                  {usuarios.map((item) => (
+                    <option key={item.id} value={item.cliente_id ?? ""}>
+                      {(item.nome || item.email) + (item.cliente_id ? ` - ${item.cliente_id}` : "")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label className="flex items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
               Periodo
               <select
@@ -300,7 +332,16 @@ export default function Maquinas() {
         </div>
 
         <div className="mt-6 overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-white">
-          {loading ? (
+          {user?.role === "admin" && !selectedClienteId ? (
+            <div className="flex h-48 flex-col items-center justify-center gap-2 px-6 text-center">
+              <div className="text-base font-semibold text-[var(--color-text)]">
+                Selecione um cliente para listar as maquinas
+              </div>
+              <div className="max-w-md text-sm leading-6 text-[var(--color-text-soft)]">
+                A listagem fica filtrada por cliente para manter a tela rapida e organizada mesmo com muitas maquinas cadastradas.
+              </div>
+            </div>
+          ) : loading ? (
             <LoadingSpinner className="h-40" />
           ) : maquinas.length === 0 ? (
             <div className="flex h-40 items-center justify-center px-6 text-center text-sm text-[var(--color-text-soft)]">

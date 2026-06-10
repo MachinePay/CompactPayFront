@@ -3,6 +3,7 @@ import { useAuth } from "./context/AuthContext";
 
 import Dashboard from "./pages/Dashboard";
 import MaquinaHistorico from "./pages/MaquinaHistorico";
+import RelatorioDetalhadoMaquina from "./pages/RelatorioDetalhadoMaquina";
 import Maquinas from "./pages/Maquinas";
 import Produtos from "./pages/Produtos";
 import TestePagamento from "./pages/TestePagamento";
@@ -47,6 +48,16 @@ export default function AppRoutes() {
             <PrivateRoute>
               <Layout>
                 <MaquinaHistorico />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/relatorio-maquina"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <RelatorioDetalhadoMaquina />
               </Layout>
             </PrivateRoute>
           }
