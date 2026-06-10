@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Wallet, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import Button from "../components/Button";
 import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -57,24 +57,24 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   const [refundState, setRefundState] = useState({ open: false, venda: null, confirmationText: "" });
   const [refundingId, setRefundingId] = useState("");
 
-  const buildQuery = (selectedPeriodo = periodo, selectedRange = dateRange) => {
+  const buildQuery = useCallback((selectedPeriodo = periodo, selectedRange = dateRange) => {
     const params = [];
     if (selectedPeriodo) params.push(`periodo=${selectedPeriodo}`);
     if (selectedRange.start) params.push(`data_inicio=${selectedRange.start}`);
     if (selectedRange.end) params.push(`data_fim=${selectedRange.end}`);
     return params.length ? `?${params.join("&")}` : "";
-  };
+  }, [dateRange, periodo]);
 
-  const fetchHistorico = async (options = {}) => {
+  const fetchHistorico = useCallback(async (options = {}) => {
     if (!machineId) return null;
     const currentPeriodo = options.periodo ?? periodo;
     const currentRange = options.dateRange ?? dateRange;
     const query = buildQuery(currentPeriodo, currentRange);
     const { data } = await api.get(`/maquinas/${machineId}/historico${query}`);
     return data;
-  };
+  }, [buildQuery, dateRange, machineId, periodo]);
 
-  const loadHistorico = async (options = {}) => {
+  const loadHistorico = useCallback(async (options = {}) => {
     if (!machineId) return null;
     if (selectable && user?.role === "admin" && !selectedClienteId) return null;
     setLoading(true);
@@ -85,13 +85,16 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchHistorico, machineId, selectable, selectedClienteId, user?.role]);
 
   useEffect(() => {
     if (!machineId) return;
     if (selectable && user?.role === "admin" && !selectedClienteId) return;
-    loadHistorico();
-  }, [machineId, periodo, dateRange, selectedClienteId, selectable, user]);
+    const timer = window.setTimeout(() => {
+      loadHistorico();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadHistorico, machineId, selectable, selectedClienteId, user]);
 
   useEffect(() => {
     if (!selectable || !user) return;

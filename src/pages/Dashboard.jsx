@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Bell,
@@ -25,7 +25,7 @@ import api from "../api/axios";
 import Card from "../components/Card";
 import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 function buildDashboardParams({ dateRange, selectedClientId, selectedMachineId, userRole }) {
   const params = new URLSearchParams();
@@ -99,7 +99,7 @@ export default function Dashboard() {
     });
   }, [isAdmin, selectedClientId, selectedMachineId, user]);
 
-  useEffect(() => {
+  const loadOverview = useCallback(() => {
     if (!user) return;
     setLoading(true);
     const query = buildDashboardParams({
@@ -127,6 +127,11 @@ export default function Dashboard() {
       })
       .finally(() => setLoading(false));
   }, [dateRange, selectedClientId, selectedMachineId, user]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(loadOverview, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadOverview]);
 
   const filteredClientes = clientes.filter((cliente) => {
     const term = filterSearch.trim().toLowerCase();

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, Link, Plus, RefreshCcw, ShieldCheck, Trash2, UserRoundCog, Users, XCircle } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import Modal from "../components/Modal";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Button from "../components/Button";

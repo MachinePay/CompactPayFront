@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import { ClipboardList, Filter, RefreshCcw, ShieldCheck } from "lucide-react";
 
 import api from "../api/axios";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 const emptyFilters = {
   entidade_tipo: "",
@@ -19,7 +19,7 @@ export default function AuditoriaSistema() {
   const [filters, setFilters] = useState(emptyFilters);
   const [loading, setLoading] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (user?.role !== "admin") return;
     setLoading(true);
     try {
@@ -33,11 +33,18 @@ export default function AuditoriaSistema() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, user?.role]);
 
   useEffect(() => {
-    loadData();
-  }, [user]);
+    if (user?.role !== "admin") return;
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({ limite: "100" });
+      api.get(`/auditoria-sistema?${params.toString()}`).then(({ data }) => {
+        setItems(data);
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [user?.role]);
 
   const stats = useMemo(() => {
     const uniqueEntities = new Set(items.map((item) => `${item.entidade_tipo}:${item.entidade_id || ""}`));

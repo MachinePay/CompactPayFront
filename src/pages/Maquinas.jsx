@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
   CheckCircle2,
@@ -15,7 +15,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
 import DateRangePicker from "../components/DateRangePicker";
 import Modal from "../components/Modal";
@@ -87,7 +87,7 @@ export default function Maquinas() {
     );
   }, [dateRange, periodo, selectedClienteId]);
 
-  const loadMaquinas = async () => {
+  const loadMaquinas = useCallback(async () => {
     if (!user) return;
     if (user.role === "admin" && !selectedClienteId) {
       setMaquinas([]);
@@ -109,21 +109,23 @@ export default function Maquinas() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, periodo, selectedClienteId, user]);
 
-  const loadUsuarios = async () => {
+  const loadUsuarios = useCallback(async () => {
     if (user?.role !== "admin") return;
     const res = await api.get("/usuarios");
     setUsuarios(res.data.filter((item) => item.role === "cliente"));
-  };
+  }, [user?.role]);
 
   useEffect(() => {
-    loadMaquinas();
-  }, [user, periodo, dateRange, selectedClienteId]);
+    const timer = window.setTimeout(loadMaquinas, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadMaquinas]);
 
   useEffect(() => {
-    loadUsuarios();
-  }, [user]);
+    const timer = window.setTimeout(loadUsuarios, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadUsuarios]);
 
   const generateId = async () => {
     setGeneratingId(true);

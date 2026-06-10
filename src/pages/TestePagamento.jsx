@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CreditCard, QrCode, Send } from "lucide-react";
 import api from "../api/axios";
 
@@ -11,7 +11,6 @@ export default function TestePagamento() {
   const [mpWebhookSecret, setMpWebhookSecret] = useState("");
   const [valor, setValor] = useState("5.00");
   const [loading, setLoading] = useState(false);
-  const [sendingPulse, setSendingPulse] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [feedbackType, setFeedbackType] = useState("success");
   const [escutaAtiva, setEscutaAtiva] = useState(false);
@@ -51,18 +50,20 @@ export default function TestePagamento() {
     );
   }, [machineId, terminalId, mpAccessToken, mpPublicKey, mpWebhookSecret]);
 
-  useEffect(() => {
-    const loadMaquinas = async () => {
-      const { data } = await api.get("/maquinas");
-      setMaquinas(data || []);
-      if (!machineId && data?.length) {
-        setMachineId(data[0].id_hardware);
-      }
-    };
-    loadMaquinas();
-  }, []);
+  const loadMaquinas = useCallback(async () => {
+    const { data } = await api.get("/maquinas");
+    setMaquinas(data || []);
+    if (!machineId && data?.length) {
+      setMachineId(data[0].id_hardware);
+    }
+  }, [machineId]);
 
-  const carregarEscutas = async () => {
+  useEffect(() => {
+    const timer = window.setTimeout(loadMaquinas, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadMaquinas]);
+
+  const carregarEscutas = useCallback(async () => {
     try {
       const { data } = await api.get("/pagamentos/escuta");
       const ativos = data?.ativos || [];
@@ -72,11 +73,12 @@ export default function TestePagamento() {
     } catch {
       setEscutasAtivas([]);
     }
-  };
+  }, [machineId, terminalId]);
 
   useEffect(() => {
-    carregarEscutas();
-  }, []);
+    const timer = window.setTimeout(carregarEscutas, 0);
+    return () => window.clearTimeout(timer);
+  }, [carregarEscutas]);
 
   const lancarPagamento = async (canal) => {
     if (!machineId) return;
@@ -137,22 +139,6 @@ export default function TestePagamento() {
       setFeedback("Falha ao parar escuta.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const enviarPulsoDireto = async () => {
-    if (!machineId) return;
-    setSendingPulse(true);
-    setFeedback("");
-    try {
-      await api.post(`/maquinas/${machineId}/credito-teste`);
-      setFeedbackType("success");
-      setFeedback(`Pulso de credito enviado para ${machineId}.`);
-    } catch {
-      setFeedbackType("error");
-      setFeedback("Falha ao enviar pulso de credito.");
-    } finally {
-      setSendingPulse(false);
     }
   };
 

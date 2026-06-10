@@ -7,7 +7,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 const emptyForm = {
   id: null,

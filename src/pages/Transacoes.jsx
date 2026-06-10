@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Activity, BanknoteArrowDown, Download, Filter, RefreshCcw } from "lucide-react";
 
 import api from "../api/axios";
 import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth";
 
 export default function Transacoes() {
   const { user } = useAuth();
@@ -20,7 +20,7 @@ export default function Transacoes() {
     metodo: "",
   });
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const maquinaParams = "periodo=mes";
@@ -43,12 +43,13 @@ export default function Transacoes() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange, filtros, periodo]);
 
   useEffect(() => {
     if (!user) return;
-    loadData();
-  }, [user, periodo, dateRange, filtros]);
+    const timer = window.setTimeout(loadData, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadData, user]);
 
   const entradas = transacoes.filter((item) => item.tipo === "IN").length;
   const saidas = transacoes.filter((item) => item.tipo === "OUT").length;
