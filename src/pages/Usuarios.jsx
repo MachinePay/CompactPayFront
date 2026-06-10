@@ -57,6 +57,9 @@ export default function Usuarios() {
     endereco_longitude: "",
     password: "",
     role: "cliente",
+    cliente_mercado_pago: false,
+    cliente_pagbank: false,
+    cliente_s6pay: false,
     mp_public_key: "",
     mp_access_token: "",
     mp_client_id: "",
@@ -96,6 +99,9 @@ export default function Usuarios() {
       endereco_longitude: "",
       password: "",
       role: "cliente",
+      cliente_mercado_pago: false,
+      cliente_pagbank: false,
+      cliente_s6pay: false,
       mp_public_key: "",
       mp_access_token: "",
       mp_client_id: "",
@@ -121,6 +127,16 @@ export default function Usuarios() {
       endereco_longitude: currentUser.endereco_longitude ?? "",
       password: "",
       role: currentUser.role,
+      cliente_mercado_pago: Boolean(
+        currentUser.cliente_mercado_pago ||
+        currentUser.mp_configurado ||
+          currentUser.mp_public_key ||
+          currentUser.mp_access_token ||
+          currentUser.mp_client_id ||
+          currentUser.mp_user_id,
+      ),
+      cliente_pagbank: Boolean(currentUser.cliente_pagbank),
+      cliente_s6pay: Boolean(currentUser.cliente_s6pay),
       mp_public_key: currentUser.mp_public_key || "",
       mp_access_token: currentUser.mp_access_token || "",
       mp_client_id: currentUser.mp_client_id || "",
@@ -150,7 +166,12 @@ export default function Usuarios() {
       ...form,
       endereco_latitude: form.endereco_latitude === "" ? null : Number(form.endereco_latitude),
       endereco_longitude: form.endereco_longitude === "" ? null : Number(form.endereco_longitude),
-      mp_pos_category: form.mp_pos_category === "" ? null : Number(form.mp_pos_category),
+      mp_public_key: form.cliente_mercado_pago ? form.mp_public_key : "",
+      mp_access_token: form.cliente_mercado_pago ? form.mp_access_token : "",
+      mp_client_id: form.cliente_mercado_pago ? form.mp_client_id : "",
+      mp_client_secret: form.cliente_mercado_pago ? form.mp_client_secret : "",
+      mp_user_id: form.cliente_mercado_pago ? form.mp_user_id : "",
+      mp_pos_category: form.cliente_mercado_pago && form.mp_pos_category !== "" ? Number(form.mp_pos_category) : null,
       cliente_id: null,
     };
 
@@ -452,89 +473,94 @@ export default function Usuarios() {
                   </select>
                 </Field>
 
-                <Field label="Latitude">
-                  <input
-                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                    placeholder="-23.55052"
-                    type="number"
-                    step="any"
-                    value={form.endereco_latitude}
-                    onChange={(e) => setForm((current) => ({ ...current, endereco_latitude: e.target.value }))}
+                <div className="grid gap-3 md:col-span-2 md:grid-cols-3">
+                  <ProviderCheckbox
+                    label="Cliente Mercado Pago"
+                    checked={form.cliente_mercado_pago}
+                    onChange={(checked) =>
+                      setForm((current) => ({ ...current, cliente_mercado_pago: checked }))
+                    }
                   />
-                </Field>
-
-                <Field label="Longitude">
-                  <input
-                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                    placeholder="-46.633308"
-                    type="number"
-                    step="any"
-                    value={form.endereco_longitude}
-                    onChange={(e) => setForm((current) => ({ ...current, endereco_longitude: e.target.value }))}
+                  <ProviderCheckbox
+                    label="Cliente PagBank"
+                    checked={form.cliente_pagbank}
+                    onChange={(checked) =>
+                      setForm((current) => ({ ...current, cliente_pagbank: checked }))
+                    }
                   />
-                </Field>
-
-                <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
-                  Preferencialmente use o botao Conectar MP na tabela depois de criar o usuario. O Mercado Pago devolve o token de producao pela aplicacao vinculada e o sistema salva automaticamente.
+                  <ProviderCheckbox
+                    label="Cliente S6Pay"
+                    checked={form.cliente_s6pay}
+                    onChange={(checked) =>
+                      setForm((current) => ({ ...current, cliente_s6pay: checked }))
+                    }
+                  />
                 </div>
 
-                <Field label="MP Public Key (fallback)">
-                  <input
-                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                    placeholder="APP_USR..."
-                    value={form.mp_public_key}
-                    onChange={(e) => setForm((current) => ({ ...current, mp_public_key: e.target.value }))}
-                  />
-                </Field>
+                {form.cliente_mercado_pago ? (
+                  <>
+                    <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
+                      Preferencialmente use o botao Conectar MP na tabela depois de criar o usuario. O Mercado Pago devolve o token de producao pela aplicacao vinculada e o sistema salva automaticamente.
+                    </div>
 
-                <Field label="MP Access Token (fallback)">
-                  <input
-                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                    placeholder="APP_USR..."
-                    value={form.mp_access_token}
-                    onChange={(e) => setForm((current) => ({ ...current, mp_access_token: e.target.value }))}
-                  />
-                </Field>
+                    <Field label="MP Public Key (fallback)">
+                      <input
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder="APP_USR..."
+                        value={form.mp_public_key}
+                        onChange={(e) => setForm((current) => ({ ...current, mp_public_key: e.target.value }))}
+                      />
+                    </Field>
 
-                <Field label="MP Client ID">
-                  <input
-                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                    value={form.mp_client_id}
-                    onChange={(e) => setForm((current) => ({ ...current, mp_client_id: e.target.value }))}
-                  />
-                </Field>
+                    <Field label="MP Access Token (fallback)">
+                      <input
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder="APP_USR..."
+                        value={form.mp_access_token}
+                        onChange={(e) => setForm((current) => ({ ...current, mp_access_token: e.target.value }))}
+                      />
+                    </Field>
 
-                <Field label="MP Client Secret">
-                  <input
-                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                    placeholder={editUser ? "Preencha somente para trocar" : ""}
-                    value={form.mp_client_secret}
-                    onChange={(e) => setForm((current) => ({ ...current, mp_client_secret: e.target.value }))}
-                  />
-                </Field>
+                    <Field label="MP Client ID">
+                      <input
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        value={form.mp_client_id}
+                        onChange={(e) => setForm((current) => ({ ...current, mp_client_id: e.target.value }))}
+                      />
+                    </Field>
 
-                <Field label="MP User ID">
-                  <input
-                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                    placeholder="Opcional, o sistema busca pelo token"
-                    value={form.mp_user_id}
-                    onChange={(e) => setForm((current) => ({ ...current, mp_user_id: e.target.value }))}
-                  />
-                </Field>
+                    <Field label="MP Client Secret">
+                      <input
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder={editUser ? "Preencha somente para trocar" : ""}
+                        value={form.mp_client_secret}
+                        onChange={(e) => setForm((current) => ({ ...current, mp_client_secret: e.target.value }))}
+                      />
+                    </Field>
 
-                <Field label="Categoria/MCC do caixa MP">
-                  <input
-                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                    placeholder="7994"
-                    type="number"
-                    value={form.mp_pos_category}
-                    onChange={(e) => setForm((current) => ({ ...current, mp_pos_category: e.target.value }))}
-                  />
-                </Field>
+                    <Field label="MP User ID">
+                      <input
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder="Opcional, o sistema busca pelo token"
+                        value={form.mp_user_id}
+                        onChange={(e) => setForm((current) => ({ ...current, mp_user_id: e.target.value }))}
+                      />
+                    </Field>
 
-                <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
-                  Ao salvar este usuario cliente, o endereco fica vinculado ao cliente. Ao criar uma maquina para ele, o sistema cria uma nova loja no Mercado Pago e o caixa dessa maquina dentro dela.
-                </div>
+                    <Field label="Categoria/MCC do caixa MP">
+                      <input
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        type="number"
+                        value={form.mp_pos_category}
+                        onChange={(e) => setForm((current) => ({ ...current, mp_pos_category: e.target.value }))}
+                      />
+                    </Field>
+
+                    <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
+                      Ao salvar este usuario cliente, o endereco fica vinculado ao cliente. Ao criar uma maquina para ele, o sistema cria uma nova loja no Mercado Pago e o caixa dessa maquina dentro dela.
+                    </div>
+                  </>
+                ) : null}
               </div>
             ) : null}
 
@@ -609,6 +635,20 @@ function Field({ label, children }) {
         {label}
       </span>
       {children}
+    </label>
+  );
+}
+
+function ProviderCheckbox({ label, checked, onChange }) {
+  return (
+    <label className="flex items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-4 text-sm font-semibold text-[var(--color-text)]">
+      <input
+        type="checkbox"
+        className="h-5 w-5 accent-[var(--color-primary)]"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      {label}
     </label>
   );
 }

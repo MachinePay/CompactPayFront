@@ -27,7 +27,23 @@ const emptyForm = {
   nome: "",
   localizacao: "",
   cliente_id: "",
+  banco_pagamento: "",
 };
+
+const paymentProviderLabels = {
+  mercado_pago: "Mercado Pago",
+  pagbank: "PagBank",
+  s6pay: "S6Pay",
+};
+
+function getPaymentProviders(cliente) {
+  if (!cliente) return [];
+  return [
+    cliente.cliente_mercado_pago || cliente.mp_configurado ? "mercado_pago" : null,
+    cliente.cliente_pagbank ? "pagbank" : null,
+    cliente.cliente_s6pay ? "s6pay" : null,
+  ].filter(Boolean);
+}
 
 const emptyDeleteState = {
   open: false,
@@ -59,6 +75,8 @@ export default function Maquinas() {
   const [sendingCreditId, setSendingCreditId] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [deleteState, setDeleteState] = useState(emptyDeleteState);
+  const selectedCliente = usuarios.find((item) => String(item.cliente_id) === String(form.cliente_id));
+  const paymentProviders = getPaymentProviders(selectedCliente);
 
   useEffect(() => {
     localStorage.setItem(
@@ -129,6 +147,7 @@ export default function Maquinas() {
       const payload = {
         nome: form.nome,
         localizacao: form.localizacao,
+        banco_pagamento: form.banco_pagamento || paymentProviders[0] || "mercado_pago",
         cliente_id:
           user?.role === "admin"
             ? form.cliente_id === ""
@@ -170,6 +189,7 @@ export default function Maquinas() {
       nome: machine.nome || "",
       localizacao: machine.localizacao || "",
       cliente_id: machine.cliente_id == null ? "" : String(machine.cliente_id),
+      banco_pagamento: machine.banco_pagamento || "mercado_pago",
     });
     setCopyFeedback("");
     setShowModal(true);
@@ -296,6 +316,7 @@ export default function Maquinas() {
                     <th className="px-5 py-4 whitespace-nowrap">Status</th>
                     <th className="px-5 py-4 whitespace-nowrap">Ultima atividade</th>
                     <th className="px-5 py-4 whitespace-nowrap">Localizacao</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Banco</th>
                     <th className="px-5 py-4 whitespace-nowrap">Caixa MP</th>
                     <th className="px-5 py-4 whitespace-nowrap">Faturamento</th>
                     <th className="px-5 py-4 whitespace-nowrap">Teste</th>
@@ -371,6 +392,9 @@ export default function Maquinas() {
                         </td>
                         <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
                           {m.localizacao || "--"}
+                        </td>
+                        <td className="px-5 py-4 min-w-[150px] font-semibold text-[var(--color-text)]">
+                          {paymentProviderLabels[m.banco_pagamento || "mercado_pago"] || m.banco_pagamento || "--"}
                         </td>
                         <td className="px-5 py-4 min-w-[170px]">
                           <div className="font-semibold text-[var(--color-text)]">{m.mp_pos_external_id || "--"}</div>
@@ -499,7 +523,15 @@ export default function Maquinas() {
                     className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
                     value={form.cliente_id || ""}
                     onChange={(e) =>
-                      setForm((current) => ({ ...current, cliente_id: e.target.value }))
+                      setForm((current) => {
+                        const cliente = usuarios.find((item) => String(item.cliente_id) === e.target.value);
+                        const providers = getPaymentProviders(cliente);
+                        return {
+                          ...current,
+                          cliente_id: e.target.value,
+                          banco_pagamento: providers[0] || "",
+                        };
+                      })
                     }
                     required
                   >
@@ -511,6 +543,41 @@ export default function Maquinas() {
                       </option>
                     ))}
                   </select>
+                </label>
+              ) : null}
+
+              {user?.role === "admin" ? (
+                <label className="block md:col-span-2">
+                  <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+                    Banco da maquina
+                  </span>
+                  <select
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    value={form.banco_pagamento}
+                    onChange={(e) =>
+                      setForm((current) => ({ ...current, banco_pagamento: e.target.value }))
+                    }
+                    required
+                    disabled={!form.cliente_id || paymentProviders.length === 0 || Boolean(editingMachineId)}
+                  >
+                    <option value="">
+                      {form.cliente_id ? "Selecione o banco da maquina" : "Selecione um cliente primeiro"}
+                    </option>
+                    {paymentProviders.map((provider) => (
+                      <option
+                        key={provider}
+                        value={provider}
+                        disabled={provider !== "mercado_pago"}
+                      >
+                        {paymentProviderLabels[provider]}{provider !== "mercado_pago" ? " - em breve" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {form.cliente_id && paymentProviders.length === 0 ? (
+                    <span className="mt-2 block text-xs font-medium text-[var(--color-error)]">
+                      Este cliente ainda nao tem banco de pagamento habilitado.
+                    </span>
+                  ) : null}
                 </label>
               ) : null}
 
