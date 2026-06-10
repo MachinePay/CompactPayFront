@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, Plus, ShieldCheck, Trash2, UserRoundCog, Users } from "lucide-react";
+import { CheckCircle2, Link, Plus, RefreshCcw, ShieldCheck, Trash2, UserRoundCog, Users, XCircle } from "lucide-react";
 
-import api from "../api/axios";
+import api, { getApiErrorMessage } from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Modal from "../components/Modal";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -47,6 +47,8 @@ export default function Usuarios() {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteUser, setDeleteUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
+  const [validatingClienteId, setValidatingClienteId] = useState(null);
+  const [mpValidation, setMpValidation] = useState(null);
   const [form, setForm] = useState({
     email: "",
     nome: "",
@@ -167,6 +169,32 @@ export default function Usuarios() {
     if (!clienteId) return;
     const { data } = await api.get(`/mercado-pago/oauth/url?cliente_id=${clienteId}`);
     window.location.href = data.url;
+  };
+
+  const handleValidateMercadoPago = async (cliente) => {
+    if (!cliente?.cliente_id) return;
+    setValidatingClienteId(cliente.cliente_id);
+    try {
+      const { data } = await api.get(`/mercado-pago/clientes/${cliente.cliente_id}/validacao`);
+      setMpValidation(data);
+      await fetchUsuarios();
+    } catch (error) {
+      setMpValidation({
+        ok: false,
+        cliente_id: cliente.cliente_id,
+        cliente_nome: cliente.nome || cliente.email,
+        checks: [
+          {
+            key: "erro",
+            label: "Validacao Mercado Pago",
+            ok: false,
+            message: getApiErrorMessage(error, "Nao foi possivel validar o Mercado Pago."),
+          },
+        ],
+      });
+    } finally {
+      setValidatingClienteId(null);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -350,15 +378,29 @@ export default function Usuarios() {
                             Editar
                           </button>
                           {item.role === "cliente" ? (
-                            <button
-                              className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                              onClick={() => handleConnectMercadoPago(item.cliente_id)}
-                              type="button"
-                              disabled={!item.cliente_id}
-                            >
-                              <Link size={15} />
-                              Conectar MP
-                            </button>
+                            <>
+                              <button
+                                className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                                onClick={() => handleConnectMercadoPago(item.cliente_id)}
+                                type="button"
+                                disabled={!item.cliente_id}
+                              >
+                                <Link size={15} />
+                                Conectar MP
+                              </button>
+                              <button
+                                className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                                onClick={() => handleValidateMercadoPago(item)}
+                                type="button"
+                                disabled={!item.cliente_id || validatingClienteId === item.cliente_id}
+                              >
+                                <RefreshCcw
+                                  size={15}
+                                  className={validatingClienteId === item.cliente_id ? "animate-spin" : ""}
+                                />
+                                {validatingClienteId === item.cliente_id ? "Validando" : "Validar MP"}
+                              </button>
+                            </>
                           ) : null}
                           <button
                             className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
@@ -388,6 +430,70 @@ export default function Usuarios() {
         onCancel={() => setDeleteUser(null)}
         onConfirm={handleDelete}
       />
+
+      <Modal
+        open={Boolean(mpValidation)}
+        onClose={() => setMpValidation(null)}
+      >
+        <div className="space-y-5">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
+              Mercado Pago
+            </div>
+            <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
+              Validacao da integracao
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+              {mpValidation?.cliente_nome || "Cliente"} - cliente #{mpValidation?.cliente_id}
+            </p>
+          </div>
+
+          <div
+            className={`rounded-[24px] px-5 py-4 text-sm font-semibold ${
+              mpValidation?.ok
+                ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
+                : "bg-amber-50 text-[var(--color-warning)]"
+            }`}
+          >
+            {mpValidation?.ok
+              ? "Integracao pronta para criar maquinas com Mercado Pago."
+              : "Revise os itens abaixo antes de criar maquinas com Mercado Pago."}
+          </div>
+
+          <div className="space-y-3">
+            {(mpValidation?.checks || []).map((check) => (
+              <div
+                key={check.key}
+                className="flex items-start gap-3 rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-4"
+              >
+                <div
+                  className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                    check.ok
+                      ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
+                      : "bg-rose-50 text-[var(--color-error)]"
+                  }`}
+                >
+                  {check.ok ? <CheckCircle2 size={17} /> : <XCircle size={17} />}
+                </div>
+                <div>
+                  <div className="font-semibold text-[var(--color-text)]">{check.label}</div>
+                  <div className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
+                    {check.message}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className="pill-button pill-button--primary inline-flex w-full items-center justify-center px-5 py-3 font-semibold"
+            onClick={() => setMpValidation(null)}
+          >
+            Fechar
+          </button>
+        </div>
+      </Modal>
 
       <Modal
         open={showModal}
