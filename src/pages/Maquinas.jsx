@@ -21,6 +21,7 @@ import DateRangePicker from "../components/DateRangePicker";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
 import Toast from "../components/Toast";
+import ConfirmModal from "../components/ConfirmModal";
 
 const emptyForm = {
   id_hardware: "",
@@ -218,7 +219,6 @@ export default function Maquinas() {
   };
 
   const handleDeleteMachine = async () => {
-    if (deleteState.confirmationText.trim().toLowerCase() !== "confirmar") return;
     await api.delete(`/maquinas/${deleteState.machineId}`);
     setToast({ message: "Maquina excluida com sucesso.", type: "success" });
     setDeleteState(emptyDeleteState);
@@ -658,62 +658,20 @@ export default function Maquinas() {
         </div>
       </Modal>
 
-      <Modal
+      <ConfirmModal
         open={deleteState.open}
-        onClose={() => setDeleteState(emptyDeleteState)}
-      >
-        <div className="space-y-5">
-          <div>
-            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
-              Exclusao de maquina
-            </div>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
-              Confirmar exclusao
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-              Esta acao remove a maquina <span className="font-semibold text-[var(--color-text)]">{deleteState.machineId}</span> e todo o historico vinculado.
-            </p>
-            <p className="mt-3 text-sm leading-6 text-[var(--color-text-soft)]">
-              Para continuar, digite <span className="font-semibold text-[var(--color-error)]">confirmar</span> no campo abaixo.
-            </p>
-          </div>
-
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-              Confirmacao
-            </span>
-            <input
-              className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-error)]"
-              placeholder='Digite "confirmar"'
-              value={deleteState.confirmationText}
-              onChange={(e) =>
-                setDeleteState((current) => ({
-                  ...current,
-                  confirmationText: e.target.value,
-                }))
-              }
-            />
-          </label>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="pill-button inline-flex flex-1 items-center justify-center px-5 py-3 font-semibold"
-              onClick={() => setDeleteState(emptyDeleteState)}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className="inline-flex flex-1 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={handleDeleteMachine}
-              disabled={deleteState.confirmationText.trim().toLowerCase() !== "confirmar"}
-            >
-              Excluir maquina
-            </button>
-          </div>
-        </div>
-      </Modal>
+        title="Excluir maquina"
+        description={`Esta acao remove a maquina ${deleteState.machineId} e seus vinculos operacionais. Digite confirmar para continuar.`}
+        confirmLabel="Excluir maquina"
+        requireText="confirmar"
+        inputValue={deleteState.confirmationText}
+        inputPlaceholder='Digite "confirmar"'
+        onInputChange={(value) =>
+          setDeleteState((current) => ({ ...current, confirmationText: value }))
+        }
+        onCancel={() => setDeleteState(emptyDeleteState)}
+        onConfirm={handleDeleteMachine}
+      />
     </div>
   );
 }

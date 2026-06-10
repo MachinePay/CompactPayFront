@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wrench } from "lucide-react";
+import { Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Wallet, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -8,8 +8,8 @@ import { useAuth } from "../context/AuthContext";
 import Button from "../components/Button";
 import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
-import Modal from "../components/Modal";
 import Toast from "../components/Toast";
+import ConfirmModal from "../components/ConfirmModal";
 
 export default function MaquinaHistorico({ detailed = false, selectable = false }) {
   const { machineId: routeMachineId } = useParams();
@@ -238,9 +238,11 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   };
 
   const handleDeleteHistorico = async () => {
+    if (deleteState.confirmationText.trim().toLowerCase() !== "confirmar") return;
     const query = buildQuery();
     await api.delete(`/maquinas/${machineId}/historico${query}`);
     setToast({ message: "Historico apagado com sucesso.", type: "success" });
+    setDeleteState({ open: false, confirmationText: "" });
     await loadHistorico();
   };
 
@@ -398,93 +400,35 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         type={toast.type}
         onClose={() => setToast({ message: "", type: toast.type })}
       />
-      <Modal open={deleteState.open} onClose={() => setDeleteState({ open: false, confirmationText: "" })}>
-        <div className="space-y-5">
-          <div>
-            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
-              Exclusao de historico
-            </div>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
-              Confirmar apagamento
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-              Esta acao remove pagamentos e testes do periodo filtrado. Para continuar, digite <span className="font-semibold text-[var(--color-error)]">confirmar</span>.
-            </p>
-          </div>
-
-          <input
-            className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-error)]"
-            placeholder='Digite "confirmar"'
-            value={deleteState.confirmationText}
-            onChange={(event) => setDeleteState((current) => ({ ...current, confirmationText: event.target.value }))}
-          />
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="pill-button inline-flex flex-1 items-center justify-center px-5 py-3 font-semibold"
-              onClick={() => setDeleteState({ open: false, confirmationText: "" })}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className="inline-flex flex-1 items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={deleteState.confirmationText.trim().toLowerCase() !== "confirmar"}
-              onClick={async () => {
-                await handleDeleteHistorico();
-                setDeleteState({ open: false, confirmationText: "" });
-              }}
-            >
-              Apagar historico
-            </button>
-          </div>
-        </div>
-      </Modal>
-      <Modal open={refundState.open} onClose={() => setRefundState({ open: false, venda: null, confirmationText: "" })}>
-        <div className="space-y-5">
-          <div>
-            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
-              Confirmar extorno
-            </div>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
-              Devolver pagamento
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-              O sistema vai solicitar o extorno automatico no Mercado Pago para o pagamento
-              {" "}
-              <span className="font-semibold text-[var(--color-text)]">
-                {refundState.venda?.provider_payment_id || refundState.venda?.id}
-              </span>
-              . Para confirmar, digite <span className="font-semibold text-[var(--color-error)]">estornar</span>.
-            </p>
-          </div>
-          <input
-            className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-error)]"
-            placeholder='Digite "estornar"'
-            value={refundState.confirmationText}
-            onChange={(event) => setRefundState((current) => ({ ...current, confirmationText: event.target.value }))}
-          />
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="pill-button inline-flex flex-1 items-center justify-center px-5 py-3 font-semibold"
-              onClick={() => setRefundState({ open: false, venda: null, confirmationText: "" })}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={refundState.confirmationText.trim().toLowerCase() !== "estornar" || refundingId}
-              onClick={handleRefund}
-            >
-              <Undo2 size={16} />
-              {refundingId ? "Estornando..." : "Confirmar extorno"}
-            </button>
-          </div>
-        </div>
-      </Modal>
+      <ConfirmModal
+        open={deleteState.open}
+        title="Apagar historico"
+        description="Esta acao remove pagamentos, vendas oficiais e testes do periodo filtrado. Digite confirmar para continuar."
+        confirmLabel="Apagar historico"
+        requireText="confirmar"
+        inputValue={deleteState.confirmationText}
+        inputPlaceholder='Digite "confirmar"'
+        onInputChange={(value) =>
+          setDeleteState((current) => ({ ...current, confirmationText: value }))
+        }
+        onCancel={() => setDeleteState({ open: false, confirmationText: "" })}
+        onConfirm={handleDeleteHistorico}
+      />
+      <ConfirmModal
+        open={refundState.open}
+        title="Devolver pagamento"
+        description={`O sistema vai solicitar o extorno automatico no Mercado Pago para o pagamento ${refundState.venda?.provider_payment_id || refundState.venda?.id || ""}. Digite estornar para confirmar.`}
+        confirmLabel="Confirmar extorno"
+        loading={Boolean(refundingId)}
+        requireText="estornar"
+        inputValue={refundState.confirmationText}
+        inputPlaceholder='Digite "estornar"'
+        onInputChange={(value) =>
+          setRefundState((current) => ({ ...current, confirmationText: value }))
+        }
+        onCancel={() => setRefundState({ open: false, venda: null, confirmationText: "" })}
+        onConfirm={handleRefund}
+      />
 
       <section className="app-panel rounded-[30px] p-6 md:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">

@@ -10,9 +10,16 @@ export default function ConfirmModal({
   cancelLabel = "Cancelar",
   tone = "danger",
   loading = false,
+  requireText = "",
+  inputValue = "",
+  inputPlaceholder,
+  onInputChange,
   onCancel,
   onConfirm,
 }) {
+  const normalizedRequiredText = requireText.trim().toLowerCase();
+  const confirmationMatches =
+    !normalizedRequiredText || inputValue.trim().toLowerCase() === normalizedRequiredText;
   const confirmClass =
     tone === "danger"
       ? "border-rose-200 bg-rose-50 text-[var(--color-error)] hover:bg-rose-100"
@@ -40,6 +47,21 @@ export default function ConfirmModal({
           </div>
         </div>
 
+        {requireText ? (
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+              Confirmacao
+            </span>
+            <input
+              className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-error)]"
+              placeholder={inputPlaceholder || `Digite "${requireText}"`}
+              value={inputValue}
+              onChange={(event) => onInputChange?.(event.target.value)}
+              disabled={loading}
+            />
+          </label>
+        ) : null}
+
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
@@ -53,7 +75,7 @@ export default function ConfirmModal({
             type="button"
             className={`inline-flex flex-1 items-center justify-center rounded-full border px-5 py-3 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${confirmClass}`}
             onClick={onConfirm}
-            disabled={loading}
+            disabled={loading || !confirmationMatches}
           >
             {loading ? "Processando..." : confirmLabel}
           </button>
