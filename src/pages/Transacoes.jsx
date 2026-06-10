@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Activity, BanknoteArrowDown, Filter, RefreshCcw } from "lucide-react";
+import { Activity, BanknoteArrowDown, Download, Filter, RefreshCcw } from "lucide-react";
 
 import api from "../api/axios";
 import DateRangePicker from "../components/DateRangePicker";
@@ -56,11 +56,55 @@ export default function Transacoes() {
     .filter((item) => item.metodo === "DIGITAL")
     .reduce((sum, item) => sum + Number(item.valor || 0), 0);
 
+  const handleExportCsv = () => {
+    const rows = [
+      ["data", "hora", "maquina_id", "maquina_nome", "tipo", "metodo", "valor"],
+      ...transacoes.map((item) => [
+        dayjs(item.data_hora).format("YYYY-MM-DD"),
+        dayjs(item.data_hora).format("HH:mm:ss"),
+        item.maquina_id,
+        item.maquina_nome || "",
+        item.tipo,
+        item.metodo,
+        Number(item.valor || 0).toFixed(2),
+      ]),
+    ];
+
+    const csv = rows
+      .map((row) =>
+        row
+          .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
+          .join(","),
+      )
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `transacoes-${dayjs().format("YYYYMMDD-HHmmss")}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex min-h-full flex-col gap-4">
       <SectionHeader
         title="Transacoes"
         description="Consulte entradas, saidas e pagamentos digitais por maquina, periodo e metodo."
+        actions={
+          <button
+            className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
+            type="button"
+            onClick={handleExportCsv}
+            disabled={transacoes.length === 0}
+          >
+            <Download size={16} />
+            Exportar CSV
+          </button>
+        }
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -217,19 +261,22 @@ export default function Transacoes() {
   );
 }
 
-function SectionHeader({ title, description }) {
+function SectionHeader({ title, description, actions }) {
   return (
     <section className="app-panel rounded-[30px] p-6 md:p-7">
-      <div>
-        <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
-          Operacao
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
+            Operacao
+          </div>
+          <h1 className="mt-3 text-4xl font-extrabold tracking-[-0.05em] text-[var(--color-text)] md:text-5xl">
+            {title}
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
+            {description}
+          </p>
         </div>
-        <h1 className="mt-3 text-4xl font-extrabold tracking-[-0.05em] text-[var(--color-text)] md:text-5xl">
-          {title}
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
-          {description}
-        </p>
+        {actions ? <div className="flex flex-wrap items-center gap-3">{actions}</div> : null}
       </div>
     </section>
   );
