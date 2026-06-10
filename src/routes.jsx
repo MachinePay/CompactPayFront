@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
 import Dashboard from "./pages/Dashboard";
+import AuditoriaSistema from "./pages/AuditoriaSistema";
 import MaquinaHistorico from "./pages/MaquinaHistorico";
 import RelatorioDetalhadoMaquina from "./pages/RelatorioDetalhadoMaquina";
 import Maquinas from "./pages/Maquinas";
@@ -98,6 +99,16 @@ export default function AppRoutes() {
             <PrivateRoute>
               <Layout>
                 <Usuarios />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/auditoria"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <AuditoriaSistema />
               </Layout>
             </PrivateRoute>
           }

@@ -1,4 +1,4 @@
-import { Activity, BarChart3, CreditCard, Home, LogOut, QrCode, Server, Users } from "lucide-react";
+import { Activity, BarChart3, ClipboardList, CreditCard, Home, LogOut, QrCode, Server, Users } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -65,11 +65,18 @@ export default function Sidebar() {
               </NavLink>
             </li>
             {user?.role === "admin" && (
-              <li>
-                <NavLink to="/usuarios" className={linkClassName}>
-                  <Users /> Usuarios
-                </NavLink>
-              </li>
+              <>
+                <li>
+                  <NavLink to="/usuarios" className={linkClassName}>
+                    <Users /> Usuarios
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/auditoria" className={linkClassName}>
+                    <ClipboardList /> Auditoria
+                  </NavLink>
+                </li>
+              </>
             )}
           </ul>
         </nav>
