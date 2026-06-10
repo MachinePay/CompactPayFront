@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Download, FileDown, RefreshCcw, ShieldCheck, Sparkles, Trash2, Wallet, Wrench } from "lucide-react";
+import { Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api from "../api/axios";
@@ -37,6 +37,7 @@ export default function MaquinaHistorico() {
     auditoria: [],
     observacoes: [],
     timeline: [],
+    vendas: [],
   });
   const [periodo, setPeriodo] = useState("mes");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
@@ -44,6 +45,9 @@ export default function MaquinaHistorico() {
   const [observacao, setObservacao] = useState("");
   const [savingObservacao, setSavingObservacao] = useState(false);
   const [deleteState, setDeleteState] = useState({ open: false, confirmationText: "" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [refundState, setRefundState] = useState({ open: false, venda: null, confirmationText: "" });
+  const [refundingId, setRefundingId] = useState("");
 
   const buildQuery = (selectedPeriodo = periodo, selectedRange = dateRange) => {
     const params = [];
@@ -192,6 +196,29 @@ export default function MaquinaHistorico() {
     await api.delete(`/maquinas/${machineId}/historico${query}`);
     setToast({ message: "Historico apagado com sucesso.", type: "success" });
     await loadHistorico();
+  };
+
+  const requestRefund = (venda) => {
+    setRefundState({ open: true, venda, confirmationText: "" });
+  };
+
+  const handleRefund = async () => {
+    const venda = refundState.venda;
+    if (!venda || refundState.confirmationText.trim().toLowerCase() !== "estornar") return;
+    setRefundingId(String(venda.id));
+    try {
+      await api.post(`/maquinas/${machineId}/pagamentos/${venda.id}/extorno`);
+      setToast({ message: "Extorno solicitado no Mercado Pago com sucesso.", type: "success" });
+      setRefundState({ open: false, venda: null, confirmationText: "" });
+      await loadHistorico();
+    } catch (error) {
+      setToast({
+        message: error?.response?.data?.detail || "Nao foi possivel solicitar o extorno.",
+        type: "error",
+      });
+    } finally {
+      setRefundingId("");
+    }
   };
 
   const handleSalvarObservacao = async () => {
@@ -368,6 +395,50 @@ export default function MaquinaHistorico() {
           </div>
         </div>
       </Modal>
+      <Modal open={refundState.open} onClose={() => setRefundState({ open: false, venda: null, confirmationText: "" })}>
+        <div className="space-y-5">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
+              Confirmar extorno
+            </div>
+            <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
+              Devolver pagamento
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+              O sistema vai solicitar o extorno automatico no Mercado Pago para o pagamento
+              {" "}
+              <span className="font-semibold text-[var(--color-text)]">
+                {refundState.venda?.provider_payment_id || refundState.venda?.id}
+              </span>
+              . Para confirmar, digite <span className="font-semibold text-[var(--color-error)]">estornar</span>.
+            </p>
+          </div>
+          <input
+            className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-error)]"
+            placeholder='Digite "estornar"'
+            value={refundState.confirmationText}
+            onChange={(event) => setRefundState((current) => ({ ...current, confirmationText: event.target.value }))}
+          />
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="pill-button inline-flex flex-1 items-center justify-center px-5 py-3 font-semibold"
+              onClick={() => setRefundState({ open: false, venda: null, confirmationText: "" })}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={refundState.confirmationText.trim().toLowerCase() !== "estornar" || refundingId}
+              onClick={handleRefund}
+            >
+              <Undo2 size={16} />
+              {refundingId ? "Estornando..." : "Confirmar extorno"}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <section className="app-panel rounded-[30px] p-6 md:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -399,6 +470,15 @@ export default function MaquinaHistorico() {
               </select>
             </label>
             <DateRangePicker value={dateRange} onChange={setDateRange} />
+            <label className="flex min-w-[240px] items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)]">
+              <Search size={16} className="text-[var(--color-text-soft)]" />
+              <input
+                className="w-full bg-transparent outline-none"
+                placeholder="Pesquisar venda"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+              />
+            </label>
           </div>
         </div>
       </section>
@@ -506,6 +586,14 @@ export default function MaquinaHistorico() {
           <LoadingSpinner className="h-56" />
         ) : (
           <div className="mt-6 space-y-4">
+            <SalesReportTable
+              vendas={historico.vendas || []}
+              searchTerm={searchTerm}
+              maquina={maquina}
+              onRefund={requestRefund}
+              refundingId={refundingId}
+            />
+
             <HistoryTable
               title="Resumo diario"
               empty="Nenhum pagamento encontrado para compor o fechamento diario."
@@ -688,6 +776,209 @@ function StatusCard({ maquina }) {
       </div>
     </section>
   );
+}
+
+function SalesReportTable({ vendas, searchTerm, maquina, onRefund, refundingId }) {
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filtered = vendas.filter((item) => {
+    if (!normalizedSearch) return true;
+    return [
+      item.descricao,
+      item.provider_payment_id,
+      item.payment_type,
+      item.card_brand,
+      item.bank_name,
+      item.situacao,
+      item.ponto,
+    ]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+  });
+
+  return (
+    <div className="overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-bg-muted)] px-5 py-4">
+        <div>
+          <div className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+            Relatorio de vendas
+          </div>
+          <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+            Pagamentos, testes, pulso e situacao da maquina {maquina?.id_hardware || ""}
+          </div>
+        </div>
+        <span className="rounded-full bg-[var(--color-primary-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)]">
+          {filtered.length} registro(s)
+        </span>
+      </div>
+      {filtered.length === 0 ? (
+        <div className="flex h-40 items-center justify-center px-6 text-center text-sm text-[var(--color-text-soft)]">
+          Nenhuma venda ou teste encontrado neste periodo.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-[1180px]">
+            <thead className="bg-white text-left text-xs uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
+              <tr>
+                <th className="px-4 py-4">Opcoes</th>
+                <th className="px-4 py-4">Data</th>
+                <th className="px-4 py-4">Valor</th>
+                <th className="px-4 py-4">Taxa</th>
+                <th className="px-4 py-4">Total</th>
+                <th className="px-4 py-4">Ponto</th>
+                <th className="px-4 py-4">Banco/Metodo</th>
+                <th className="px-4 py-4">Pago/Devolver</th>
+                <th className="px-4 py-4">Machine Pay</th>
+                <th className="px-4 py-4">Situacao</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((item) => (
+                <tr
+                  key={`${item.kind}-${item.id}`}
+                  className={`border-t border-[var(--color-border)] align-top text-sm text-[var(--color-text)] ${
+                    item.is_test ? "bg-amber-50/80" : "bg-white"
+                  }`}
+                >
+                  <td className="px-4 py-4">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-bg-muted)] text-[var(--color-text-soft)]">
+                      <Search size={17} />
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 min-w-[150px]">
+                    <div className="font-semibold">{dayjs(item.data).format("DD/MM/YYYY")}</div>
+                    <div className="text-xs text-[var(--color-text-soft)]">{dayjs(item.data).format("HH:mm:ss")}</div>
+                    {item.is_test ? (
+                      <div className="mt-2 rounded-full bg-amber-200 px-3 py-1 text-center text-xs font-extrabold uppercase text-amber-900">
+                        TESTE
+                      </div>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-4">
+                    <MoneyBadge value={item.valor} tone="blue" />
+                    <div className="mt-1 text-xs text-[var(--color-primary)]">Cliente pagou</div>
+                  </td>
+                  <td className="px-4 py-4">
+                    {item.taxa == null ? (
+                      <span className="rounded-full bg-[var(--color-bg-muted)] px-3 py-2 text-xs font-semibold text-[var(--color-text-soft)]">
+                        Nao informado
+                      </span>
+                    ) : (
+                      <MoneyBadge value={item.taxa} tone="orange" />
+                    )}
+                  </td>
+                  <td className="px-4 py-4">
+                    <MoneyBadge value={item.total} tone="green" />
+                    <div className="mt-1 text-xs text-[var(--color-success)]">Voce recebeu</div>
+                  </td>
+                  <td className="px-4 py-4 min-w-[190px]">
+                    <div className="rounded-[14px] bg-[var(--color-primary-soft)] px-3 py-2 font-semibold text-[var(--color-primary)]">
+                      {item.ponto || maquina?.nome || maquina?.id_hardware}
+                    </div>
+                    <div className="mt-2 rounded-[10px] bg-black px-3 py-1 text-xs font-semibold text-yellow-300">
+                      Caixa: {maquina?.mp_pos_external_id || maquina?.id_hardware}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 min-w-[220px]">
+                    {item.is_test ? (
+                      <div className="rounded-[16px] bg-amber-200 px-4 py-3 text-center text-lg font-extrabold uppercase text-amber-950">
+                        Pagamento de teste
+                      </div>
+                    ) : (
+                      <div className="rounded-[16px] bg-[var(--color-primary-soft)] px-4 py-3">
+                        <div className="font-semibold text-[var(--color-primary)]">{formatProvider(item.provider)}</div>
+                        <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+                          {formatPaymentMethod(item)}
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-4 min-w-[135px]">
+                    <div className="rounded-[12px] bg-sky-50 px-3 py-2 text-center text-xs font-bold text-sky-700">
+                      {item.provider_payment_id ? "PGTO REAL" : item.is_test ? "TESTE" : "PGTO"}
+                    </div>
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-[10px] bg-sky-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      disabled={!item.can_refund || refundingId === String(item.id)}
+                      onClick={() => onRefund(item)}
+                    >
+                      {refundingId === String(item.id) ? "Devolvendo" : "Devolver"}
+                    </button>
+                  </td>
+                  <td className="px-4 py-4 min-w-[150px]">
+                    <PulseBadge status={item.pulse_status} />
+                  </td>
+                  <td className="px-4 py-4 min-w-[170px]">
+                    <StatusBadge item={item} />
+                    {item.provider_payment_id ? (
+                      <div className="mt-2 text-xs font-semibold text-[var(--color-primary)]">
+                        {item.provider_payment_id}
+                      </div>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MoneyBadge({ value, tone }) {
+  const toneClass = {
+    blue: "bg-blue-500 text-white",
+    orange: "bg-orange-400 text-white",
+    green: "bg-emerald-600 text-white",
+  }[tone];
+  return (
+    <span className={`inline-flex rounded-[8px] px-3 py-1 text-base font-extrabold ${toneClass}`}>
+      R$ {Number(value || 0).toFixed(2)}
+    </span>
+  );
+}
+
+function PulseBadge({ status }) {
+  const normalized = String(status || "").toLowerCase();
+  const isFail = normalized === "falha";
+  const isTest = normalized === "teste";
+  return (
+    <div className={`rounded-[14px] px-3 py-2 text-center text-xs font-bold ${
+      isFail ? "bg-rose-50 text-[var(--color-error)]" : isTest ? "bg-amber-100 text-amber-800" : "bg-emerald-50 text-[var(--color-success)]"
+    }`}>
+      {isFail ? "Pulso nao liberado" : isTest ? "Pulso de teste" : "Pulso liberado"}
+    </div>
+  );
+}
+
+function StatusBadge({ item }) {
+  if (item.is_test) {
+    return <span className="rounded-full bg-amber-200 px-3 py-2 text-xs font-extrabold text-amber-900">TESTE</span>;
+  }
+  const refunded = Boolean(item.refunded_at);
+  return (
+    <span className={`rounded-full px-3 py-2 text-xs font-bold ${
+      refunded ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-[var(--color-success)]"
+    }`}>
+      {refunded ? "Extornado" : "Venda aprovada"}
+    </span>
+  );
+}
+
+function formatProvider(provider) {
+  const labels = {
+    mercado_pago: "Mercado Pago",
+    manual: "Lancamento manual",
+    pagbank: "PagBank",
+    s6pay: "S6Pay",
+  };
+  return labels[provider] || provider || "Nao informado";
+}
+
+function formatPaymentMethod(item) {
+  const parts = [item.payment_type, item.card_brand, item.bank_name].filter(Boolean);
+  return parts.length ? parts.join(" - ") : "Metodo nao informado";
 }
 
 function formatResumoData(value, label) {
