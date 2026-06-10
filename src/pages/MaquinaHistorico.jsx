@@ -15,6 +15,8 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   const { machineId: routeMachineId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [clientes, setClientes] = useState([]);
+  const [selectedClienteId, setSelectedClienteId] = useState("");
   const [machineOptions, setMachineOptions] = useState([]);
   const [selectedMachineId, setSelectedMachineId] = useState(routeMachineId || "");
   const machineId = selectable ? selectedMachineId : routeMachineId;
@@ -74,6 +76,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
 
   const loadHistorico = async (options = {}) => {
     if (!machineId) return null;
+    if (selectable && user?.role === "admin" && !selectedClienteId) return null;
     setLoading(true);
     try {
       const data = await fetchHistorico(options);
@@ -86,20 +89,43 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
 
   useEffect(() => {
     if (!machineId) return;
+    if (selectable && user?.role === "admin" && !selectedClienteId) return;
     loadHistorico();
-  }, [machineId, periodo, dateRange]);
+  }, [machineId, periodo, dateRange, selectedClienteId, selectable, user]);
+
+  useEffect(() => {
+    if (!selectable || !user) return;
+    if (user.role !== "admin") return;
+    const loadClientes = async () => {
+      const { data } = await api.get("/clientes");
+      setClientes(data);
+    };
+    loadClientes();
+  }, [selectable, user]);
 
   useEffect(() => {
     if (!selectable || !user) return;
     const loadMachineOptions = async () => {
-      const { data } = await api.get("/maquinas?periodo=mes");
+      if (user.role === "admin" && !selectedClienteId) {
+        setMachineOptions([]);
+        setSelectedMachineId("");
+        return;
+      }
+      const params = ["periodo=mes"];
+      if (user.role === "admin") {
+        params.push(`cliente_id=${encodeURIComponent(selectedClienteId)}`);
+      }
+      const { data } = await api.get(`/maquinas?${params.join("&")}`);
       setMachineOptions(data);
+      if (!data.some((item) => item.id_hardware === selectedMachineId)) {
+        setSelectedMachineId("");
+      }
       if (!selectedMachineId && data.length) {
         setSelectedMachineId(data[0].id_hardware);
       }
     };
     loadMachineOptions();
-  }, [selectable, user, selectedMachineId]);
+  }, [selectable, user, selectedClienteId, selectedMachineId]);
 
   const handleExportPdf = (snapshot = historico, snapshotPeriodo = periodo, snapshotRange = dateRange) => {
     const maquina = snapshot.maquina;
@@ -480,6 +506,23 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {selectable && user?.role === "admin" ? (
+              <label className="flex min-w-[260px] items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
+                Cliente
+                <select
+                  className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none"
+                  value={selectedClienteId}
+                  onChange={(event) => setSelectedClienteId(event.target.value)}
+                >
+                  <option value="">Selecione um cliente</option>
+                  {clientes.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.nome_empresa || item.email_contato}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             {selectable ? (
               <label className="flex min-w-[260px] items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
                 Maquina
@@ -487,8 +530,11 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                   className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none"
                   value={selectedMachineId}
                   onChange={(event) => setSelectedMachineId(event.target.value)}
+                  disabled={user?.role === "admin" && !selectedClienteId}
                 >
-                  <option value="">Selecione uma maquina</option>
+                  <option value="">
+                    {user?.role === "admin" && !selectedClienteId ? "Selecione um cliente primeiro" : "Selecione uma maquina"}
+                  </option>
                   {machineOptions.map((item) => (
                     <option key={item.id_hardware} value={item.id_hardware}>
                       {(item.nome || item.id_hardware) + ` - ${item.id_hardware}`}
