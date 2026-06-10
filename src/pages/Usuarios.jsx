@@ -43,6 +43,7 @@ export default function Usuarios() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editUser, setEditUser] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [form, setForm] = useState({
     email: "",
     nome: "",
@@ -196,6 +197,19 @@ export default function Usuarios() {
 
   const adminCount = usuarios.filter((item) => item.role === "admin").length;
   const clientCount = usuarios.filter((item) => item.role === "cliente").length;
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredUsuarios = usuarios.filter((item) => {
+    if (!normalizedSearch) return true;
+    return [
+      item.nome,
+      item.email,
+      item.role,
+      item.cliente_id,
+      item.mp_configurado ? "configurado" : "pendente",
+    ]
+      .filter((value) => value !== null && value !== undefined)
+      .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+  });
 
   return (
     <div className="flex min-h-full flex-col gap-4">
@@ -240,12 +254,30 @@ export default function Usuarios() {
       </div>
 
       <section className="app-panel rounded-[30px] p-5 md:p-6">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-[var(--color-text)]">Buscar usuario</div>
+            <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+              Filtre por nome, email, perfil, cliente ou status Mercado Pago.
+            </div>
+          </div>
+          <input
+            className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] md:max-w-md"
+            placeholder="Digite para filtrar usuarios..."
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+        </div>
         <div className="overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-white">
           {loading ? (
             <LoadingSpinner className="h-40" />
           ) : usuarios.length === 0 ? (
             <div className="flex h-40 items-center justify-center px-6 text-center text-sm text-[var(--color-text-soft)]">
               Nenhum usuario cadastrado ainda. Crie um administrador ou operador para comecar.
+            </div>
+          ) : filteredUsuarios.length === 0 ? (
+            <div className="flex h-40 items-center justify-center px-6 text-center text-sm text-[var(--color-text-soft)]">
+              Nenhum usuario encontrado para "{searchTerm}".
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -261,7 +293,7 @@ export default function Usuarios() {
                   </tr>
                 </thead>
                 <tbody>
-                  {usuarios.map((item) => (
+                  {filteredUsuarios.map((item) => (
                     <tr
                       key={item.id}
                       className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
