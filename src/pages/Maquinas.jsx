@@ -108,6 +108,14 @@ export default function Maquinas() {
     }
   };
 
+  const openCreateMachineModal = () => {
+    setEditingMachineId("");
+    setForm(emptyForm);
+    setCopyFeedback("");
+    setShowModal(true);
+    generateId();
+  };
+
   const copyMachineId = async () => {
     if (!form.id_hardware) return;
     await navigator.clipboard.writeText(form.id_hardware);
@@ -213,12 +221,7 @@ export default function Maquinas() {
           user?.role === "admin" ? (
             <Button
               className="justify-center"
-              onClick={() => {
-                setEditingMachineId("");
-                setForm(emptyForm);
-                setCopyFeedback("");
-                setShowModal(true);
-              }}
+              onClick={openCreateMachineModal}
             >
               <Plus size={18} />
               Nova maquina
@@ -433,12 +436,12 @@ export default function Maquinas() {
               Cadastro de maquina
             </div>
             <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
-              {editingMachineId ? "Editar maquina" : "Gerar ID e vincular ao ESP"}
+              {editingMachineId ? "Editar maquina" : "Cadastrar e vincular ao ESP"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
               {editingMachineId
                 ? "Atualize os dados cadastrais da maquina e mantenha o cliente responsavel correto."
-                : "Escolha o usuario cliente. Ao cadastrar, o sistema gera o ID e cria automaticamente um caixa no Mercado Pago com o nome do ponto."}
+                : "Escolha o usuario cliente. O sistema ja busca o proximo ID e cria automaticamente um caixa no Mercado Pago com o nome do ponto."}
             </p>
           </div>
 
@@ -450,7 +453,7 @@ export default function Maquinas() {
               <div className="mt-3 flex flex-col gap-3 md:flex-row">
                 <input
                   className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                  placeholder="Gerado automaticamente se ficar vazio"
+                  placeholder="Ex.: 1000"
                   value={form.id_hardware}
                   onChange={(e) =>
                     setForm((current) => ({ ...current, id_hardware: e.target.value.toUpperCase() }))
@@ -464,7 +467,7 @@ export default function Maquinas() {
                   disabled={generatingId || Boolean(editingMachineId)}
                 >
                   <RefreshCcw size={16} className={generatingId ? "animate-spin" : ""} />
-                  {generatingId ? "Gerando" : "Gerar ID"}
+                  {generatingId ? "Gerando" : "Proximo ID"}
                 </button>
                 <button
                   type="button"
@@ -477,7 +480,7 @@ export default function Maquinas() {
                 </button>
               </div>
               <div className="mt-3 text-xs text-[var(--color-text-soft)]">
-                Se deixar vazio, o backend gera automaticamente. Exemplo: <span className="font-semibold text-[var(--color-text)]">CPM-A1B2C3</span>
+                O ID e gerado automaticamente a partir de <span className="font-semibold text-[var(--color-text)]">1000</span>, mas voce pode alterar antes de cadastrar.
               </div>
               {copyFeedback ? (
                 <div className="mt-3 text-sm font-medium text-[var(--color-success)]">
