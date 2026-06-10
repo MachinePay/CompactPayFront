@@ -17,9 +17,11 @@ export default function Sidebar() {
       <div className="space-y-8">
         <div className="rounded-[24px] bg-[linear-gradient(135deg,#ffffff_0%,#eff5ef_100%)] p-5 soft-ring">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-primary-soft)] text-xl font-bold text-[var(--color-primary)]">
-              C
-            </div>
+            <img
+              src="/logoCompactpay.jpeg"
+              alt="CompactPay"
+              className="h-12 w-12 rounded-2xl object-cover"
+            />
             <div>
               <div className="text-lg font-bold text-[var(--color-text)]">CompactPay</div>
               <div className="text-sm text-[var(--color-text-soft)]">Painel operacional</div>
