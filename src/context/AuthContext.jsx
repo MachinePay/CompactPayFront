@@ -56,6 +56,16 @@ export function AuthProvider({ children }) {
     return () => window.clearTimeout(timer);
   }, [logout, user?.exp]);
 
+  useEffect(() => {
+    const handleStorage = (event) => {
+      if (event.key !== "token") return;
+      setUser(getStoredUser());
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
       {children}
