@@ -1,5 +1,6 @@
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL?.trim();
 const listeners = [];
 
 export function addApiErrorListener(fn) {
@@ -66,11 +67,16 @@ export function getApiErrorMessage(error, fallback = "Erro inesperado. Tente nov
 }
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: API_BASE_URL,
   timeout: 30000,
 });
 
 api.interceptors.request.use((config) => {
+  if (!API_BASE_URL) {
+    const error = new Error("VITE_API_URL nao esta configurada. Defina a URL do backend no ambiente do frontend.");
+    error.compactpayMessage = error.message;
+    return Promise.reject(error);
+  }
   const token = localStorage.getItem("token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
