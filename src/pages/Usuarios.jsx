@@ -460,6 +460,23 @@ export default function Usuarios() {
               : "Revise os itens abaixo antes de criar maquinas com Mercado Pago."}
           </div>
 
+          <div className="grid gap-3 md:grid-cols-3">
+            <InfoPill label="User ID" value={mpValidation?.mp_user_id || "--"} />
+            <InfoPill label="Ambiente" value={mpValidation?.mp_live_mode ? "Producao" : "Nao confirmado"} />
+            <InfoPill label="MCC" value={mpValidation?.mp_pos_category || "Fallback"} />
+          </div>
+
+          {mpValidation?.mp_account ? (
+            <div className="rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)]">
+              <div className="font-semibold text-[var(--color-text)]">Conta Mercado Pago</div>
+              <div className="mt-1">
+                {mpValidation.mp_account.email || mpValidation.mp_account.nickname || "Conta encontrada"}
+                {mpValidation.mp_account.site_id ? ` - ${mpValidation.mp_account.site_id}` : ""}
+                {mpValidation.mp_account.status ? ` - status ${mpValidation.mp_account.status}` : ""}
+              </div>
+            </div>
+          ) : null}
+
           <div className="space-y-3">
             {(mpValidation?.checks || []).map((check) => (
               <div
@@ -480,10 +497,21 @@ export default function Usuarios() {
                   <div className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
                     {check.message}
                   </div>
+                  {check.hint ? (
+                    <div className="mt-2 rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2 text-xs leading-5 text-[var(--color-text-soft)]">
+                      {check.hint}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}
           </div>
+
+          {mpValidation?.next_step ? (
+            <div className="rounded-[20px] bg-[var(--color-bg-muted)] px-4 py-3 text-sm font-semibold leading-6 text-[var(--color-text)]">
+              {mpValidation.next_step}
+            </div>
+          ) : null}
 
           <button
             type="button"
@@ -793,6 +821,17 @@ function Field({ label, children }) {
       </span>
       {children}
     </label>
+  );
+}
+
+function InfoPill({ label, value }) {
+  return (
+    <div className="rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-3">
+      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
+        {label}
+      </div>
+      <div className="mt-1 break-words text-sm font-bold text-[var(--color-text)]">{value}</div>
+    </div>
   );
 }
 
