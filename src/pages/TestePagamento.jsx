@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CreditCard, QrCode, Send } from "lucide-react";
-import api from "../api/axios";
+import api, { getApiErrorMessage } from "../api/axios";
 
 export default function TestePagamento() {
   const [maquinas, setMaquinas] = useState([]);
@@ -70,8 +70,10 @@ export default function TestePagamento() {
       setEscutasAtivas(ativos);
       const existeEscutaAtual = ativos.some((item) => item.terminal_id === terminalId && item.machine_id === machineId);
       setEscutaAtiva(existeEscutaAtual);
-    } catch {
+    } catch (error) {
       setEscutasAtivas([]);
+      setFeedbackType("error");
+      setFeedback(getApiErrorMessage(error, "Nao foi possivel carregar escutas ativas."));
     }
   }, [machineId, terminalId]);
 
@@ -93,9 +95,9 @@ export default function TestePagamento() {
       });
       setFeedbackType("success");
       setFeedback(`Pagamento ${canal} enviado e pulso disparado para ${machineId}.`);
-    } catch {
+    } catch (error) {
       setFeedbackType("error");
-      setFeedback(`Falha ao processar pagamento ${canal}.`);
+      setFeedback(getApiErrorMessage(error, `Falha ao processar pagamento ${canal}.`));
     } finally {
       setLoading(false);
     }
@@ -114,9 +116,9 @@ export default function TestePagamento() {
       await carregarEscutas();
       setFeedbackType("success");
       setFeedback("Escuta ativada. Agora pague na maquininha vinculada: quando o pagamento aprovar, o pulso sera enviado automaticamente.");
-    } catch {
+    } catch (error) {
       setFeedbackType("error");
-      setFeedback("Falha ao iniciar escuta da maquininha.");
+      setFeedback(getApiErrorMessage(error, "Falha ao iniciar escuta da maquininha."));
     } finally {
       setLoading(false);
     }
@@ -134,9 +136,9 @@ export default function TestePagamento() {
       await carregarEscutas();
       setFeedbackType("success");
       setFeedback("Escuta parada para este terminal.");
-    } catch {
+    } catch (error) {
       setFeedbackType("error");
-      setFeedback("Falha ao parar escuta.");
+      setFeedback(getApiErrorMessage(error, "Falha ao parar escuta."));
     } finally {
       setLoading(false);
     }

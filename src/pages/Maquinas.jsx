@@ -106,6 +106,8 @@ export default function Maquinas() {
     try {
       const res = await api.get(`/maquinas${paramStr}`);
       setMaquinas(res.data);
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel carregar as maquinas."), type: "error" });
     } finally {
       setLoading(false);
     }
@@ -113,8 +115,12 @@ export default function Maquinas() {
 
   const loadUsuarios = useCallback(async () => {
     if (user?.role !== "admin") return;
-    const res = await api.get("/usuarios");
-    setUsuarios(res.data.filter((item) => item.role === "cliente"));
+    try {
+      const res = await api.get("/usuarios");
+      setUsuarios(res.data.filter((item) => item.role === "cliente"));
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel carregar os clientes."), type: "error" });
+    }
   }, [user?.role]);
 
   useEffect(() => {
@@ -133,6 +139,8 @@ export default function Maquinas() {
       const { data } = await api.get("/maquinas/novo-id");
       setForm((current) => ({ ...current, id_hardware: data.id_hardware }));
       setCopyFeedback("");
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel gerar o ID da maquina."), type: "error" });
     } finally {
       setGeneratingId(false);
     }
@@ -221,10 +229,14 @@ export default function Maquinas() {
   };
 
   const handleDeleteMachine = async () => {
-    await api.delete(`/maquinas/${deleteState.machineId}`);
-    setToast({ message: "Maquina excluida com sucesso.", type: "success" });
-    setDeleteState(emptyDeleteState);
-    await loadMaquinas();
+    try {
+      await api.delete(`/maquinas/${deleteState.machineId}`);
+      setToast({ message: "Maquina excluida com sucesso.", type: "success" });
+      setDeleteState(emptyDeleteState);
+      await loadMaquinas();
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel excluir a maquina."), type: "error" });
+    }
   };
 
   const sendTestCredit = async (machineId) => {
@@ -232,6 +244,8 @@ export default function Maquinas() {
     try {
       await api.post(`/maquinas/${machineId}/credito-teste`);
       setToast({ message: `Credito de teste enviado para ${machineId}.`, type: "success" });
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel enviar o credito de teste."), type: "error" });
     } finally {
       setSendingCreditId("");
     }

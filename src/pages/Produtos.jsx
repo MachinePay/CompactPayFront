@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CreditCard, Package, Pencil, Plus, Trash2 } from "lucide-react";
 
-import api from "../api/axios";
+import api, { getApiErrorMessage } from "../api/axios";
 import Button from "../components/Button";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
@@ -38,6 +38,8 @@ export default function Produtos() {
       ]);
       setProdutos(produtosRes.data);
       setMaquinas(maquinasRes.data);
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel carregar produtos."), type: "error" });
     } finally {
       setLoading(false);
     }
@@ -72,6 +74,8 @@ export default function Produtos() {
       setShowModal(false);
       resetForm();
       await loadData();
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel salvar o produto."), type: "error" });
     } finally {
       setSaving(false);
     }
@@ -95,6 +99,8 @@ export default function Produtos() {
       setDeleteProduct(null);
       setToast({ message: "Produto removido com sucesso.", type: "success" });
       await loadData();
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel excluir o produto."), type: "error" });
     } finally {
       setDeletingProduct(false);
     }
@@ -113,6 +119,8 @@ export default function Produtos() {
         message: `Pagamento lancado e credito enviado para ${produto.maquina_nome || produto.maquina_id}.`,
         type: "success",
       });
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel lancar o pagamento."), type: "error" });
     } finally {
       setSendingProductId(null);
     }
