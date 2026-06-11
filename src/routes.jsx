@@ -20,7 +20,9 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
-  return user ? children : <Navigate to="/login" />;
+  const location = useLocation();
+
+  return user ? children : <Navigate to="/login" replace state={{ from: location }} />;
 }
 
 function RouteFallback() {

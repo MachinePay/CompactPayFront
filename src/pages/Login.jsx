@@ -1,19 +1,25 @@
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { login as loginApi } from "../api/authService";
 import { useAuth } from "../context/useAuth";
 import Button from "../components/Button";
 
 export default function Login() {
   const { login } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const redirectTo = location.state?.from?.pathname
+    ? `${location.state.from.pathname}${location.state.from.search || ""}${location.state.from.hash || ""}`
+    : "/";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const data = await loginApi(email, password);
       login(data.access_token);
-      window.location.href = "/";
+      navigate(redirectTo, { replace: true });
     } catch {
       // Mensagem de erro sera exibida pelo Toast global
     }
