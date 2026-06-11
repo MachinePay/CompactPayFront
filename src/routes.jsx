@@ -16,6 +16,7 @@ const TestePagamento = lazy(() => import("./pages/TestePagamento"));
 const Transacoes = lazy(() => import("./pages/Transacoes"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Login = lazy(() => import("./pages/Login"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -51,6 +52,7 @@ function RouteContent() {
           <Route path="/transacoes" element={<PrivatePage><Transacoes /></PrivatePage>} />
           <Route path="/usuarios" element={<PrivatePage><Usuarios /></PrivatePage>} />
           <Route path="/auditoria" element={<PrivatePage><AuditoriaSistema /></PrivatePage>} />
+          <Route path="*" element={<PrivatePage><NotFound /></PrivatePage>} />
         </Routes>
       </Suspense>
     </RouteErrorBoundary>
