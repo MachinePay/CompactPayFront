@@ -14,6 +14,14 @@ function notifyApiError(payload) {
   listeners.forEach((fn) => fn(payload));
 }
 
+function redirectToLogin() {
+  const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const loginPath = currentPath.startsWith("/login")
+    ? "/login"
+    : `/login?redirect=${encodeURIComponent(currentPath)}`;
+  window.location.assign(loginPath);
+}
+
 function normalizeDetail(detail) {
   if (!detail) return "";
   if (typeof detail === "string") return detail;
@@ -77,7 +85,7 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
-      window.location.href = "/login";
+      redirectToLogin();
     }
 
     notifyApiError({

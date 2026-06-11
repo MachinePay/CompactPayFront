@@ -4,15 +4,24 @@ import { login as loginApi } from "../api/authService";
 import { useAuth } from "../context/useAuth";
 import Button from "../components/Button";
 
+function getSafeRedirect(search) {
+  const redirect = new URLSearchParams(search).get("redirect");
+  if (!redirect || !redirect.startsWith("/") || redirect.startsWith("//")) return "";
+  if (redirect.startsWith("/login")) return "";
+  return redirect;
+}
+
 export default function Login() {
   const { login, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const redirectTo = location.state?.from?.pathname
+  const redirectFromQuery = getSafeRedirect(location.search);
+  const redirectFromState = location.state?.from?.pathname
     ? `${location.state.from.pathname}${location.state.from.search || ""}${location.state.from.hash || ""}`
-    : "/";
+    : "";
+  const redirectTo = redirectFromQuery || redirectFromState || "/";
 
   useEffect(() => {
     if (user) {
