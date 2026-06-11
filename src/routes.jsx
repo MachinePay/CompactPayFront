@@ -37,6 +37,34 @@ function PrivatePage({ children }) {
   );
 }
 
+function AccessDenied() {
+  return (
+    <div className="flex min-h-full items-center justify-center p-4">
+      <section className="app-panel max-w-xl rounded-[30px] p-8 text-center">
+        <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
+          Acesso restrito
+        </div>
+        <h1 className="mt-3 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
+          Voce nao tem permissao para abrir esta tela
+        </h1>
+        <p className="mt-3 text-sm leading-7 text-[var(--color-text-soft)]">
+          Use uma conta administradora para acessar esta area do painel.
+        </p>
+      </section>
+    </div>
+  );
+}
+
+function AdminPage({ children }) {
+  const { user } = useAuth();
+
+  return (
+    <PrivatePage>
+      {user?.role === "admin" ? children : <AccessDenied />}
+    </PrivatePage>
+  );
+}
+
 function RouteContent() {
   const location = useLocation();
 
@@ -52,8 +80,8 @@ function RouteContent() {
           <Route path="/produtos" element={<PrivatePage><Produtos /></PrivatePage>} />
           <Route path="/teste-pagamento" element={<PrivatePage><TestePagamento /></PrivatePage>} />
           <Route path="/transacoes" element={<PrivatePage><Transacoes /></PrivatePage>} />
-          <Route path="/usuarios" element={<PrivatePage><Usuarios /></PrivatePage>} />
-          <Route path="/auditoria" element={<PrivatePage><AuditoriaSistema /></PrivatePage>} />
+          <Route path="/usuarios" element={<AdminPage><Usuarios /></AdminPage>} />
+          <Route path="/auditoria" element={<AdminPage><AuditoriaSistema /></AdminPage>} />
           <Route path="*" element={<PrivatePage><NotFound /></PrivatePage>} />
         </Routes>
       </Suspense>
