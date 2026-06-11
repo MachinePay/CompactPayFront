@@ -50,6 +50,7 @@ export function getApiErrorMessage(error, fallback = "Erro inesperado. Tente nov
     return "A requisicao demorou demais para responder. Tente novamente.";
   }
   if (error?.message === "Network Error" || !error?.response) {
+    if (error?.message && error.message !== "Network Error") return error.message;
     return "Nao foi possivel conectar ao backend. Verifique se a API esta online e se o dominio esta liberado no CORS.";
   }
 

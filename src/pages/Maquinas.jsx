@@ -170,10 +170,11 @@ export default function Maquinas() {
     e.preventDefault();
     setSaving(true);
     try {
+      const selectedProvider = form.banco_pagamento || paymentProviders[0] || "mercado_pago";
       const payload = {
         nome: form.nome,
         localizacao: form.localizacao,
-        banco_pagamento: form.banco_pagamento || paymentProviders[0] || "mercado_pago",
+        banco_pagamento: selectedProvider,
         cliente_id:
           user?.role === "admin"
             ? form.cliente_id === ""
@@ -181,6 +182,19 @@ export default function Maquinas() {
               : Number(form.cliente_id)
             : user.cliente_id,
       };
+
+      if (!editingMachineId && user?.role === "admin" && selectedProvider === "mercado_pago") {
+        const { data } = await api.get(`/mercado-pago/clientes/${payload.cliente_id}/validacao`);
+        if (!data?.ok) {
+          const blockingChecks = (data?.checks || []).filter(
+            (item) => !item.ok && (item.severity || "error") === "error",
+          );
+          const message = blockingChecks.length
+            ? blockingChecks.map((item) => `${item.label}: ${item.message}`).join(" ")
+            : data?.next_step || "Valide a integracao Mercado Pago antes de criar a maquina.";
+          throw new Error(message);
+        }
+      }
 
       if (editingMachineId) {
         await api.put(`/maquinas/${editingMachineId}`, payload);
@@ -632,6 +646,11 @@ export default function Maquinas() {
                   {form.cliente_id && paymentProviders.length === 0 ? (
                     <span className="mt-2 block text-xs font-medium text-[var(--color-error)]">
                       Este cliente ainda nao tem banco de pagamento habilitado.
+                    </span>
+                  ) : null}
+                  {form.cliente_id && form.banco_pagamento === "mercado_pago" && !selectedCliente?.mp_configurado ? (
+                    <span className="mt-2 block rounded-[14px] bg-amber-50 px-3 py-2 text-xs font-medium leading-5 text-[var(--color-warning)]">
+                      Antes de cadastrar, o sistema vai validar o Mercado Pago deste cliente. Se faltar token ou conta valida, o cadastro sera bloqueado.
                     </span>
                   ) : null}
                 </label>
