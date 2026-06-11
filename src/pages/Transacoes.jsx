@@ -62,7 +62,20 @@ export default function Transacoes() {
     .reduce((sum, item) => sum + Number(item.valor || 0), 0);
 
   const handleExportCsv = () => {
+    const maquinaSelecionada = maquinas.find((item) => item.id_hardware === filtros.maquina);
+    const totalValor = transacoes.reduce((sum, item) => sum + Number(item.valor || 0), 0);
     const rows = [
+      ["relatorio", "Transacoes CompactPay"],
+      ["gerado_em", dayjs().format("YYYY-MM-DD HH:mm:ss")],
+      ["periodo", dateRange.start && dateRange.end ? `${dateRange.start} ate ${dateRange.end}` : periodo],
+      ["maquina", maquinaSelecionada ? `${maquinaSelecionada.nome || maquinaSelecionada.id_hardware} (${maquinaSelecionada.id_hardware})` : "Todas"],
+      ["tipo", filtros.tipo || "Todos"],
+      ["metodo", filtros.metodo || "Todos"],
+      ["total_registros", transacoes.length],
+      ["entradas", entradas],
+      ["saidas", saidas],
+      ["total_valor", totalValor.toFixed(2)],
+      [],
       ["data", "hora", "maquina_id", "maquina_nome", "tipo", "metodo", "valor"],
       ...transacoes.map((item) => [
         dayjs(item.data_hora).format("YYYY-MM-DD"),
@@ -86,8 +99,10 @@ export default function Transacoes() {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
+    const machineSlug = filtros.maquina ? filtros.maquina.replaceAll("/", "-") : "todas";
+    const rangeSlug = dateRange.start && dateRange.end ? `${dateRange.start}_${dateRange.end}` : periodo;
     link.href = url;
-    link.download = `transacoes-${dayjs().format("YYYYMMDD-HHmmss")}.csv`;
+    link.download = `transacoes-${machineSlug}-${rangeSlug}-${dayjs().format("YYYYMMDD-HHmmss")}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
