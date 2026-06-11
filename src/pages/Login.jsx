@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { login as loginApi } from "../api/authService";
 import { useAuth } from "../context/useAuth";
 import Button from "../components/Button";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -13,6 +13,12 @@ export default function Login() {
   const redirectTo = location.state?.from?.pathname
     ? `${location.state.from.pathname}${location.state.from.search || ""}${location.state.from.hash || ""}`
     : "/";
+
+  useEffect(() => {
+    if (user) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [navigate, redirectTo, user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
