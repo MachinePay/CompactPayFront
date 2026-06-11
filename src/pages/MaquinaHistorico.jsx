@@ -318,7 +318,59 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     const maquina = historico.maquina;
     if (!maquina) return;
 
+    const periodoLabel = formatPeriodoLabel(periodo, dateRange);
     const rows = [
+      ["relatorio", "Historico da Maquina CompactPay"],
+      ["gerado_em", dayjs().format("YYYY-MM-DD HH:mm:ss")],
+      ["periodo", periodoLabel],
+      ["maquina_id", maquina.id_hardware],
+      ["maquina_nome", maquina.nome || maquina.id_hardware],
+      ["cliente", maquina.cliente_nome || ""],
+      ["localizacao", maquina.localizacao || ""],
+      ["operador", user?.email || ""],
+      [],
+      ["resumo"],
+      ["total_pagamentos", Number(historico.resumo.total_pagamentos || 0).toFixed(2)],
+      ["total_digital", Number(historico.resumo.total_digital || 0).toFixed(2)],
+      ["total_fisico", Number(historico.resumo.total_fisico || 0).toFixed(2)],
+      ["quantidade_pagamentos", historico.resumo.quantidade_pagamentos || 0],
+      ["quantidade_testes", historico.resumo.quantidade_testes || 0],
+      ["quantidade_saidas", historico.resumo.quantidade_saidas || 0],
+      [],
+      ["resumo_diario"],
+      ["dia", "total"],
+      ...historico.totais_por_dia.map((item) => [
+        item.dia,
+        Number(item.total || 0).toFixed(2),
+      ]),
+      [],
+      ["fechamentos_salvos"],
+      [
+        "periodo_inicio",
+        "periodo_fim",
+        "total_pagamentos",
+        "total_digital",
+        "total_fisico",
+        "pagamentos",
+        "testes",
+        "saidas",
+        "criado_por",
+        "criado_em",
+      ],
+      ...historico.fechamentos.map((item) => [
+        dayjs(item.periodo_inicio).format("YYYY-MM-DD"),
+        dayjs(item.periodo_fim).format("YYYY-MM-DD"),
+        Number(item.total_pagamentos || 0).toFixed(2),
+        Number(item.total_digital || 0).toFixed(2),
+        Number(item.total_fisico || 0).toFixed(2),
+        item.quantidade_pagamentos || 0,
+        item.quantidade_testes || 0,
+        item.quantidade_saidas || 0,
+        item.criado_por_email || "",
+        dayjs(item.created_at).format("YYYY-MM-DD HH:mm:ss"),
+      ]),
+      [],
+      ["detalhes"],
       ["secao", "data", "metodo", "valor", "descricao"],
       ...historico.pagamentos.map((item) => [
         "pagamento",
@@ -361,8 +413,9 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
+    const rangeSlug = dateRange.start && dateRange.end ? `${dateRange.start}_${dateRange.end}` : periodo || "periodo";
     link.href = url;
-    link.download = `historico-${maquina.id_hardware}-${dayjs().format("YYYYMMDD-HHmmss")}.csv`;
+    link.download = `historico-${maquina.id_hardware}-${rangeSlug}-${dayjs().format("YYYYMMDD-HHmmss")}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
