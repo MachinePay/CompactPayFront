@@ -7,18 +7,19 @@ import Toast from "./components/Toast";
 import { addApiErrorListener } from "./api/axios";
 
 export default function App() {
-  const [toast, setToast] = useState({ message: "", type: "error", title: "" });
+  const [toast, setToast] = useState({ message: "", type: "error", title: "", requestId: "" });
 
   useEffect(() => {
     const removeListener = addApiErrorListener((payload) => {
       if (typeof payload === "string") {
-        setToast({ message: payload, type: "error", title: "Erro" });
+        setToast({ message: payload, type: "error", title: "Erro", requestId: "" });
         return;
       }
       setToast({
         message: payload.message,
         type: payload.type || "error",
         title: payload.title || "Erro",
+        requestId: payload.requestId || "",
       });
     });
     return removeListener;
@@ -31,7 +32,8 @@ export default function App() {
         message={toast.message}
         type={toast.type}
         title={toast.title}
-        onClose={() => setToast({ message: "", type: "error", title: "" })}
+        requestId={toast.requestId}
+        onClose={() => setToast({ message: "", type: "error", title: "", requestId: "" })}
       />
     </AuthProvider>
   );

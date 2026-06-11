@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-export default function Toast({ message, type = "error", title, onClose }) {
+export default function Toast({ message, type = "error", title, requestId, onClose }) {
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(onClose, type === "error" ? 7000 : 4000);
@@ -28,6 +28,11 @@ export default function Toast({ message, type = "error", title, onClose }) {
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold">{label}</div>
           <div className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed opacity-90">{message}</div>
+          {requestId ? (
+            <div className="mt-2 break-all text-xs font-semibold opacity-70">
+              Request ID: {requestId}
+            </div>
+          ) : null}
         </div>
         <button
           className="shrink-0 rounded-full px-2 text-xl leading-none opacity-60 hover:opacity-100"

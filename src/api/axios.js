@@ -94,7 +94,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const message = getApiErrorMessage(error);
+    const requestId = error.response?.headers?.["x-request-id"];
     error.compactpayMessage = message;
+    error.compactpayRequestId = requestId;
 
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
@@ -104,6 +106,7 @@ api.interceptors.response.use(
     notifyApiError({
       message,
       status: error.response?.status,
+      requestId,
       type: "error",
       title: error.response?.status ? `Erro ${error.response.status}` : "Falha de conexao",
     });
