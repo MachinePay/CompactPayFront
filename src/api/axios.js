@@ -1,6 +1,12 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.trim();
+function normalizeApiBaseUrl(value) {
+  const trimmedValue = value?.trim();
+  if (!trimmedValue) return "";
+  return trimmedValue.replace(/\/+$/, "");
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL);
 const listeners = [];
 
 export function addApiErrorListener(fn) {
