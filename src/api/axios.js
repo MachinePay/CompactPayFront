@@ -41,6 +41,10 @@ function normalizeDetail(detail) {
   return detail.message || detail.error || JSON.stringify(detail);
 }
 
+function getRequestId(error) {
+  return error.response?.headers?.["x-request-id"] || error.response?.data?.request_id || "";
+}
+
 export function getApiErrorMessage(error, fallback = "Erro inesperado. Tente novamente.") {
   if (error?.compactpayMessage) return error.compactpayMessage;
 
@@ -94,7 +98,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const message = getApiErrorMessage(error);
-    const requestId = error.response?.headers?.["x-request-id"];
+    const requestId = getRequestId(error);
     error.compactpayMessage = message;
     error.compactpayRequestId = requestId;
 
