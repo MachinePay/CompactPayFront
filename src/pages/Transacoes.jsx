@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import { Activity, BanknoteArrowDown, Download, Filter, RefreshCcw } from "lucide-react";
 
-import api from "../api/axios";
+import api, { getApiErrorMessage } from "../api/axios";
 import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
+import Toast from "../components/Toast";
 import { useAuth } from "../context/useAuth";
 
 export default function Transacoes() {
@@ -14,6 +15,7 @@ export default function Transacoes() {
   const [loading, setLoading] = useState(false);
   const [periodo, setPeriodo] = useState("mes");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [toast, setToast] = useState({ message: "", type: "error" });
   const [filtros, setFiltros] = useState({
     maquina: "",
     tipo: "",
@@ -40,6 +42,8 @@ export default function Transacoes() {
       ]);
       setTransacoes(transacoesRes.data);
       setMaquinas(maquinasRes.data);
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel carregar as transacoes."), type: "error" });
     } finally {
       setLoading(false);
     }
@@ -92,6 +96,12 @@ export default function Transacoes() {
 
   return (
     <div className="flex min-h-full flex-col gap-4">
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ message: "", type: toast.type })}
+      />
+
       <SectionHeader
         title="Transacoes"
         description="Consulte entradas, saidas e pagamentos digitais por maquina, periodo e metodo."

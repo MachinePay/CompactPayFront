@@ -21,7 +21,7 @@ import {
   YAxis,
 } from "recharts";
 
-import api from "../api/axios";
+import api, { getApiErrorMessage } from "../api/axios";
 import Card from "../components/Card";
 import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -62,6 +62,7 @@ export default function Dashboard() {
   const [clientes, setClientes] = useState([]);
   const [clientesResumo, setClientesResumo] = useState([]);
   const [maquinas, setMaquinas] = useState([]);
+  const [errorMessage, setErrorMessage] = useState("");
   const [selectedClientId, setSelectedClientId] = useState(persistedFilters.selectedClientId || "");
   const [selectedMachineId, setSelectedMachineId] = useState(persistedFilters.selectedMachineId || "");
   const [filterSearch, setFilterSearch] = useState(persistedFilters.filterSearch || "");
@@ -78,9 +79,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user || !isAdmin) return;
-    api.get("/clientes").then(({ data }) => {
-      setClientes(Array.isArray(data) ? data : []);
-    });
+    api
+      .get("/clientes")
+      .then(({ data }) => {
+        setClientes(Array.isArray(data) ? data : []);
+      })
+      .catch((error) => {
+        setErrorMessage(getApiErrorMessage(error, "Nao foi possivel carregar os clientes."));
+      });
   }, [isAdmin, user]);
 
   useEffect(() => {
@@ -90,13 +96,18 @@ export default function Dashboard() {
     if (isAdmin && selectedClientId) params.set("cliente_id", selectedClientId);
     const query = params.toString() ? `?${params.toString()}` : "";
 
-    api.get(`/maquinas${query}`).then(({ data }) => {
-      const items = Array.isArray(data) ? data : [];
-      setMaquinas(items);
-      if (selectedMachineId && !items.some((item) => item.id_hardware === selectedMachineId)) {
-        setSelectedMachineId("");
-      }
-    });
+    api
+      .get(`/maquinas${query}`)
+      .then(({ data }) => {
+        const items = Array.isArray(data) ? data : [];
+        setMaquinas(items);
+        if (selectedMachineId && !items.some((item) => item.id_hardware === selectedMachineId)) {
+          setSelectedMachineId("");
+        }
+      })
+      .catch((error) => {
+        setErrorMessage(getApiErrorMessage(error, "Nao foi possivel carregar as maquinas."));
+      });
   }, [isAdmin, selectedClientId, selectedMachineId, user]);
 
   const loadOverview = useCallback(() => {
@@ -112,6 +123,7 @@ export default function Dashboard() {
     api
       .get(`/dashboard/overview${query}`)
       .then(({ data }) => {
+        setErrorMessage("");
         setStats({
           faturamento_total: data?.stats?.faturamento_total ?? 0,
           premios_entregues: data?.stats?.premios_entregues ?? 0,
@@ -124,6 +136,9 @@ export default function Dashboard() {
         setChartData(Array.isArray(data?.chart_data) ? data.chart_data : []);
         setAlerts(Array.isArray(data?.alerts) ? data.alerts : []);
         setClientesResumo(Array.isArray(data?.clientes_resumo) ? data.clientes_resumo : []);
+      })
+      .catch((error) => {
+        setErrorMessage(getApiErrorMessage(error, "Nao foi possivel carregar o dashboard."));
       })
       .finally(() => setLoading(false));
   }, [dateRange, selectedClientId, selectedMachineId, user]);
@@ -354,6 +369,12 @@ export default function Dashboard() {
           </button>
         </div>
       </section>
+
+      {errorMessage ? (
+        <div className="rounded-[22px] border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold leading-6 text-red-900">
+          {errorMessage}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-[1.65fr_0.9fr]">
         <section className="space-y-4">
