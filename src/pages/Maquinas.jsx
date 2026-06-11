@@ -73,6 +73,7 @@ export default function Maquinas() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [generatingId, setGeneratingId] = useState(false);
+  const [validatingMp, setValidatingMp] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState("");
   const [sendingCreditId, setSendingCreditId] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
@@ -166,6 +167,31 @@ export default function Maquinas() {
     setCopyFeedback("ID copiado para configurar no ESP.");
   };
 
+  const validateSelectedMercadoPago = async () => {
+    if (!form.cliente_id) return null;
+    setValidatingMp(true);
+    try {
+      const { data } = await api.get(`/mercado-pago/clientes/${form.cliente_id}/validacao`);
+      if (data?.ok) {
+        setToast({ message: "Mercado Pago validado. Cliente pronto para criar maquina.", type: "success" });
+        return data;
+      }
+      const blockingChecks = (data?.checks || []).filter(
+        (item) => !item.ok && (item.severity || "error") === "error",
+      );
+      const message = blockingChecks.length
+        ? blockingChecks.map((item) => `${item.label}: ${item.message}`).join(" ")
+        : data?.next_step || "Revise a integracao Mercado Pago antes de criar a maquina.";
+      setToast({ message, type: "error" });
+      return data;
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel validar o Mercado Pago."), type: "error" });
+      return null;
+    } finally {
+      setValidatingMp(false);
+    }
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -184,7 +210,7 @@ export default function Maquinas() {
       };
 
       if (!editingMachineId && user?.role === "admin" && selectedProvider === "mercado_pago") {
-        const { data } = await api.get(`/mercado-pago/clientes/${payload.cliente_id}/validacao`);
+        const data = await validateSelectedMercadoPago();
         if (!data?.ok) {
           const blockingChecks = (data?.checks || []).filter(
             (item) => !item.ok && (item.severity || "error") === "error",
@@ -652,6 +678,17 @@ export default function Maquinas() {
                     <span className="mt-2 block rounded-[14px] bg-amber-50 px-3 py-2 text-xs font-medium leading-5 text-[var(--color-warning)]">
                       Antes de cadastrar, o sistema vai validar o Mercado Pago deste cliente. Se faltar token ou conta valida, o cadastro sera bloqueado.
                     </span>
+                  ) : null}
+                  {form.cliente_id && form.banco_pagamento === "mercado_pago" ? (
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)]"
+                      onClick={validateSelectedMercadoPago}
+                      disabled={validatingMp}
+                    >
+                      <RefreshCcw size={15} className={validatingMp ? "animate-spin" : ""} />
+                      {validatingMp ? "Validando MP..." : "Validar MP deste cliente"}
+                    </button>
                   ) : null}
                 </label>
               ) : null}
