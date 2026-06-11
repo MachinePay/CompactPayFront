@@ -1,9 +1,10 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./context/useAuth";
 
 import Layout from "./components/Layout";
 import LoadingSpinner from "./components/LoadingSpinner";
+import RouteErrorBoundary from "./components/RouteErrorBoundary";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AuditoriaSistema = lazy(() => import("./pages/AuditoriaSistema"));
@@ -33,9 +34,11 @@ function PrivatePage({ children }) {
   );
 }
 
-export default function AppRoutes() {
+function RouteContent() {
+  const location = useLocation();
+
   return (
-    <BrowserRouter>
+    <RouteErrorBoundary resetKey={location.pathname}>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -50,6 +53,14 @@ export default function AppRoutes() {
           <Route path="/auditoria" element={<PrivatePage><AuditoriaSistema /></PrivatePage>} />
         </Routes>
       </Suspense>
+    </RouteErrorBoundary>
+  );
+}
+
+export default function AppRoutes() {
+  return (
+    <BrowserRouter>
+      <RouteContent />
     </BrowserRouter>
   );
 }
