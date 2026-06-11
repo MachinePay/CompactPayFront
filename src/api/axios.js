@@ -10,6 +10,10 @@ export function addApiErrorListener(fn) {
   };
 }
 
+function notifyApiError(payload) {
+  listeners.forEach((fn) => fn(payload));
+}
+
 function normalizeDetail(detail) {
   if (!detail) return "";
   if (typeof detail === "string") return detail;
@@ -29,10 +33,12 @@ export function getApiErrorMessage(error, fallback = "Erro inesperado. Tente nov
   const data = error?.response?.data;
   const detail = normalizeDetail(data?.detail || data?.message || data?.error || data);
 
+  if (status === 400) return detail || "Confira os dados informados e tente novamente.";
   if (status === 401) return "Sessao expirada. Faca login novamente.";
   if (status === 403) return detail || "Voce nao tem permissao para executar esta acao.";
   if (status === 404) return detail || "Registro nao encontrado.";
   if (status === 409) return detail || "Esta operacao conflita com dados ja cadastrados.";
+  if (status === 422) return detail || "Algum campo obrigatorio esta ausente ou invalido.";
   if (status >= 500) {
     return detail
       ? `Falha no servidor (${status}): ${detail}`
@@ -44,7 +50,7 @@ export function getApiErrorMessage(error, fallback = "Erro inesperado. Tente nov
     return "A requisicao demorou demais para responder. Tente novamente.";
   }
   if (error?.message === "Network Error" || !error?.response) {
-    return "Nao foi possivel conectar ao backend. Verifique se a API esta online, se a URL esta correta e se o CORS permite este dominio.";
+    return "Nao foi possivel conectar ao backend. Verifique se a API esta online e se o dominio esta liberado no CORS.";
   }
 
   return fallback;
@@ -73,7 +79,12 @@ api.interceptors.response.use(
       window.location.href = "/login";
     }
 
-    listeners.forEach((fn) => fn(message));
+    notifyApiError({
+      message,
+      status: error.response?.status,
+      type: "error",
+      title: error.response?.status ? `Erro ${error.response.status}` : "Falha de conexao",
+    });
     return Promise.reject(error);
   },
 );

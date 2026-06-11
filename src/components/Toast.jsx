@@ -1,21 +1,42 @@
 import { useEffect } from "react";
 
-export default function Toast({ message, type = "error", onClose }) {
+export default function Toast({ message, type = "error", title, onClose }) {
   useEffect(() => {
     if (!message) return;
-    const timer = setTimeout(onClose, 4000);
+    const timer = setTimeout(onClose, type === "error" ? 7000 : 4000);
     return () => clearTimeout(timer);
-  }, [message, onClose]);
+  }, [message, onClose, type]);
 
   if (!message) return null;
+
+  const isError = type === "error";
+  const tone = isError
+    ? "border-red-200 bg-red-50 text-red-950"
+    : "border-emerald-200 bg-emerald-50 text-emerald-950";
+  const iconTone = isError ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700";
+  const label = title || (isError ? "Nao foi possivel concluir" : "Tudo certo");
+
   return (
     <div
-      className={`fixed top-6 right-6 z-50 px-4 py-2 rounded shadow text-white ${type === "error" ? "bg-error" : "bg-success"}`}
+      className={`fixed right-4 top-5 z-50 w-[calc(100vw-2rem)] max-w-md rounded-lg border px-4 py-3 shadow-xl ${tone}`}
+      role="alert"
     >
-      {message}
-      <button className="ml-4 text-white/80 hover:text-white" onClick={onClose}>
-        ×
-      </button>
+      <div className="flex items-start gap-3">
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${iconTone}`}>
+          {isError ? "!" : "OK"}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-bold">{label}</div>
+          <div className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed opacity-90">{message}</div>
+        </div>
+        <button
+          className="shrink-0 rounded-full px-2 text-xl leading-none opacity-60 hover:opacity-100"
+          onClick={onClose}
+          aria-label="Fechar aviso"
+        >
+          x
+        </button>
+      </div>
     </div>
   );
 }
