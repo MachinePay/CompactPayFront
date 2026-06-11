@@ -67,6 +67,7 @@ export function getApiErrorMessage(error, fallback = "Erro inesperado. Tente nov
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
+  timeout: 30000,
 });
 
 api.interceptors.request.use((config) => {
