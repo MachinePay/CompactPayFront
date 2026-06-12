@@ -41,6 +41,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     fechamentos: [],
     auditoria: [],
     observacoes: [],
+    eventos_dispositivo: [],
     timeline: [],
     vendas: [],
   });
@@ -608,7 +609,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
           helper={formatResumoData(historico.resumo.ultima_saida_em, "Ultima saida")}
           icon={<Sparkles size={18} />}
         />
-        <StatusCard maquina={maquina} />
+        <StatusCard maquina={maquina} eventos={historico.eventos_dispositivo || []} />
       </div>
       ) : null}
 
@@ -751,6 +752,17 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                       item.descricao,
                     ])}
                   />
+                  <HistoryTable
+                    title="Eventos do dispositivo"
+                    empty="Nenhum evento tecnico recebido da placa."
+                    columns={["Data", "Status", "Comando", "Descricao"]}
+                    rows={(historico.eventos_dispositivo || []).map((item) => [
+                      dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                      formatPulseStatus(item.pulse_status),
+                      item.command_id || "--",
+                      item.descricao,
+                    ])}
+                  />
                 </div>
               </div>
             </div>
@@ -857,8 +869,9 @@ function SummaryCard({ label, value, helper, icon, featured = false }) {
   );
 }
 
-function StatusCard({ maquina }) {
+function StatusCard({ maquina, eventos = [] }) {
   const online = Boolean(maquina?.status_online);
+  const ultimoEvento = eventos[0];
   return (
     <section className="app-panel rounded-[28px] p-6">
       <div className="text-sm font-semibold text-[var(--color-text-soft)]">Status da maquina</div>
@@ -878,6 +891,14 @@ function StatusCard({ maquina }) {
             : "Sem sinal recebido ainda"}
         </span>
       </div>
+      {ultimoEvento ? (
+        <div className="mt-4 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-3 text-sm text-[var(--color-text)]">
+          <div className="font-semibold">Ultimo evento da placa: {formatPulseStatus(ultimoEvento.pulse_status)}</div>
+          <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+            {dayjs(ultimoEvento.created_at).format("DD/MM/YYYY HH:mm:ss")} {ultimoEvento.command_id ? `cmd ${ultimoEvento.command_id}` : ""}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -1045,15 +1066,40 @@ function MoneyBadge({ value, tone }) {
 
 function PulseBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
-  const isFail = normalized === "falha";
+  const isFail = normalized.startsWith("falha");
+  const isPending = ["pendente", "comando_enviado", "cmd_recebido", "pulso_iniciado"].includes(normalized);
   const isTest = normalized === "teste";
   return (
     <div className={`rounded-[14px] px-3 py-2 text-center text-xs font-bold ${
-      isFail ? "bg-rose-50 text-[var(--color-error)]" : isTest ? "bg-amber-100 text-amber-800" : "bg-emerald-50 text-[var(--color-success)]"
+      isFail
+        ? "bg-rose-50 text-[var(--color-error)]"
+        : isPending
+          ? "bg-sky-50 text-sky-700"
+          : isTest
+            ? "bg-amber-100 text-amber-800"
+            : "bg-emerald-50 text-[var(--color-success)]"
     }`}>
-      {isFail ? "Pulso nao liberado" : isTest ? "Pulso de teste" : "Pulso liberado"}
+      {formatPulseStatus(status)}
     </div>
   );
+}
+
+function formatPulseStatus(status) {
+  const normalized = String(status || "").toLowerCase();
+  const labels = {
+    pendente: "Aguardando envio",
+    comando_enviado: "Comando enviado",
+    cmd_recebido: "Comando recebido",
+    pulso_iniciado: "Pulso iniciado",
+    liberado: "Pulso confirmado",
+    falha: "Pulso nao liberado",
+    falha_timeout: "Sem confirmacao",
+    falha_publicacao: "Falha ao publicar",
+    falha_cmd_ignorado: "Comando ignorado",
+    falha_bloqueado: "Pulso bloqueado",
+    teste: "Pulso de teste",
+  };
+  return labels[normalized] || status || "Sem status";
 }
 
 function StatusBadge({ item }) {
