@@ -403,7 +403,22 @@ export default function Maquinas() {
               Nenhuma maquina cadastrada ainda. Gere um ID, configure o ESP e crie a unidade por aqui.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="grid gap-3 p-3 md:hidden">
+              {maquinas.map((m) => (
+                <MachineMobileCard
+                  key={m.id_hardware}
+                  machine={m}
+                  user={user}
+                  sendingCreditId={sendingCreditId}
+                  onOpen={() => navigate(`/maquinas/${m.id_hardware}`)}
+                  onSendCredit={() => sendTestCredit(m.id_hardware)}
+                  onEdit={() => handleEditMachine(m)}
+                  onDelete={() => requestDeleteMachine(m.id_hardware)}
+                />
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <table className="min-w-full">
                 <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
                   <tr>
@@ -539,6 +554,7 @@ export default function Maquinas() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </section>
@@ -799,5 +815,100 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
         {helper}
       </div>
     </section>
+  );
+}
+
+function MachineMobileCard({ machine, user, sendingCreditId, onOpen, onSendCredit, onEdit, onDelete }) {
+  return (
+    <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
+      <div className="flex items-start justify-between gap-3">
+        <button type="button" className="min-w-0 text-left" onClick={onOpen}>
+          <div className="truncate text-base font-extrabold text-[var(--color-primary-strong)]">
+            {machine.nome || machine.id_hardware}
+          </div>
+          <div className="mt-1 text-xs font-semibold text-[var(--color-text-soft)]">
+            ID {machine.id_hardware}
+          </div>
+        </button>
+        <MachineStatusBadge status={machine.status_operacional} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+        <InfoPill label="Faturamento" value={machine.faturamento?.toFixed ? `R$ ${machine.faturamento.toFixed(2)}` : "--"} />
+        <InfoPill label="Banco" value={paymentProviderLabels[machine.banco_pagamento || "mercado_pago"] || machine.banco_pagamento || "--"} />
+        <InfoPill label="Local" value={machine.localizacao || "--"} wide />
+        <InfoPill
+          label="Ultima atividade"
+          value={machine.ultima_atividade_em ? dayjs(machine.ultima_atividade_em).format("DD/MM HH:mm") : "Sem atividade"}
+          wide
+        />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+          onClick={onSendCredit}
+          disabled={sendingCreditId === machine.id_hardware}
+        >
+          <Rocket size={15} />
+          {sendingCreditId === machine.id_hardware ? "Enviando" : "Credito"}
+        </button>
+        <button
+          type="button"
+          className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+          onClick={onOpen}
+        >
+          <Server size={15} />
+          Abrir
+        </button>
+        {user?.role === "admin" ? (
+          <>
+            <button
+              type="button"
+              className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+              onClick={onEdit}
+            >
+              <Pencil size={15} />
+              Editar
+            </button>
+            <button
+              type="button"
+              className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)]"
+              onClick={onDelete}
+            >
+              <Trash2 size={15} />
+              Excluir
+            </button>
+          </>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function MachineStatusBadge({ status }) {
+  const tone =
+    status === "operando"
+      ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
+      : status === "atencao"
+        ? "bg-amber-50 text-[var(--color-warning)]"
+        : "bg-rose-50 text-[var(--color-error)]";
+  const label = status === "operando" ? "Operando" : status === "atencao" ? "Atencao" : "Offline";
+  const Icon = status === "operando" ? CheckCircle2 : XCircle;
+  return (
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold ${tone}`}>
+      <Icon size={14} />
+      {label}
+    </span>
+  );
+}
+
+function InfoPill({ label, value, wide = false }) {
+  return (
+    <div className={`rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2 ${wide ? "col-span-2" : ""}`}>
+      <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">{label}</div>
+      <div className="mt-1 truncate font-semibold text-[var(--color-text)]">{value}</div>
+    </div>
   );
 }

@@ -2,9 +2,9 @@ import Sidebar from "./Sidebar";
 
 export default function Layout({ children }) {
   return (
-    <div className="app-shell flex min-h-screen flex-col gap-4 p-4 lg:flex-row lg:p-5">
+    <div className="app-shell flex min-h-screen flex-col gap-3 p-2 sm:p-3 lg:flex-row lg:gap-4 lg:p-5">
       <Sidebar />
-      <main className="flex-1 overflow-hidden rounded-[28px] bg-white/36 p-2">
+      <main className="min-w-0 flex-1 overflow-visible rounded-[18px] bg-white/36 p-1 sm:p-2 lg:overflow-hidden lg:rounded-[28px]">
         {children}
       </main>
     </div>

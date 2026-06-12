@@ -139,7 +139,13 @@ export default function AuditoriaSistema() {
               Nenhum registro de auditoria encontrado para os filtros selecionados.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="grid gap-3 p-3 md:hidden">
+              {items.map((item) => (
+                <AuditMobileCard key={item.id} item={item} />
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <table className="min-w-full">
                 <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
                   <tr>
@@ -186,6 +192,7 @@ export default function AuditoriaSistema() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </section>
@@ -241,5 +248,49 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
         {helper}
       </div>
     </section>
+  );
+}
+
+function AuditMobileCard({ item }) {
+  return (
+    <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-extrabold text-[var(--color-text)]">
+            {dayjs(item.created_at).format("DD/MM/YYYY")}
+          </div>
+          <div className="mt-1 text-xs font-semibold text-[var(--color-text-soft)]">
+            {dayjs(item.created_at).format("HH:mm:ss")}
+          </div>
+        </div>
+        <span className="shrink-0 rounded-full bg-[var(--color-primary-soft)] px-3 py-1.5 text-xs font-bold text-[var(--color-success)]">
+          {item.acao}
+        </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-3 py-3">
+          <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-soft)]">
+            Entidade
+          </div>
+          <div className="mt-1 break-words text-sm font-bold text-[var(--color-text)]">
+            {item.entidade_tipo}
+          </div>
+          <div className="mt-1 text-xs text-[var(--color-text-soft)]">{item.entidade_id || "--"}</div>
+        </div>
+        <div className="rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-3 py-3">
+          <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-text-soft)]">
+            Usuario
+          </div>
+          <div className="mt-1 break-words text-sm font-bold text-[var(--color-text)]">
+            {item.executado_por_email || "--"}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-[16px] border border-[var(--color-border)] bg-white px-3 py-3 text-sm leading-6 text-[var(--color-text-soft)]">
+        {item.descricao}
+      </div>
+    </article>
   );
 }

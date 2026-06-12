@@ -317,106 +317,121 @@ export default function Usuarios() {
               Nenhum usuario encontrado para "{searchTerm}".
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
-                  <tr>
-                    <th className="px-5 py-4 whitespace-nowrap">Nome</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Email</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Perfil</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Cliente</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Mercado Pago</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Acoes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsuarios.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
-                    >
-                      <td className="px-5 py-4 min-w-[180px]">
-                        <div className="font-semibold">{item.nome || "Sem nome"}</div>
-                        <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                          ID interno #{item.id}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 min-w-[220px] text-[var(--color-text-soft)]">{item.email}</td>
-                      <td className="px-5 py-4 min-w-[120px]">
-                        <span
-                          className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
-                            item.role === "admin"
-                              ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
-                              : "bg-[var(--color-bg-muted)] text-[var(--color-text)]"
-                          }`}
-                        >
-                          {item.role}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 min-w-[110px] text-[var(--color-text-soft)]">
-                        {item.cliente_id ?? "--"}
-                      </td>
-                      <td className="px-5 py-4 min-w-[150px]">
-                        <span
-                          className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
-                            item.mp_configurado
-                              ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
-                              : "bg-amber-50 text-[var(--color-warning)]"
-                          }`}
-                        >
-                          {item.mp_configurado ? "Configurado" : "Pendente"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 min-w-[190px]">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                            onClick={() => handleEdit(item)}
-                            type="button"
-                          >
-                            <UserRoundCog size={15} />
-                            Editar
-                          </button>
-                          {item.role === "cliente" ? (
-                            <>
-                              <button
-                                className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                                onClick={() => handleConnectMercadoPago(item.cliente_id)}
-                                type="button"
-                                disabled={!item.cliente_id}
-                              >
-                                <Link size={15} />
-                                Conectar MP
-                              </button>
-                              <button
-                                className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                                onClick={() => handleValidateMercadoPago(item)}
-                                type="button"
-                                disabled={!item.cliente_id || validatingClienteId === item.cliente_id}
-                              >
-                                <RefreshCcw
-                                  size={15}
-                                  className={validatingClienteId === item.cliente_id ? "animate-spin" : ""}
-                                />
-                                {validatingClienteId === item.cliente_id ? "Validando" : "Validar MP"}
-                              </button>
-                            </>
-                          ) : null}
-                          <button
-                            className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-                            onClick={() => setDeleteUser(item)}
-                            type="button"
-                          >
-                            <Trash2 size={15} />
-                            Excluir
-                          </button>
-                        </div>
-                      </td>
+            <>
+              <div className="grid gap-3 p-3 md:hidden">
+                {filteredUsuarios.map((item) => (
+                  <UserMobileCard
+                    key={item.id}
+                    item={item}
+                    validatingClienteId={validatingClienteId}
+                    onEdit={() => handleEdit(item)}
+                    onConnectMp={() => handleConnectMercadoPago(item.cliente_id)}
+                    onValidateMp={() => handleValidateMercadoPago(item)}
+                    onDelete={() => setDeleteUser(item)}
+                  />
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+                <table className="min-w-full">
+                  <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+                    <tr>
+                      <th className="px-5 py-4 whitespace-nowrap">Nome</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Email</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Perfil</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Cliente</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Mercado Pago</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Acoes</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredUsuarios.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                      >
+                        <td className="px-5 py-4 min-w-[180px]">
+                          <div className="font-semibold">{item.nome || "Sem nome"}</div>
+                          <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+                            ID interno #{item.id}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 min-w-[220px] text-[var(--color-text-soft)]">{item.email}</td>
+                        <td className="px-5 py-4 min-w-[120px]">
+                          <span
+                            className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
+                              item.role === "admin"
+                                ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
+                                : "bg-[var(--color-bg-muted)] text-[var(--color-text)]"
+                            }`}
+                          >
+                            {item.role}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 min-w-[110px] text-[var(--color-text-soft)]">
+                          {item.cliente_id ?? "--"}
+                        </td>
+                        <td className="px-5 py-4 min-w-[150px]">
+                          <span
+                            className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
+                              item.mp_configurado
+                                ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
+                                : "bg-amber-50 text-[var(--color-warning)]"
+                            }`}
+                          >
+                            {item.mp_configurado ? "Configurado" : "Pendente"}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 min-w-[190px]">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                              onClick={() => handleEdit(item)}
+                              type="button"
+                            >
+                              <UserRoundCog size={15} />
+                              Editar
+                            </button>
+                            {item.role === "cliente" ? (
+                              <>
+                                <button
+                                  className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                                  onClick={() => handleConnectMercadoPago(item.cliente_id)}
+                                  type="button"
+                                  disabled={!item.cliente_id}
+                                >
+                                  <Link size={15} />
+                                  Conectar MP
+                                </button>
+                                <button
+                                  className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                                  onClick={() => handleValidateMercadoPago(item)}
+                                  type="button"
+                                  disabled={!item.cliente_id || validatingClienteId === item.cliente_id}
+                                >
+                                  <RefreshCcw
+                                    size={15}
+                                    className={validatingClienteId === item.cliente_id ? "animate-spin" : ""}
+                                  />
+                                  {validatingClienteId === item.cliente_id ? "Validando" : "Validar MP"}
+                                </button>
+                              </>
+                            ) : null}
+                            <button
+                              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
+                              onClick={() => setDeleteUser(item)}
+                              type="button"
+                            >
+                              <Trash2 size={15} />
+                              Excluir
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </section>
@@ -810,6 +825,85 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
         {helper}
       </div>
     </section>
+  );
+}
+
+function UserMobileCard({ item, validatingClienteId, onEdit, onConnectMp, onValidateMp, onDelete }) {
+  const isCliente = item.role === "cliente";
+
+  return (
+    <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-base font-extrabold text-[var(--color-text)]">
+            {item.nome || "Sem nome"}
+          </div>
+          <div className="mt-1 truncate text-xs font-semibold text-[var(--color-text-soft)]">
+            {item.email}
+          </div>
+        </div>
+        <span
+          className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${
+            item.role === "admin"
+              ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
+              : "bg-[var(--color-bg-muted)] text-[var(--color-text)]"
+          }`}
+        >
+          {item.role}
+        </span>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <InfoPill label="ID" value={`#${item.id}`} />
+        <InfoPill label="Cliente" value={item.cliente_id ?? "--"} />
+        <InfoPill label="Mercado Pago" value={item.mp_configurado ? "Configurado" : "Pendente"} />
+        <InfoPill label="Perfil" value={item.role} />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          className="pill-button inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+          onClick={onEdit}
+          type="button"
+        >
+          <UserRoundCog size={16} />
+          Editar
+        </button>
+        {isCliente ? (
+          <button
+            className="pill-button inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+            onClick={onConnectMp}
+            type="button"
+            disabled={!item.cliente_id}
+          >
+            <Link size={16} />
+            Conectar
+          </button>
+        ) : null}
+        {isCliente ? (
+          <button
+            className="pill-button inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+            onClick={onValidateMp}
+            type="button"
+            disabled={!item.cliente_id || validatingClienteId === item.cliente_id}
+          >
+            <RefreshCcw
+              size={16}
+              className={validatingClienteId === item.cliente_id ? "animate-spin" : ""}
+            />
+            {validatingClienteId === item.cliente_id ? "Validando" : "Validar"}
+          </button>
+        ) : null}
+        <button
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
+          onClick={onDelete}
+          type="button"
+        >
+          <Trash2 size={16} />
+          Excluir
+        </button>
+      </div>
+    </article>
   );
 }
 

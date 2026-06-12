@@ -225,7 +225,13 @@ export default function Transacoes() {
               Nenhuma transacao encontrada para os filtros selecionados.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="grid gap-3 p-3 md:hidden">
+              {transacoes.map((transacao) => (
+                <TransactionMobileCard key={transacao.id} transacao={transacao} />
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <table className="min-w-full">
                 <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
                   <tr>
@@ -280,6 +286,7 @@ export default function Transacoes() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </section>
@@ -338,5 +345,41 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
         {helper}
       </div>
     </section>
+  );
+}
+
+function TransactionMobileCard({ transacao }) {
+  const entrada = transacao.tipo === "IN";
+  return (
+    <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold text-[var(--color-text-soft)]">
+            {dayjs(transacao.data_hora).format("DD/MM/YYYY HH:mm:ss")}
+          </div>
+          <div className="mt-1 text-base font-extrabold text-[var(--color-text)]">
+            {transacao.maquina_nome || transacao.maquina_id}
+          </div>
+          <div className="mt-1 text-xs font-semibold text-[var(--color-text-soft)]">{transacao.maquina_id}</div>
+        </div>
+        <span
+          className={`inline-flex shrink-0 items-center rounded-full px-3 py-2 text-xs font-bold ${
+            entrada ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]" : "bg-amber-50 text-[var(--color-warning)]"
+          }`}
+        >
+          {entrada ? "Entrada" : "Saida"}
+        </span>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <div className="rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
+          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">Metodo</div>
+          <div className="mt-1 font-semibold text-[var(--color-text)]">{transacao.metodo}</div>
+        </div>
+        <div className="rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
+          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">Valor</div>
+          <div className="mt-1 font-extrabold text-[var(--color-text)]">R$ {Number(transacao.valor).toFixed(2)}</div>
+        </div>
+      </div>
+    </article>
   );
 }

@@ -6,34 +6,34 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
 
   const linkClassName = ({ isActive }) =>
-    `flex items-center gap-3 rounded-2xl px-4 py-3 font-medium transition ${
+    `flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition lg:gap-3 lg:rounded-2xl lg:px-4 lg:py-3 lg:text-base ${
       isActive
         ? "bg-[linear-gradient(135deg,var(--color-primary-soft),#f6fbf8)] text-[var(--color-primary-strong)] shadow-[0_10px_30px_rgba(31,122,76,0.12)]"
         : "text-[var(--color-text-soft)] hover:bg-white hover:text-[var(--color-text)]"
     }`;
 
   return (
-    <aside className="app-panel flex w-full flex-col justify-between p-4 lg:w-[260px]">
-      <div className="space-y-8">
-        <div className="rounded-[24px] bg-[linear-gradient(135deg,#ffffff_0%,#eff5ef_100%)] p-5 soft-ring">
+    <aside className="app-panel flex w-full flex-col justify-between gap-3 p-3 lg:w-[260px] lg:p-4">
+      <div className="space-y-3 lg:space-y-8">
+        <div className="rounded-[18px] bg-[linear-gradient(135deg,#ffffff_0%,#eff5ef_100%)] p-3 soft-ring lg:rounded-[24px] lg:p-5">
           <div className="flex items-center gap-3">
             <img
               src="/logoCompactpay.jpeg"
               alt="CompactPay"
-              className="h-12 w-12 rounded-2xl object-cover"
+              className="h-10 w-10 rounded-2xl object-cover lg:h-12 lg:w-12"
             />
-            <div>
-              <div className="text-lg font-bold text-[var(--color-text)]">CompactPay</div>
-              <div className="text-sm text-[var(--color-text-soft)]">Painel operacional</div>
+            <div className="min-w-0">
+              <div className="truncate text-base font-bold text-[var(--color-text)] lg:text-lg">CompactPay</div>
+              <div className="truncate text-xs text-[var(--color-text-soft)] lg:text-sm">Painel operacional</div>
             </div>
           </div>
         </div>
 
         <nav>
-          <div className="px-3 pb-3 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
+          <div className="hidden px-3 pb-3 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)] lg:block">
             Menu
           </div>
-          <ul className="space-y-2">
+          <ul className="flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-2 lg:overflow-visible lg:pb-0">
             <li>
               <NavLink to="/" end className={linkClassName}>
                 <Home /> Dashboard
@@ -81,7 +81,7 @@ export default function Sidebar() {
           </ul>
         </nav>
 
-        <div className="rounded-[28px] bg-[radial-gradient(circle_at_top,_rgba(52,148,92,0.35),transparent_35%),linear-gradient(145deg,#07160d_0%,#10331f_55%,#15512f_100%)] p-5 text-white shadow-[0_18px_48px_rgba(19,51,31,0.34)]">
+        <div className="hidden rounded-[28px] bg-[radial-gradient(circle_at_top,_rgba(52,148,92,0.35),transparent_35%),linear-gradient(145deg,#07160d_0%,#10331f_55%,#15512f_100%)] p-5 text-white shadow-[0_18px_48px_rgba(19,51,31,0.34)] lg:block">
           <div className="text-xs uppercase tracking-[0.28em] text-white/55">Conta</div>
           <div className="mt-3 text-lg font-semibold">{user?.email || "Operador"}</div>
           <div className="mt-1 text-sm text-white/70">
@@ -95,7 +95,7 @@ export default function Sidebar() {
 
       <button
         onClick={logout}
-        className="mt-5 flex items-center justify-center gap-2 rounded-full border border-[var(--color-border)] bg-white/90 px-4 py-3 font-semibold text-[var(--color-text)] transition hover:border-[var(--color-error)] hover:text-[var(--color-error)]"
+        className="flex items-center justify-center gap-2 rounded-full border border-[var(--color-border)] bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-error)] hover:text-[var(--color-error)] lg:mt-5 lg:py-3 lg:text-base"
       >
         <LogOut /> Sair
       </button>
