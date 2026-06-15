@@ -291,10 +291,7 @@ export default function Maquinas() {
     }
   };
 
-  const onlineCount = maquinas.filter((m) => {
-    if (!m.ultimo_sinal) return false;
-    return dayjs().diff(dayjs(m.ultimo_sinal), "minute") < 3;
-  }).length;
+  const onlineCount = maquinas.filter((m) => m.status_online).length;
 
   return (
     <div className="flex min-h-full flex-col gap-4">
@@ -331,7 +328,7 @@ export default function Maquinas() {
           icon={<CheckCircle2 size={18} />}
           label="Ativas agora"
           value={String(onlineCount)}
-          helper="Ultimo sinal recebido nos ultimos 3 minutos"
+          helper="Ultimo sinal recebido nos ultimos 90 segundos"
           featured
         />
         <SummaryCard

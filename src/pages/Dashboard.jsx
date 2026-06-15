@@ -499,7 +499,7 @@ export default function Dashboard() {
                     <div className="h-3 rounded-full bg-[linear-gradient(135deg,var(--color-primary),var(--color-primary-strong))]" style={{ width: `${Math.min(100, Math.max(6, stats.percentual_ativas))}%` }} />
                   </div>
                   <div className="mt-4 text-sm text-[var(--color-text-soft)]">
-                    {stats.maquinas_ativas} de {stats.total_maquinas} maquinas reportando nos ultimos 3 minutos.
+                    {stats.maquinas_ativas} de {stats.total_maquinas} maquinas reportando nos ultimos 90 segundos.
                   </div>
                 </div>
               </div>
