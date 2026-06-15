@@ -260,20 +260,20 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-full flex-col gap-4">
-      <section className="app-panel flex flex-col gap-4 rounded-[30px] p-5 md:p-6">
+    <div className="flex min-h-full min-w-0 flex-col gap-4">
+      <section className="app-panel flex min-w-0 flex-col gap-4 rounded-[22px] p-3 sm:rounded-[30px] sm:p-5 md:p-6">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="relative flex flex-1 items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3">
-            <Search size={18} className="text-[var(--color-text-soft)]" />
+          <div className="relative flex min-w-0 flex-1 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-3 py-3 sm:gap-3 sm:rounded-full sm:px-4">
+            <Search size={18} className="shrink-0 text-[var(--color-text-soft)]" />
             <input
               value={filterSearch}
               onChange={(event) => setFilterSearch(event.target.value)}
               onFocus={() => setShowSuggestions(true)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
               placeholder="Buscar cliente, maquina ou localizacao"
-              className="w-full bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-soft)]"
+              className="min-w-0 w-full bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-soft)]"
             />
-            <span className="rounded-full bg-[var(--color-bg-muted)] px-3 py-1 text-xs font-semibold text-[var(--color-text-soft)]">
+            <span className="hidden rounded-full bg-[var(--color-bg-muted)] px-3 py-1 text-xs font-semibold text-[var(--color-text-soft)] sm:inline-flex">
               Busca
             </span>
             {showSuggestions && searchSuggestions.length > 0 ? (
@@ -297,7 +297,7 @@ export default function Dashboard() {
             ) : null}
           </div>
 
-          <div className="flex items-center justify-between gap-3 xl:justify-end">
+          <div className="flex min-w-0 items-center justify-between gap-2 xl:justify-end">
             <div className="flex items-center gap-2">
               <button className="pill-button flex h-12 w-12 items-center justify-center">
                 <Bell size={18} />
@@ -307,21 +307,21 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <div className="flex items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-3 py-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-lg font-bold text-[var(--color-primary)]">
+            <div className="flex min-w-0 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-2 py-2 sm:gap-3 sm:rounded-full sm:px-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-lg font-bold text-[var(--color-primary)] sm:h-12 sm:w-12">
                 {user?.email?.[0]?.toUpperCase() || "C"}
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-sm font-semibold text-[var(--color-text)]">
                   {isAdmin ? "Administrador" : "Operador"}
                 </div>
-                <div className="text-xs text-[var(--color-text-soft)]">{user?.email}</div>
+                <div className="max-w-[150px] truncate text-xs text-[var(--color-text-soft)] sm:max-w-[220px]">{user?.email}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[1.1fr_1.1fr_1.4fr_auto]">
+        <div className="grid min-w-0 gap-3 lg:grid-cols-[1.1fr_1.1fr_1.4fr_auto]">
           {isAdmin ? (
             <label className="flex items-center gap-3 rounded-[24px] border border-[var(--color-border)] bg-white px-4 py-3">
               <Filter size={18} className="text-[var(--color-text-soft)]" />
@@ -364,7 +364,7 @@ export default function Dashboard() {
             <DateRangePicker value={dateRange} onChange={setDateRange} />
           </div>
 
-          <button type="button" className="pill-button pill-button--primary px-5 py-3 font-semibold">
+          <button type="button" className="pill-button pill-button--primary w-full px-5 py-3 font-semibold lg:w-auto">
             Atualizar resumo
           </button>
         </div>
@@ -376,15 +376,15 @@ export default function Dashboard() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[1.65fr_0.9fr]">
-        <section className="space-y-4">
-          <Card className="rounded-[30px] p-6 md:p-7">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-[1.65fr_0.9fr]">
+        <section className="min-w-0 space-y-4">
+          <Card className="rounded-[22px] p-4 sm:rounded-[30px] sm:p-6 md:p-7">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div>
+              <div className="min-w-0">
                 <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
                   Dashboard
                 </div>
-                <h1 className="mt-3 text-4xl font-extrabold tracking-[-0.05em] text-[var(--color-text)] md:text-5xl">
+                <h1 className="mt-3 text-3xl font-extrabold text-[var(--color-text)] sm:text-4xl md:text-5xl">
                   Operacao em foco.
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
@@ -392,11 +392,11 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div className="rounded-[26px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-5 py-4">
+              <div className="min-w-0 rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-4 sm:rounded-[26px] sm:px-5">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
                   Recorte atual
                 </div>
-                <div className="mt-2 text-lg font-bold text-[var(--color-text)]">{scopeLabel}</div>
+                <div className="mt-2 break-words text-lg font-bold text-[var(--color-text)]">{scopeLabel}</div>
                 <div className="mt-1 text-sm text-[var(--color-text-soft)]">
                   {selectedMachine
                     ? "Resumo filtrado por maquina especifica."
@@ -408,27 +408,27 @@ export default function Dashboard() {
             </div>
           </Card>
           
-          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+          <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-4">
             {statCards.map((item, index) => {
               const Icon = item.icon;
               const featured = item.featured;
               return (
                 <Card
                   key={item.label}
-                  className={`rounded-[28px] p-6 ${
+                  className={`rounded-[22px] p-4 sm:rounded-[28px] sm:p-6 ${
                     featured
                       ? "bg-[linear-gradient(135deg,var(--color-primary)_0%,var(--color-primary-strong)_100%)] text-white shadow-[0_22px_40px_rgba(31,122,76,0.28)]"
                       : "bg-[var(--color-bg-card)]"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
+                  <div className="flex min-w-0 items-start justify-between gap-3 sm:gap-4">
+                    <div className="min-w-0">
                       <div className={`text-sm font-semibold ${featured ? "text-white/72" : "text-[var(--color-text-soft)]"}`}>
                         {item.label}
                       </div>
-                      <div className="mt-5 text-4xl font-extrabold tracking-[-0.05em]">{item.value}</div>
+                      <div className="mt-4 break-words text-[clamp(1.7rem,8vw,2.25rem)] font-extrabold leading-tight sm:mt-5">{item.value}</div>
                     </div>
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-full ${featured ? "bg-white/16 text-white" : "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"}`}>
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${featured ? "bg-white/16 text-white" : "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"}`}>
                       <Icon size={18} />
                     </div>
                   </div>
@@ -441,14 +441,14 @@ export default function Dashboard() {
             })}
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <Card className="rounded-[30px]">
-              <div className="flex items-center justify-between gap-3">
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <Card className="rounded-[22px] sm:rounded-[30px]">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="text-xl font-bold text-[var(--color-text)]">Analise semanal</div>
                   <div className="mt-1 text-sm text-[var(--color-text-soft)]">Leitura compacta do movimento operacional.</div>
                 </div>
-                <span className="rounded-full bg-[var(--color-primary-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)]">
+                <span className="w-fit rounded-full bg-[var(--color-primary-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)]">
                   {loading ? "Sincronizando" : "Atualizado"}
                 </span>
               </div>
@@ -477,13 +477,13 @@ export default function Dashboard() {
               </div>
             </Card>
 
-            <Card className="rounded-[30px] bg-[linear-gradient(180deg,#ffffff_0%,#f6faf6_100%)]">
-              <div className="flex items-center justify-between">
-                <div>
+            <Card className="rounded-[22px] bg-[linear-gradient(180deg,#ffffff_0%,#f6faf6_100%)] sm:rounded-[30px]">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
                   <div className="text-xl font-bold text-[var(--color-text)]">Resumo de hoje</div>
                   <div className="mt-1 text-sm text-[var(--color-text-soft)]">Indicadores sinteticos para a operacao.</div>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
                   <Sparkles size={18} />
                 </div>
               </div>
@@ -491,7 +491,7 @@ export default function Dashboard() {
               <div className="mt-8 grid gap-4">
                 <div className="rounded-[24px] bg-[var(--color-bg-muted)] p-5">
                   <div className="text-sm font-semibold text-[var(--color-text-soft)]">Receita consolidada</div>
-                  <div className="mt-3 text-3xl font-extrabold tracking-[-0.05em] text-[var(--color-text)]">R$ {stats.faturamento_total.toFixed(2)}</div>
+                  <div className="mt-3 break-words text-[clamp(1.7rem,8vw,1.875rem)] font-extrabold leading-tight text-[var(--color-text)]">R$ {stats.faturamento_total.toFixed(2)}</div>
                 </div>
                 <div className="rounded-[24px] border border-[var(--color-border)] p-5">
                   <div className="text-sm font-semibold text-[var(--color-text-soft)]">Maquinas online</div>
@@ -507,9 +507,9 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-4">
           <Card
-            className="rounded-[30px] p-6 shadow-[0_26px_50px_rgba(17,66,40,0.30)]"
+            className="rounded-[22px] p-4 shadow-[0_26px_50px_rgba(17,66,40,0.30)] sm:rounded-[30px] sm:p-6"
             style={{ background: "linear-gradient(150deg, #0a2314 0%, #114228 55%, #165d38 100%)", color: "#ffffff" }}
           >
             <div className="flex items-start justify-between gap-3">
@@ -527,7 +527,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="mt-8 grid grid-cols-3 gap-3 text-sm">
+            <div className="mt-6 grid gap-3 text-sm sm:mt-8 sm:grid-cols-3">
               {[
                 ["Faturamento", `R$ ${stats.faturamento_total.toFixed(0)}`],
                 ["Ativas", stats.maquinas_ativas],
@@ -541,13 +541,13 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          <Card className="rounded-[30px]">
-            <div className="flex items-center justify-between">
-              <div>
+          <Card className="rounded-[22px] sm:rounded-[30px]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <div className="text-xl font-bold text-[var(--color-text)]">Maquinas e status</div>
                 <div className="mt-1 text-sm text-[var(--color-text-soft)]">Semaforo operacional e ultima atividade do recorte atual.</div>
               </div>
-              <span className="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-soft)]">
+              <span className="w-fit rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-soft)]">
                 {machineStatusRows.length} itens
               </span>
             </div>
@@ -556,7 +556,7 @@ export default function Dashboard() {
                 <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">Nenhuma maquina encontrada para esse recorte.</div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full bg-white">
+                  <table className="min-w-[520px] bg-white text-sm">
                     <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
                       <tr>
                         <th className="px-5 py-4">Maquina</th>
@@ -611,13 +611,13 @@ export default function Dashboard() {
           </Card>
 
           {isAdmin ? (
-            <Card className="rounded-[30px]">
-              <div className="flex items-center justify-between gap-3">
-                <div>
+            <Card className="rounded-[22px] sm:rounded-[30px]">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <div className="text-xl font-bold text-[var(--color-text)]">Resumo por cliente</div>
                   <div className="mt-1 text-sm text-[var(--color-text-soft)]">Consolidado financeiro e operacional por cliente.</div>
                 </div>
-                <button type="button" className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold" onClick={exportClientesCsv}>
+                <button type="button" className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:w-auto" onClick={exportClientesCsv}>
                   <Download size={16} />
                   Exportar CSV
                 </button>
@@ -627,7 +627,7 @@ export default function Dashboard() {
                   <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">Nenhum cliente encontrado para esse recorte.</div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white">
+                    <table className="min-w-[720px] bg-white text-sm">
                       <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
                         <tr>
                           <th className="px-5 py-4">Cliente</th>
@@ -657,21 +657,21 @@ export default function Dashboard() {
             </Card>
           ) : null}
 
-          <Card className="rounded-[30px]">
-            <div className="flex items-center justify-between">
-              <div>
+          <Card className="rounded-[22px] sm:rounded-[30px]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <div className="text-xl font-bold text-[var(--color-text)]">Fila operacional</div>
                 <div className="mt-1 text-sm text-[var(--color-text-soft)]">Tarefas sugeridas para a proxima rodada.</div>
               </div>
-              <span className="rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-soft)]">
+              <span className="w-fit rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-soft)]">
                 {alerts.length} itens
               </span>
             </div>
 
             <div className="mt-5 space-y-3">
               {alerts.map((task) => (
-                <div key={task.title} className="flex items-center justify-between gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-4">
-                  <div>
+                <div key={task.title} className="flex flex-col gap-3 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:rounded-[22px]">
+                  <div className="min-w-0">
                     <div className="font-semibold text-[var(--color-text)]">{task.title}</div>
                     <div className="mt-1 text-sm text-[var(--color-text-soft)]">Acao recomendada para manter o painel limpo e responsivo.</div>
                   </div>
