@@ -451,7 +451,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   const maquina = historico.maquina;
 
   return (
-    <div className="flex min-h-full flex-col gap-4">
+    <div className="flex min-h-full min-w-0 flex-col gap-4">
       <Toast
         message={toast.message}
         type={toast.type}
@@ -487,13 +487,13 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         onConfirm={handleRefund}
       />
 
-      <section className="app-panel rounded-[30px] p-6 md:p-7">
+      <section className="app-panel min-w-0 rounded-[22px] p-3 sm:rounded-[30px] sm:p-6 md:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+          <div className="min-w-0">
             <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
               {detailed ? "Relatorio detalhado" : "Relatorio de vendas"}
             </div>
-            <h1 className="mt-3 text-4xl font-extrabold tracking-[-0.05em] text-[var(--color-text)] md:text-5xl">
+            <h1 className="mt-3 break-words text-3xl font-extrabold text-[var(--color-text)] sm:text-4xl md:text-5xl">
               {maquina?.nome || machineId}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
@@ -506,9 +506,9 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-3 lg:w-auto lg:justify-end">
             {selectable && user?.role === "admin" ? (
-              <label className="flex min-w-[260px] items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
+              <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] sm:min-w-[260px] sm:w-auto sm:rounded-full">
                 Cliente
                 <select
                   className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none"
@@ -525,7 +525,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               </label>
             ) : null}
             {selectable ? (
-              <label className="flex min-w-[260px] items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
+              <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] sm:min-w-[260px] sm:w-auto sm:rounded-full">
                 Maquina
                 <select
                   className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none"
@@ -544,10 +544,10 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 </select>
               </label>
             ) : null}
-            <label className="flex items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
+            <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] sm:w-auto sm:rounded-full">
               Periodo
               <select
-                className="bg-transparent text-[var(--color-text-soft)] outline-none"
+                className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none sm:flex-none"
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value)}
               >
@@ -556,11 +556,13 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 <option value="mes">Mes atual</option>
               </select>
             </label>
-            <DateRangePicker value={dateRange} onChange={setDateRange} />
-            <label className="flex min-w-[240px] items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)]">
-              <Search size={16} className="text-[var(--color-text-soft)]" />
+            <div className="w-full min-w-0 sm:w-auto">
+              <DateRangePicker value={dateRange} onChange={setDateRange} />
+            </div>
+            <label className="flex w-full min-w-0 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)] sm:min-w-[240px] sm:w-auto sm:rounded-full">
+              <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
               <input
-                className="w-full bg-transparent outline-none"
+                className="min-w-0 w-full bg-transparent outline-none"
                 placeholder="Pesquisar venda"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
