@@ -1133,7 +1133,7 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
 function PulseBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
   const isFail = normalized.startsWith("falha");
-  const isPending = ["pendente", "comando_enviado", "cmd_recebido", "cmd_duplicado", "pulso_iniciado", "pulso_enviado", "pulso_unitario"].includes(normalized);
+  const isPending = ["pendente", "comando_enviado", "cmd_recebido", "cmd_duplicado", "pulso_iniciado", "pulso_enviado", "pulso_unitario", "pulso_sem_retorno"].includes(normalized);
   const isTest = normalized === "teste";
   return (
     <div className={`rounded-[14px] px-3 py-2 text-center text-xs font-bold ${
@@ -1160,6 +1160,7 @@ function formatPulseStatus(status) {
     pulso_iniciado: "Pulso iniciado",
     pulso_enviado: "Pulso enviado",
     pulso_unitario: "Pulso unitario",
+    pulso_sem_retorno: "Pulso sem retorno",
     pulso_confirmado: "Pulso confirmado",
     liberado: "Pulso enviado",
     falha: "Pulso nao liberado",
@@ -1180,7 +1181,7 @@ function StatusBadge({ item }) {
   const refunded = Boolean(item.refunded_at);
   const pulseStatus = String(item.pulse_status || "").toLowerCase();
   const pulseFailed = pulseStatus.startsWith("falha");
-  const pulsePending = ["pendente", "comando_enviado", "cmd_recebido", "cmd_duplicado", "pulso_iniciado", "pulso_enviado", "pulso_unitario"].includes(pulseStatus);
+  const pulsePending = ["pendente", "comando_enviado", "cmd_recebido", "cmd_duplicado", "pulso_iniciado", "pulso_enviado", "pulso_unitario", "pulso_sem_retorno"].includes(pulseStatus);
   return (
     <span className={`rounded-full px-3 py-2 text-xs font-bold ${
       refunded
