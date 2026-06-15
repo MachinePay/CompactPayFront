@@ -94,7 +94,7 @@ export default function TestePagamento() {
         descricao: `Teste temporario via ${canal}`,
       });
       setFeedbackType("success");
-      setFeedback(`Pagamento ${canal} enviado e pulso disparado para ${machineId}.`);
+      setFeedback(`Pagamento ${canal} enviado e pulso confirmado para ${machineId}.`);
     } catch (error) {
       setFeedbackType("error");
       setFeedback(getApiErrorMessage(error, `Falha ao processar pagamento ${canal}.`));

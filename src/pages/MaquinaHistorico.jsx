@@ -1133,7 +1133,7 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
 function PulseBadge({ status }) {
   const normalized = String(status || "").toLowerCase();
   const isFail = normalized.startsWith("falha");
-  const isPending = ["pendente", "comando_enviado", "cmd_recebido", "pulso_iniciado"].includes(normalized);
+  const isPending = ["pendente", "comando_enviado", "cmd_recebido", "pulso_iniciado", "pulso_enviado"].includes(normalized);
   const isTest = normalized === "teste";
   return (
     <div className={`rounded-[14px] px-3 py-2 text-center text-xs font-bold ${
@@ -1157,9 +1157,12 @@ function formatPulseStatus(status) {
     comando_enviado: "Comando enviado",
     cmd_recebido: "Comando recebido",
     pulso_iniciado: "Pulso iniciado",
-    liberado: "Pulso confirmado",
+    pulso_enviado: "Pulso enviado",
+    pulso_confirmado: "Pulso confirmado",
+    liberado: "Pulso enviado",
     falha: "Pulso nao liberado",
     falha_timeout: "Sem confirmacao",
+    falha_sem_confirmacao: "Pulso nao confirmado",
     falha_publicacao: "Falha ao publicar",
     falha_cmd_ignorado: "Comando ignorado",
     falha_bloqueado: "Pulso bloqueado",
@@ -1173,11 +1176,20 @@ function StatusBadge({ item }) {
     return <span className="rounded-full bg-amber-200 px-3 py-2 text-xs font-extrabold text-amber-900">TESTE</span>;
   }
   const refunded = Boolean(item.refunded_at);
+  const pulseStatus = String(item.pulse_status || "").toLowerCase();
+  const pulseFailed = pulseStatus.startsWith("falha");
+  const pulsePending = ["pendente", "comando_enviado", "cmd_recebido", "pulso_iniciado", "pulso_enviado"].includes(pulseStatus);
   return (
     <span className={`rounded-full px-3 py-2 text-xs font-bold ${
-      refunded ? "bg-slate-100 text-slate-600" : "bg-emerald-100 text-[var(--color-success)]"
+      refunded
+        ? "bg-slate-100 text-slate-600"
+        : pulseFailed
+          ? "bg-rose-50 text-[var(--color-error)]"
+          : pulsePending
+            ? "bg-sky-50 text-sky-700"
+            : "bg-emerald-100 text-[var(--color-success)]"
     }`}>
-      {refunded ? "Extornado" : "Venda aprovada"}
+      {refunded ? "Extornado" : pulseFailed ? "Pago, pulso falhou" : pulsePending ? "Pago, aguardando pulso" : "Venda aprovada"}
     </span>
   );
 }
