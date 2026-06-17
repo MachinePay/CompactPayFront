@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Activity, BanknoteArrowDown, Download, Filter, RefreshCcw } from "lucide-react";
+import {
+  Activity,
+  BanknoteArrowDown,
+  Download,
+  Filter,
+  RefreshCcw,
+} from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
 import DateRangePicker from "../components/DateRangePicker";
@@ -30,9 +36,11 @@ export default function Transacoes() {
       if (periodo) params.push(`periodo=${periodo}`);
       if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
       if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
-      if (filtros.maquina) params.push(`id_hardware=${encodeURIComponent(filtros.maquina)}`);
+      if (filtros.maquina)
+        params.push(`id_hardware=${encodeURIComponent(filtros.maquina)}`);
       if (filtros.tipo) params.push(`tipo=${encodeURIComponent(filtros.tipo)}`);
-      if (filtros.metodo) params.push(`metodo=${encodeURIComponent(filtros.metodo)}`);
+      if (filtros.metodo)
+        params.push(`metodo=${encodeURIComponent(filtros.metodo)}`);
       params.push("limit=200");
       const query = params.length ? `?${params.join("&")}` : "";
 
@@ -43,7 +51,13 @@ export default function Transacoes() {
       setTransacoes(transacoesRes.data);
       setMaquinas(maquinasRes.data);
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel carregar as transacoes."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel carregar as transacoes.",
+        ),
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -62,13 +76,28 @@ export default function Transacoes() {
     .reduce((sum, item) => sum + Number(item.valor || 0), 0);
 
   const handleExportCsv = () => {
-    const maquinaSelecionada = maquinas.find((item) => item.id_hardware === filtros.maquina);
-    const totalValor = transacoes.reduce((sum, item) => sum + Number(item.valor || 0), 0);
+    const maquinaSelecionada = maquinas.find(
+      (item) => item.id_hardware === filtros.maquina,
+    );
+    const totalValor = transacoes.reduce(
+      (sum, item) => sum + Number(item.valor || 0),
+      0,
+    );
     const rows = [
       ["relatorio", "Transacoes CompactPay"],
       ["gerado_em", dayjs().format("YYYY-MM-DD HH:mm:ss")],
-      ["periodo", dateRange.start && dateRange.end ? `${dateRange.start} ate ${dateRange.end}` : periodo],
-      ["maquina", maquinaSelecionada ? `${maquinaSelecionada.nome || maquinaSelecionada.id_hardware} (${maquinaSelecionada.id_hardware})` : "Todas"],
+      [
+        "periodo",
+        dateRange.start && dateRange.end
+          ? `${dateRange.start} ate ${dateRange.end}`
+          : periodo,
+      ],
+      [
+        "maquina",
+        maquinaSelecionada
+          ? `${maquinaSelecionada.nome || maquinaSelecionada.id_hardware} (${maquinaSelecionada.id_hardware})`
+          : "Todas",
+      ],
       ["tipo", filtros.tipo || "Todos"],
       ["metodo", filtros.metodo || "Todos"],
       ["total_registros", transacoes.length],
@@ -76,7 +105,16 @@ export default function Transacoes() {
       ["saidas", saidas],
       ["total_valor", totalValor.toFixed(2)],
       [],
-      ["data", "hora", "maquina_id", "maquina_nome", "tipo", "metodo", "valor"],
+      [
+        "data",
+        "hora",
+        "maquina_id",
+        "maquina_nome",
+        "tipo",
+        "metodo",
+        "valor",
+        "taxa",
+      ],
       ...transacoes.map((item) => [
         dayjs(item.data_hora).format("YYYY-MM-DD"),
         dayjs(item.data_hora).format("HH:mm:ss"),
@@ -85,6 +123,7 @@ export default function Transacoes() {
         item.tipo,
         item.metodo,
         Number(item.valor || 0).toFixed(2),
+        item.taxa ? Number(item.taxa).toFixed(2) : "",
       ]),
     ];
 
@@ -99,8 +138,13 @@ export default function Transacoes() {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const machineSlug = filtros.maquina ? filtros.maquina.replaceAll("/", "-") : "todas";
-    const rangeSlug = dateRange.start && dateRange.end ? `${dateRange.start}_${dateRange.end}` : periodo;
+    const machineSlug = filtros.maquina
+      ? filtros.maquina.replaceAll("/", "-")
+      : "todas";
+    const rangeSlug =
+      dateRange.start && dateRange.end
+        ? `${dateRange.start}_${dateRange.end}`
+        : periodo;
     link.href = url;
     link.download = `transacoes-${machineSlug}-${rangeSlug}-${dayjs().format("YYYYMMDD-HHmmss")}.csv`;
     document.body.appendChild(link);
@@ -186,12 +230,15 @@ export default function Transacoes() {
           <select
             className="rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             value={filtros.maquina}
-            onChange={(e) => setFiltros((current) => ({ ...current, maquina: e.target.value }))}
+            onChange={(e) =>
+              setFiltros((current) => ({ ...current, maquina: e.target.value }))
+            }
           >
             <option value="">Todas as maquinas</option>
             {maquinas.map((maquina) => (
               <option key={maquina.id_hardware} value={maquina.id_hardware}>
-                {(maquina.nome || maquina.id_hardware) + ` - ${maquina.id_hardware}`}
+                {(maquina.nome || maquina.id_hardware) +
+                  ` - ${maquina.id_hardware}`}
               </option>
             ))}
           </select>
@@ -199,7 +246,9 @@ export default function Transacoes() {
           <select
             className="rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             value={filtros.tipo}
-            onChange={(e) => setFiltros((current) => ({ ...current, tipo: e.target.value }))}
+            onChange={(e) =>
+              setFiltros((current) => ({ ...current, tipo: e.target.value }))
+            }
           >
             <option value="">Todos os tipos</option>
             <option value="IN">Entrada</option>
@@ -209,7 +258,9 @@ export default function Transacoes() {
           <select
             className="rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             value={filtros.metodo}
-            onChange={(e) => setFiltros((current) => ({ ...current, metodo: e.target.value }))}
+            onChange={(e) =>
+              setFiltros((current) => ({ ...current, metodo: e.target.value }))
+            }
           >
             <option value="">Todos os metodos</option>
             <option value="DIGITAL">Digital</option>
@@ -226,66 +277,75 @@ export default function Transacoes() {
             </div>
           ) : (
             <>
-            <div className="grid gap-3 p-3 md:hidden">
-              {transacoes.map((transacao) => (
-                <TransactionMobileCard key={transacao.id} transacao={transacao} />
-              ))}
-            </div>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="min-w-full">
-                <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
-                  <tr>
-                    <th className="px-5 py-4 whitespace-nowrap">Data</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Maquina</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Tipo</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Metodo</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transacoes.map((transacao) => (
-                    <tr
-                      key={transacao.id}
-                      className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
-                    >
-                      <td className="px-5 py-4 min-w-[180px]">
-                        <div className="font-semibold">
-                          {dayjs(transacao.data_hora).format("DD/MM/YYYY")}
-                        </div>
-                        <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                          {dayjs(transacao.data_hora).format("HH:mm:ss")}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 min-w-[220px]">
-                        <div className="font-semibold">
-                          {transacao.maquina_nome || transacao.maquina_id}
-                        </div>
-                        <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                          {transacao.maquina_id}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 min-w-[120px]">
-                        <span
-                          className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
-                            transacao.tipo === "IN"
-                              ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
-                              : "bg-amber-50 text-[var(--color-warning)]"
-                          }`}
-                        >
-                          {transacao.tipo}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 min-w-[120px] text-[var(--color-text-soft)]">
-                        {transacao.metodo}
-                      </td>
-                      <td className="px-5 py-4 min-w-[120px] font-semibold">
-                        R$ {Number(transacao.valor).toFixed(2)}
-                      </td>
+              <div className="grid gap-3 p-3 md:hidden">
+                {transacoes.map((transacao) => (
+                  <TransactionMobileCard
+                    key={transacao.id}
+                    transacao={transacao}
+                  />
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+                <table className="min-w-full">
+                  <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+                    <tr>
+                      <th className="px-5 py-4 whitespace-nowrap">Data</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Maquina</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Tipo</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Metodo</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Valor</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Taxa</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {transacoes.map((transacao) => (
+                      <tr
+                        key={transacao.id}
+                        className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                      >
+                        <td className="px-5 py-4 min-w-[180px]">
+                          <div className="font-semibold">
+                            {dayjs(transacao.data_hora).format("DD/MM/YYYY")}
+                          </div>
+                          <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+                            {dayjs(transacao.data_hora).format("HH:mm:ss")}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 min-w-[220px]">
+                          <div className="font-semibold">
+                            {transacao.maquina_nome || transacao.maquina_id}
+                          </div>
+                          <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+                            {transacao.maquina_id}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 min-w-[120px]">
+                          <span
+                            className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
+                              transacao.tipo === "IN"
+                                ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
+                                : "bg-amber-50 text-[var(--color-warning)]"
+                            }`}
+                          >
+                            {transacao.tipo}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 min-w-[120px] text-[var(--color-text-soft)]">
+                          {transacao.metodo}
+                        </td>
+                        <td className="px-5 py-4 min-w-[120px] font-semibold">
+                          R$ {Number(transacao.valor).toFixed(2)}
+                        </td>
+                        <td className="px-5 py-4 min-w-[120px] font-semibold text-[var(--color-error)]">
+                          {transacao.taxa
+                            ? `R$ ${Number(transacao.taxa).toFixed(2)}`
+                            : "--"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </>
           )}
         </div>
@@ -309,7 +369,9 @@ function SectionHeader({ title, description, actions }) {
             {description}
           </p>
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-3">{actions}</div> : null}
+        {actions ? (
+          <div className="flex flex-wrap items-center gap-3">{actions}</div>
+        ) : null}
       </div>
     </section>
   );
@@ -326,10 +388,14 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className={`text-sm font-semibold ${featured ? "text-white/72" : "text-[var(--color-text-soft)]"}`}>
+          <div
+            className={`text-sm font-semibold ${featured ? "text-white/72" : "text-[var(--color-text-soft)]"}`}
+          >
             {label}
           </div>
-          <div className="mt-4 text-4xl font-extrabold tracking-[-0.05em]">{value}</div>
+          <div className="mt-4 text-4xl font-extrabold tracking-[-0.05em]">
+            {value}
+          </div>
         </div>
         <div
           className={`flex h-11 w-11 items-center justify-center rounded-full ${
@@ -341,7 +407,9 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
           {icon}
         </div>
       </div>
-      <div className={`mt-4 text-sm ${featured ? "text-white/74" : "text-[var(--color-text-soft)]"}`}>
+      <div
+        className={`mt-4 text-sm ${featured ? "text-white/74" : "text-[var(--color-text-soft)]"}`}
+      >
         {helper}
       </div>
     </section>
@@ -360,24 +428,44 @@ function TransactionMobileCard({ transacao }) {
           <div className="mt-1 text-base font-extrabold text-[var(--color-text)]">
             {transacao.maquina_nome || transacao.maquina_id}
           </div>
-          <div className="mt-1 text-xs font-semibold text-[var(--color-text-soft)]">{transacao.maquina_id}</div>
+          <div className="mt-1 text-xs font-semibold text-[var(--color-text-soft)]">
+            {transacao.maquina_id}
+          </div>
         </div>
         <span
           className={`inline-flex shrink-0 items-center rounded-full px-3 py-2 text-xs font-bold ${
-            entrada ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]" : "bg-amber-50 text-[var(--color-warning)]"
+            entrada
+              ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
+              : "bg-amber-50 text-[var(--color-warning)]"
           }`}
         >
           {entrada ? "Entrada" : "Saida"}
         </span>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-4 grid grid-cols-3 gap-2">
         <div className="rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
-          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">Metodo</div>
-          <div className="mt-1 font-semibold text-[var(--color-text)]">{transacao.metodo}</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
+            Metodo
+          </div>
+          <div className="mt-1 font-semibold text-[var(--color-text)]">
+            {transacao.metodo}
+          </div>
         </div>
         <div className="rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
-          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">Valor</div>
-          <div className="mt-1 font-extrabold text-[var(--color-text)]">R$ {Number(transacao.valor).toFixed(2)}</div>
+          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
+            Valor
+          </div>
+          <div className="mt-1 font-extrabold text-[var(--color-text)]">
+            R$ {Number(transacao.valor).toFixed(2)}
+          </div>
+        </div>
+        <div className="rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
+          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
+            Taxa
+          </div>
+          <div className="mt-1 font-extrabold text-[var(--color-error)]">
+            {transacao.taxa ? `R$ ${Number(transacao.taxa).toFixed(2)}` : "--"}
+          </div>
         </div>
       </div>
     </article>
