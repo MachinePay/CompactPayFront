@@ -1,4 +1,4 @@
-import { Activity, BarChart3, ClipboardList, CreditCard, Home, LogOut, Menu, QrCode, Server, Users, X } from "lucide-react";
+import { Activity, BarChart3, ClipboardList, Cpu, CreditCard, Home, LogOut, Menu, QrCode, Server, Users, X } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -53,6 +53,11 @@ export default function Sidebar() {
           <li>
             <NavLink to="/usuarios" className={linkClassName} onClick={closeMobile}>
               <Users size={20} /> Usuarios
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/firmwares" className={linkClassName} onClick={closeMobile}>
+              <Cpu size={20} /> Firmwares
             </NavLink>
           </li>
           <li>

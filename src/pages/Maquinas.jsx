@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
+  AlertTriangle,
   CheckCircle2,
   Copy,
   Cpu,
@@ -53,6 +54,12 @@ const emptyDeleteState = {
   confirmationText: "",
 };
 
+const emptyUpdateState = {
+  open: false,
+  machine: null,
+  firmwareId: "",
+};
+
 export default function Maquinas() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -65,6 +72,7 @@ export default function Maquinas() {
   }, []);
   const [maquinas, setMaquinas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  const [firmwareVersions, setFirmwareVersions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [periodo, setPeriodo] = useState(persistedFilters.periodo || "mes");
   const [dateRange, setDateRange] = useState(persistedFilters.dateRange || { start: "", end: "" });
@@ -80,6 +88,7 @@ export default function Maquinas() {
   const [sendingUpdateId, setSendingUpdateId] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [deleteState, setDeleteState] = useState(emptyDeleteState);
+  const [updateState, setUpdateState] = useState(emptyUpdateState);
   const selectedCliente = usuarios.find((item) => String(item.cliente_id) === String(form.cliente_id));
   const paymentProviders = getPaymentProviders(selectedCliente);
 
@@ -126,6 +135,16 @@ export default function Maquinas() {
     }
   }, [user?.role]);
 
+  const loadFirmwareVersions = useCallback(async () => {
+    if (user?.role !== "admin") return;
+    try {
+      const { data } = await api.get("/firmware-versions");
+      setFirmwareVersions(data);
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel carregar as versoes de firmware."), type: "error" });
+    }
+  }, [user?.role]);
+
   useEffect(() => {
     const timer = window.setTimeout(loadMaquinas, 0);
     return () => window.clearTimeout(timer);
@@ -135,6 +154,20 @@ export default function Maquinas() {
     const timer = window.setTimeout(loadUsuarios, 0);
     return () => window.clearTimeout(timer);
   }, [loadUsuarios]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(loadFirmwareVersions, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadFirmwareVersions]);
+
+  useEffect(() => {
+    const hasUpdateInProgress = maquinas.some((item) =>
+      ["sent", "downloading", "restarting"].includes(item.firmware_update_status),
+    );
+    if (!hasUpdateInProgress) return undefined;
+    const timer = window.setInterval(loadMaquinas, 5000);
+    return () => window.clearInterval(timer);
+  }, [loadMaquinas, maquinas]);
 
   const generateId = async () => {
     setGeneratingId(true);
@@ -293,11 +326,33 @@ export default function Maquinas() {
     }
   };
 
-  const sendFirmwareUpdate = async (machineId) => {
-    setSendingUpdateId(machineId);
+  const requestFirmwareUpdate = (machine) => {
+    if (!machine.status_online) {
+      setToast({ message: "Maquina offline. Aguarde ela ficar online para atualizar.", type: "error" });
+      return;
+    }
+    setUpdateState({
+      open: true,
+      machine,
+      firmwareId: firmwareVersions[0]?.id ? String(firmwareVersions[0].id) : "",
+    });
+  };
+
+  const sendFirmwareUpdate = async () => {
+    const machine = updateState.machine;
+    if (!machine) return;
+    if (!updateState.firmwareId) {
+      setToast({ message: "Selecione uma versao de firmware antes de atualizar.", type: "error" });
+      return;
+    }
+    setSendingUpdateId(machine.id_hardware);
     try {
-      await api.post(`/maquinas/${machineId}/atualizacao`, {});
-      setToast({ message: `Atualizacao enviada para ${machineId}.`, type: "success" });
+      await api.post(`/maquinas/${machine.id_hardware}/atualizacao`, {
+        firmware_version_id: Number(updateState.firmwareId),
+      });
+      setToast({ message: `Atualizacao enviada para ${machine.id_hardware}.`, type: "success" });
+      setUpdateState(emptyUpdateState);
+      await loadMaquinas();
     } catch (error) {
       setToast({ message: getApiErrorMessage(error, "Nao foi possivel enviar a atualizacao."), type: "error" });
     } finally {
@@ -314,6 +369,78 @@ export default function Maquinas() {
         type={toast.type}
         onClose={() => setToast({ message: "", type: toast.type })}
       />
+
+      <Modal
+        open={updateState.open}
+        onClose={() => setUpdateState(emptyUpdateState)}
+        title="Confirmar atualizacao"
+      >
+        <div className="space-y-5">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
+              Atualizacao OTA
+            </div>
+            <h2 className="mt-2 text-3xl font-extrabold text-[var(--color-text)]">
+              {updateState.machine?.nome || updateState.machine?.id_hardware}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+              Escolha a versao cadastrada e confirme o envio para a placa online.
+            </p>
+          </div>
+
+          <div className="grid gap-3 rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4 text-sm">
+            <InfoLine label="Maquina" value={updateState.machine?.id_hardware || "--"} />
+            <InfoLine label="Versao atual" value={updateState.machine?.firmware_version || "Aguardando sinal da placa"} />
+            <InfoLine label="Ultimo sinal" value={updateState.machine?.ultimo_sinal ? dayjs(updateState.machine.ultimo_sinal).format("DD/MM/YYYY HH:mm:ss") : "Sem sinal"} />
+          </div>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">Versao para enviar</span>
+            <select
+              className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+              value={updateState.firmwareId}
+              onChange={(event) => setUpdateState((current) => ({ ...current, firmwareId: event.target.value }))}
+              required
+            >
+              <option value="">Selecione a versao</option>
+              {firmwareVersions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {updateState.firmwareId ? (
+            <div className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 text-sm">
+              <div className="font-semibold text-[var(--color-text)]">URL do firmware</div>
+              <a
+                className="mt-2 block break-all text-[var(--color-primary-strong)] hover:underline"
+                href={firmwareVersions.find((item) => String(item.id) === String(updateState.firmwareId))?.url_bin}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {firmwareVersions.find((item) => String(item.id) === String(updateState.firmwareId))?.url_bin}
+              </a>
+            </div>
+          ) : null}
+
+          <div className="flex gap-3 rounded-[18px] border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+            <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+            Nao desligue a placa durante a atualizacao. Ela pode reiniciar sozinha e voltar informando a nova versao.
+          </div>
+
+          <Button
+            type="button"
+            className="w-full justify-center"
+            onClick={sendFirmwareUpdate}
+            disabled={sendingUpdateId === updateState.machine?.id_hardware || !updateState.firmwareId}
+          >
+            <UploadCloud size={18} />
+            {sendingUpdateId === updateState.machine?.id_hardware ? "Enviando..." : "Enviar atualizacao"}
+          </Button>
+        </div>
+      </Modal>
 
       <CardSectionHeader
         title="Maquinas"
@@ -423,9 +550,10 @@ export default function Maquinas() {
                   user={user}
                   sendingCreditId={sendingCreditId}
                   sendingUpdateId={sendingUpdateId}
+                  canUpdateFirmware={Boolean(m.status_online && firmwareVersions.length > 0)}
                   onOpen={() => navigate(`/maquinas/${m.id_hardware}`)}
                   onSendCredit={() => sendTestCredit(m.id_hardware)}
-                  onSendUpdate={() => sendFirmwareUpdate(m.id_hardware)}
+                  onSendUpdate={() => requestFirmwareUpdate(m)}
                   onEdit={() => handleEditMachine(m)}
                   onDelete={() => requestDeleteMachine(m.id_hardware)}
                 />
@@ -550,8 +678,9 @@ export default function Maquinas() {
                               <button
                                 type="button"
                                 className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                                onClick={() => sendFirmwareUpdate(m.id_hardware)}
-                                disabled={sendingUpdateId === m.id_hardware}
+                                onClick={() => requestFirmwareUpdate(m)}
+                                disabled={sendingUpdateId === m.id_hardware || !m.status_online || firmwareVersions.length === 0}
+                                title={!m.status_online ? "Maquina offline" : firmwareVersions.length === 0 ? "Cadastre uma versao em Firmwares" : "Atualizar firmware"}
                               >
                                 <UploadCloud size={15} />
                                 {sendingUpdateId === m.id_hardware ? "Enviando" : "Atualizar"}
@@ -844,7 +973,7 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
   );
 }
 
-function MachineMobileCard({ machine, user, sendingCreditId, sendingUpdateId, onOpen, onSendCredit, onSendUpdate, onEdit, onDelete }) {
+function MachineMobileCard({ machine, user, sendingCreditId, sendingUpdateId, canUpdateFirmware, onOpen, onSendCredit, onSendUpdate, onEdit, onDelete }) {
   return (
     <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
       <div className="flex items-start justify-between gap-3">
@@ -898,7 +1027,8 @@ function MachineMobileCard({ machine, user, sendingCreditId, sendingUpdateId, on
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
               onClick={onSendUpdate}
-              disabled={sendingUpdateId === machine.id_hardware}
+              disabled={sendingUpdateId === machine.id_hardware || !canUpdateFirmware}
+              title={!machine.status_online ? "Maquina offline" : !canUpdateFirmware ? "Cadastre uma versao em Firmwares" : "Atualizar firmware"}
             >
               <UploadCloud size={15} />
               {sendingUpdateId === machine.id_hardware ? "Enviando" : "Atualizar"}
@@ -929,14 +1059,20 @@ function MachineMobileCard({ machine, user, sendingCreditId, sendingUpdateId, on
 function FirmwareBadge({ machine }) {
   const currentVersion = machine.firmware_version || "";
   const targetVersion = machine.firmware_target_version || "";
+  const updateStatus = machine.firmware_update_status || "";
   const hasCurrent = Boolean(currentVersion);
   const hasTarget = Boolean(targetVersion);
   const isUpdated = hasCurrent && hasTarget && currentVersion === targetVersion;
   const needsUpdate = hasCurrent && hasTarget && currentVersion !== targetVersion;
+  const updateLabel = formatFirmwareUpdateStatus(updateStatus);
+  const isUpdating = ["sent", "downloading", "restarting"].includes(updateStatus);
+  const isFailed = updateStatus === "failed";
 
   const tone = !hasCurrent
     ? "border-slate-200 bg-slate-50 text-slate-600"
-    : needsUpdate
+    : isFailed
+      ? "border-rose-200 bg-rose-50 text-rose-800"
+      : needsUpdate || isUpdating
       ? "border-amber-200 bg-amber-50 text-amber-800"
       : "border-emerald-200 bg-emerald-50 text-emerald-800";
 
@@ -945,7 +1081,7 @@ function FirmwareBadge({ machine }) {
       <Cpu size={15} className="mt-0.5 shrink-0" />
       <div className="min-w-0">
         <div className="font-bold">
-          {!hasCurrent ? "Sem versao" : isUpdated ? "Atualizado" : needsUpdate ? "Atualizacao pendente" : "Instalado"}
+          {updateLabel || (!hasCurrent ? "Sem versao" : isUpdated ? "Atualizado" : needsUpdate ? "Atualizacao pendente" : "Instalado")}
         </div>
         <div className="mt-1 max-w-[190px] truncate font-semibold" title={currentVersion || "Aguardando sinal da placa"}>
           {currentVersion || "Aguardando sinal da placa"}
@@ -963,6 +1099,18 @@ function FirmwareBadge({ machine }) {
       </div>
     </div>
   );
+}
+
+function formatFirmwareUpdateStatus(status) {
+  const labels = {
+    sent: "Atualizacao enviada",
+    downloading: "Baixando firmware",
+    restarting: "Reiniciando",
+    updated: "Atualizado",
+    failed: "Atualizacao falhou",
+    no_update: "Sem novidade",
+  };
+  return labels[status] || "";
 }
 
 function MachineStatusBadge({ status }) {
@@ -987,6 +1135,15 @@ function InfoPill({ label, value, wide = false }) {
     <div className={`rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2 ${wide ? "col-span-2" : ""}`}>
       <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">{label}</div>
       <div className="mt-1 truncate font-semibold text-[var(--color-text)]">{value}</div>
+    </div>
+  );
+}
+
+function InfoLine({ label, value }) {
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-3">
+      <span className="shrink-0 font-semibold text-[var(--color-text-soft)]">{label}</span>
+      <span className="min-w-0 truncate text-right font-bold text-[var(--color-text)]">{value}</span>
     </div>
   );
 }

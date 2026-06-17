@@ -98,6 +98,13 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   }, [loadHistorico, machineId, selectable, selectedClienteId, user]);
 
   useEffect(() => {
+    const status = historico.maquina?.firmware_update_status;
+    if (!["sent", "downloading", "restarting"].includes(status)) return undefined;
+    const timer = window.setInterval(loadHistorico, 5000);
+    return () => window.clearInterval(timer);
+  }, [historico.maquina?.firmware_update_status, loadHistorico]);
+
+  useEffect(() => {
     if (!selectable || !user) return;
     if (user.role !== "admin") return;
     const loadClientes = async () => {
@@ -901,7 +908,29 @@ function StatusCard({ maquina, eventos = [] }) {
           </div>
         </div>
       ) : null}
+      <div className="mt-4 rounded-[16px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm">
+        <div className="font-semibold text-[var(--color-text)]">Firmware</div>
+        <div className="mt-2 grid gap-2 text-xs text-[var(--color-text-soft)]">
+          <InfoRow label="Instalado" value={maquina?.firmware_version || "Aguardando fw da placa"} />
+          <InfoRow label="Alvo" value={maquina?.firmware_target_version || "--"} />
+          <InfoRow label="Status OTA" value={formatFirmwareUpdateStatus(maquina?.firmware_update_status) || "--"} />
+          <InfoRow
+            label="Solicitado"
+            value={maquina?.firmware_update_requested_at ? dayjs(maquina.firmware_update_requested_at).format("DD/MM/YYYY HH:mm:ss") : "--"}
+          />
+          <InfoRow label="URL" value={maquina?.firmware_update_url || "--"} />
+        </div>
+      </div>
     </section>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="flex min-w-0 items-start justify-between gap-3">
+      <span className="shrink-0 font-semibold">{label}</span>
+      <span className="min-w-0 break-all text-right text-[var(--color-text)]">{value}</span>
+    </div>
   );
 }
 
@@ -1171,9 +1200,26 @@ function formatPulseStatus(status) {
     falha_publicacao: "Falha ao publicar",
     falha_cmd_ignorado: "Comando ignorado",
     falha_bloqueado: "Pulso bloqueado",
+    update_enviado: "Atualizacao enviada",
+    update_iniciado: "Baixando firmware",
+    update_ok: "Reiniciando",
+    update_sem_novidade: "Sem novidade",
+    update_falhou: "Atualizacao falhou",
     teste: "Pulso de teste",
   };
   return labels[normalized] || status || "Sem status";
+}
+
+function formatFirmwareUpdateStatus(status) {
+  const labels = {
+    sent: "Atualizacao enviada",
+    downloading: "Baixando firmware",
+    restarting: "Reiniciando",
+    updated: "Atualizado",
+    failed: "Atualizacao falhou",
+    no_update: "Sem novidade",
+  };
+  return labels[status] || "";
 }
 
 function StatusBadge({ item }) {
