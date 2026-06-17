@@ -442,6 +442,7 @@ export default function Maquinas() {
                     <th className="px-5 py-4 whitespace-nowrap">Localizacao</th>
                     <th className="px-5 py-4 whitespace-nowrap">Banco</th>
                     <th className="px-5 py-4 whitespace-nowrap">Caixa MP</th>
+                    <th className="px-5 py-4 whitespace-nowrap">Firmware</th>
                     <th className="px-5 py-4 whitespace-nowrap">Faturamento</th>
                     <th className="px-5 py-4 whitespace-nowrap">Teste</th>
                     {user?.role === "admin" ? (
@@ -525,6 +526,9 @@ export default function Maquinas() {
                           <div className="mt-1 text-xs text-[var(--color-text-soft)]">
                             {m.mp_pos_id ? `POS ${m.mp_pos_id}` : "Ainda nao criado"}
                           </div>
+                        </td>
+                        <td className="px-5 py-4 min-w-[230px]">
+                          <FirmwareBadge machine={m} />
                         </td>
                         <td className="px-5 py-4 min-w-[140px] font-semibold">
                           {m.faturamento?.toFixed ? `R$ ${m.faturamento.toFixed(2)}` : "--"}
@@ -866,6 +870,10 @@ function MachineMobileCard({ machine, user, sendingCreditId, sendingUpdateId, on
         />
       </div>
 
+      <div className="mt-3">
+        <FirmwareBadge machine={machine} />
+      </div>
+
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button
           type="button"
@@ -915,6 +923,45 @@ function MachineMobileCard({ machine, user, sendingCreditId, sendingUpdateId, on
         ) : null}
       </div>
     </article>
+  );
+}
+
+function FirmwareBadge({ machine }) {
+  const currentVersion = machine.firmware_version || "";
+  const targetVersion = machine.firmware_target_version || "";
+  const hasCurrent = Boolean(currentVersion);
+  const hasTarget = Boolean(targetVersion);
+  const isUpdated = hasCurrent && hasTarget && currentVersion === targetVersion;
+  const needsUpdate = hasCurrent && hasTarget && currentVersion !== targetVersion;
+
+  const tone = !hasCurrent
+    ? "border-slate-200 bg-slate-50 text-slate-600"
+    : needsUpdate
+      ? "border-amber-200 bg-amber-50 text-amber-800"
+      : "border-emerald-200 bg-emerald-50 text-emerald-800";
+
+  return (
+    <div className={`inline-flex max-w-full items-start gap-2 rounded-xl border px-3 py-2 text-xs ${tone}`}>
+      <Cpu size={15} className="mt-0.5 shrink-0" />
+      <div className="min-w-0">
+        <div className="font-bold">
+          {!hasCurrent ? "Sem versao" : isUpdated ? "Atualizado" : needsUpdate ? "Atualizacao pendente" : "Instalado"}
+        </div>
+        <div className="mt-1 max-w-[190px] truncate font-semibold" title={currentVersion || "Aguardando sinal da placa"}>
+          {currentVersion || "Aguardando sinal da placa"}
+        </div>
+        {hasTarget && !isUpdated ? (
+          <div className="mt-1 max-w-[190px] truncate text-[11px]" title={targetVersion}>
+            Alvo: {targetVersion}
+          </div>
+        ) : null}
+        {machine.firmware_updated_at ? (
+          <div className="mt-1 text-[11px] opacity-80">
+            {dayjs(machine.firmware_updated_at).format("DD/MM HH:mm")}
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
