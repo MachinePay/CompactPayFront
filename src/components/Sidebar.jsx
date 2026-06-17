@@ -1,4 +1,17 @@
-import { Activity, BarChart3, ClipboardList, Cpu, CreditCard, Home, LogOut, Menu, QrCode, Server, Users, X } from "lucide-react";
+import {
+  Activity,
+  BarChart3,
+  ClipboardList,
+  Cpu,
+  CreditCard,
+  Home,
+  LogOut,
+  Menu,
+  QrCode,
+  Server,
+  Users,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/useAuth";
@@ -29,39 +42,58 @@ export default function Sidebar() {
         </NavLink>
       </li>
       <li>
-        <NavLink to="/relatorio-maquina" className={linkClassName} onClick={closeMobile}>
+        <NavLink
+          to="/relatorio-maquina"
+          className={linkClassName}
+          onClick={closeMobile}
+        >
           <BarChart3 size={20} /> Relatorio Maquina
         </NavLink>
       </li>
       <li>
-        <NavLink to="/produtos" className={linkClassName} onClick={closeMobile}>
-          <CreditCard size={20} /> Produtos
-        </NavLink>
-      </li>
-      <li>
-        <NavLink to="/teste-pagamento" className={linkClassName} onClick={closeMobile}>
+        <NavLink
+          to="/teste-pagamento"
+          className={linkClassName}
+          onClick={closeMobile}
+        >
           <QrCode size={20} /> Teste Pagamento
         </NavLink>
       </li>
       <li>
-        <NavLink to="/transacoes" className={linkClassName} onClick={closeMobile}>
+        <NavLink
+          to="/transacoes"
+          className={linkClassName}
+          onClick={closeMobile}
+        >
           <Activity size={20} /> Transacoes
         </NavLink>
       </li>
       {user?.role === "admin" && (
         <>
           <li>
-            <NavLink to="/usuarios" className={linkClassName} onClick={closeMobile}>
+            <NavLink
+              to="/usuarios"
+              className={linkClassName}
+              onClick={closeMobile}
+            >
               <Users size={20} /> Usuarios
             </NavLink>
           </li>
           <li>
-            <NavLink to="/firmwares" className={linkClassName} onClick={closeMobile}>
+            <NavLink
+              to="/firmwares"
+              className={linkClassName}
+              onClick={closeMobile}
+            >
               <Cpu size={20} /> Firmwares
             </NavLink>
           </li>
           <li>
-            <NavLink to="/auditoria" className={linkClassName} onClick={closeMobile}>
+            <NavLink
+              to="/auditoria"
+              className={linkClassName}
+              onClick={closeMobile}
+            >
               <ClipboardList size={20} /> Auditoria
             </NavLink>
           </li>
@@ -75,10 +107,18 @@ export default function Sidebar() {
       <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--color-border)] bg-white/95 px-3 py-2 shadow-[0_8px_24px_rgba(34,61,43,0.08)] backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <img src="/logoCompactpay.jpeg" alt="CompactPay" className="h-9 w-9 rounded-xl object-cover" />
+            <img
+              src="/logoCompactpay.jpeg"
+              alt="CompactPay"
+              className="h-9 w-9 rounded-xl object-cover"
+            />
             <div className="min-w-0">
-              <div className="truncate text-sm font-extrabold text-[var(--color-text)]">CompactPay</div>
-              <div className="truncate text-[11px] font-medium text-[var(--color-text-soft)]">{user?.role === "admin" ? "Administrador" : "Cliente"}</div>
+              <div className="truncate text-sm font-extrabold text-[var(--color-text)]">
+                CompactPay
+              </div>
+              <div className="truncate text-[11px] font-medium text-[var(--color-text-soft)]">
+                {user?.role === "admin" ? "Administrador" : "Cliente"}
+              </div>
             </div>
           </div>
           <button
@@ -93,7 +133,10 @@ export default function Sidebar() {
       </header>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-40 bg-black/28 lg:hidden" onClick={closeMobile}>
+        <div
+          className="fixed inset-0 z-40 bg-black/28 lg:hidden"
+          onClick={closeMobile}
+        >
           <aside
             className="absolute bottom-0 right-0 top-[58px] flex w-[min(86vw,340px)] flex-col justify-between overflow-y-auto rounded-l-[22px] border-l border-[var(--color-border)] bg-[var(--color-bg-card)] p-4 shadow-[0_20px_70px_rgba(0,0,0,0.22)]"
             onClick={(event) => event.stopPropagation()}
@@ -115,47 +158,56 @@ export default function Sidebar() {
       ) : null}
 
       <aside className="app-panel hidden w-[260px] flex-col justify-between gap-3 p-4 lg:flex">
-      <div className="space-y-3 lg:space-y-8">
-        <div className="rounded-[18px] bg-[linear-gradient(135deg,#ffffff_0%,#eff5ef_100%)] p-3 soft-ring lg:rounded-[24px] lg:p-5">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logoCompactpay.jpeg"
-              alt="CompactPay"
-              className="h-10 w-10 rounded-2xl object-cover lg:h-12 lg:w-12"
-            />
-            <div className="min-w-0">
-              <div className="truncate text-base font-bold text-[var(--color-text)] lg:text-lg">CompactPay</div>
-              <div className="truncate text-xs text-[var(--color-text-soft)] lg:text-sm">Painel operacional</div>
+        <div className="space-y-3 lg:space-y-8">
+          <div className="rounded-[18px] bg-[linear-gradient(135deg,#ffffff_0%,#eff5ef_100%)] p-3 soft-ring lg:rounded-[24px] lg:p-5">
+            <div className="flex items-center gap-3">
+              <img
+                src="/logoCompactpay.jpeg"
+                alt="CompactPay"
+                className="h-10 w-10 rounded-2xl object-cover lg:h-12 lg:w-12"
+              />
+              <div className="min-w-0">
+                <div className="truncate text-base font-bold text-[var(--color-text)] lg:text-lg">
+                  CompactPay
+                </div>
+                <div className="truncate text-xs text-[var(--color-text-soft)] lg:text-sm">
+                  Painel operacional
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <nav>
+            <div className="hidden px-3 pb-3 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)] lg:block">
+              Menu
+            </div>
+            {navItems}
+          </nav>
+
+          <div className="hidden rounded-[28px] bg-[radial-gradient(circle_at_top,_rgba(52,148,92,0.35),transparent_35%),linear-gradient(145deg,#07160d_0%,#10331f_55%,#15512f_100%)] p-5 text-white shadow-[0_18px_48px_rgba(19,51,31,0.34)] lg:block">
+            <div className="text-xs uppercase tracking-[0.28em] text-white/55">
+              Conta
+            </div>
+            <div className="mt-3 text-lg font-semibold">
+              {user?.email || "Operador"}
+            </div>
+            <div className="mt-1 text-sm text-white/70">
+              {user?.role === "admin" ? "Administrador" : "Cliente"}
+            </div>
+            <div className="mt-6 rounded-full border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/85">
+              Gestao de maquinas, usuarios e desempenho financeiro em um unico
+              painel.
             </div>
           </div>
         </div>
 
-        <nav>
-          <div className="hidden px-3 pb-3 text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)] lg:block">
-            Menu
-          </div>
-          {navItems}
-        </nav>
-
-        <div className="hidden rounded-[28px] bg-[radial-gradient(circle_at_top,_rgba(52,148,92,0.35),transparent_35%),linear-gradient(145deg,#07160d_0%,#10331f_55%,#15512f_100%)] p-5 text-white shadow-[0_18px_48px_rgba(19,51,31,0.34)] lg:block">
-          <div className="text-xs uppercase tracking-[0.28em] text-white/55">Conta</div>
-          <div className="mt-3 text-lg font-semibold">{user?.email || "Operador"}</div>
-          <div className="mt-1 text-sm text-white/70">
-            {user?.role === "admin" ? "Administrador" : "Cliente"}
-          </div>
-          <div className="mt-6 rounded-full border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/85">
-            Gestao de maquinas, usuarios e desempenho financeiro em um unico painel.
-          </div>
-        </div>
-      </div>
-
-      <button
-        onClick={logout}
-        className="flex items-center justify-center gap-2 rounded-full border border-[var(--color-border)] bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-error)] hover:text-[var(--color-error)] lg:mt-5 lg:py-3 lg:text-base"
-      >
-        <LogOut /> Sair
-      </button>
-    </aside>
+        <button
+          onClick={logout}
+          className="flex items-center justify-center gap-2 rounded-full border border-[var(--color-border)] bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-error)] hover:text-[var(--color-error)] lg:mt-5 lg:py-3 lg:text-base"
+        >
+          <LogOut /> Sair
+        </button>
+      </aside>
     </>
   );
 }

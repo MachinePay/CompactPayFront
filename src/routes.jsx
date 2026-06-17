@@ -1,5 +1,11 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { useAuth } from "./context/useAuth";
 
 import Layout from "./components/Layout";
@@ -10,9 +16,10 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AuditoriaSistema = lazy(() => import("./pages/AuditoriaSistema"));
 const FirmwareVersions = lazy(() => import("./pages/FirmwareVersions"));
 const MaquinaHistorico = lazy(() => import("./pages/MaquinaHistorico"));
-const RelatorioDetalhadoMaquina = lazy(() => import("./pages/RelatorioDetalhadoMaquina"));
+const RelatorioDetalhadoMaquina = lazy(
+  () => import("./pages/RelatorioDetalhadoMaquina"),
+);
 const Maquinas = lazy(() => import("./pages/Maquinas"));
-const Produtos = lazy(() => import("./pages/Produtos"));
 const TestePagamento = lazy(() => import("./pages/TestePagamento"));
 const Transacoes = lazy(() => import("./pages/Transacoes"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
@@ -23,7 +30,11 @@ function PrivateRoute({ children }) {
   const { user } = useAuth();
   const location = useLocation();
 
-  return user ? children : <Navigate to="/login" replace state={{ from: location }} />;
+  return user ? (
+    children
+  ) : (
+    <Navigate to="/login" replace state={{ from: location }} />
+  );
 }
 
 function RouteFallback() {
@@ -74,17 +85,86 @@ function RouteContent() {
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<PrivatePage><Dashboard /></PrivatePage>} />
-          <Route path="/maquinas" element={<PrivatePage><Maquinas /></PrivatePage>} />
-          <Route path="/maquinas/:machineId" element={<PrivatePage><MaquinaHistorico /></PrivatePage>} />
-          <Route path="/relatorio-maquina" element={<PrivatePage><RelatorioDetalhadoMaquina /></PrivatePage>} />
-          <Route path="/produtos" element={<PrivatePage><Produtos /></PrivatePage>} />
-          <Route path="/teste-pagamento" element={<PrivatePage><TestePagamento /></PrivatePage>} />
-          <Route path="/transacoes" element={<PrivatePage><Transacoes /></PrivatePage>} />
-          <Route path="/usuarios" element={<AdminPage><Usuarios /></AdminPage>} />
-          <Route path="/firmwares" element={<AdminPage><FirmwareVersions /></AdminPage>} />
-          <Route path="/auditoria" element={<AdminPage><AuditoriaSistema /></AdminPage>} />
-          <Route path="*" element={<PrivatePage><NotFound /></PrivatePage>} />
+          <Route
+            path="/"
+            element={
+              <PrivatePage>
+                <Dashboard />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/maquinas"
+            element={
+              <PrivatePage>
+                <Maquinas />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/maquinas/:machineId"
+            element={
+              <PrivatePage>
+                <MaquinaHistorico />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/relatorio-maquina"
+            element={
+              <PrivatePage>
+                <RelatorioDetalhadoMaquina />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/teste-pagamento"
+            element={
+              <PrivatePage>
+                <TestePagamento />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/transacoes"
+            element={
+              <PrivatePage>
+                <Transacoes />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/usuarios"
+            element={
+              <AdminPage>
+                <Usuarios />
+              </AdminPage>
+            }
+          />
+          <Route
+            path="/firmwares"
+            element={
+              <AdminPage>
+                <FirmwareVersions />
+              </AdminPage>
+            }
+          />
+          <Route
+            path="/auditoria"
+            element={
+              <AdminPage>
+                <AuditoriaSistema />
+              </AdminPage>
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <PrivatePage>
+                <NotFound />
+              </PrivatePage>
+            }
+          />
         </Routes>
       </Suspense>
     </RouteErrorBoundary>
