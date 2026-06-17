@@ -42,7 +42,9 @@ const paymentProviderLabels = {
 function getPaymentProviders(cliente) {
   if (!cliente) return [];
   return [
-    cliente.cliente_mercado_pago || cliente.mp_configurado ? "mercado_pago" : null,
+    cliente.cliente_mercado_pago || cliente.mp_configurado
+      ? "mercado_pago"
+      : null,
     cliente.cliente_pagbank ? "pagbank" : null,
     cliente.cliente_s6pay ? "s6pay" : null,
   ].filter(Boolean);
@@ -65,7 +67,9 @@ export default function Maquinas() {
   const navigate = useNavigate();
   const persistedFilters = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem("compactpay.maquinas.filters") || "{}");
+      return JSON.parse(
+        localStorage.getItem("compactpay.maquinas.filters") || "{}",
+      );
     } catch {
       return {};
     }
@@ -75,8 +79,12 @@ export default function Maquinas() {
   const [firmwareVersions, setFirmwareVersions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [periodo, setPeriodo] = useState(persistedFilters.periodo || "mes");
-  const [dateRange, setDateRange] = useState(persistedFilters.dateRange || { start: "", end: "" });
-  const [selectedClienteId, setSelectedClienteId] = useState(persistedFilters.cliente_id || "");
+  const [dateRange, setDateRange] = useState(
+    persistedFilters.dateRange || { start: "", end: "" },
+  );
+  const [selectedClienteId, setSelectedClienteId] = useState(
+    persistedFilters.cliente_id || "",
+  );
   const [showModal, setShowModal] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState("");
   const [form, setForm] = useState(emptyForm);
@@ -89,7 +97,9 @@ export default function Maquinas() {
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [deleteState, setDeleteState] = useState(emptyDeleteState);
   const [updateState, setUpdateState] = useState(emptyUpdateState);
-  const selectedCliente = usuarios.find((item) => String(item.cliente_id) === String(form.cliente_id));
+  const selectedCliente = usuarios.find(
+    (item) => String(item.cliente_id) === String(form.cliente_id),
+  );
   const paymentProviders = getPaymentProviders(selectedCliente);
 
   useEffect(() => {
@@ -119,7 +129,13 @@ export default function Maquinas() {
       const res = await api.get(`/maquinas${paramStr}`);
       setMaquinas(res.data);
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel carregar as maquinas."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel carregar as maquinas.",
+        ),
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -131,7 +147,13 @@ export default function Maquinas() {
       const res = await api.get("/usuarios");
       setUsuarios(res.data.filter((item) => item.role === "cliente"));
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel carregar os clientes."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel carregar os clientes.",
+        ),
+        type: "error",
+      });
     }
   }, [user?.role]);
 
@@ -141,7 +163,13 @@ export default function Maquinas() {
       const { data } = await api.get("/firmware-versions");
       setFirmwareVersions(data);
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel carregar as versoes de firmware."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel carregar as versoes de firmware.",
+        ),
+        type: "error",
+      });
     }
   }, [user?.role]);
 
@@ -162,7 +190,9 @@ export default function Maquinas() {
 
   useEffect(() => {
     const hasUpdateInProgress = maquinas.some((item) =>
-      ["sent", "downloading", "restarting"].includes(item.firmware_update_status),
+      ["sent", "downloading", "restarting"].includes(
+        item.firmware_update_status,
+      ),
     );
     if (!hasUpdateInProgress) return undefined;
     const timer = window.setInterval(loadMaquinas, 5000);
@@ -176,7 +206,13 @@ export default function Maquinas() {
       setForm((current) => ({ ...current, id_hardware: data.id_hardware }));
       setCopyFeedback("");
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel gerar o ID da maquina."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel gerar o ID da maquina.",
+        ),
+        type: "error",
+      });
     } finally {
       setGeneratingId(false);
     }
@@ -184,7 +220,9 @@ export default function Maquinas() {
 
   const openCreateMachineModal = () => {
     setEditingMachineId("");
-    const cliente = usuarios.find((item) => String(item.cliente_id) === String(selectedClienteId));
+    const cliente = usuarios.find(
+      (item) => String(item.cliente_id) === String(selectedClienteId),
+    );
     const providers = getPaymentProviders(cliente);
     setForm({
       ...emptyForm,
@@ -206,21 +244,35 @@ export default function Maquinas() {
     if (!form.cliente_id) return null;
     setValidatingMp(true);
     try {
-      const { data } = await api.get(`/mercado-pago/clientes/${form.cliente_id}/validacao`);
+      const { data } = await api.get(
+        `/mercado-pago/clientes/${form.cliente_id}/validacao`,
+      );
       if (data?.ok) {
-        setToast({ message: "Mercado Pago validado. Cliente pronto para criar maquina.", type: "success" });
+        setToast({
+          message: "Mercado Pago validado. Cliente pronto para criar maquina.",
+          type: "success",
+        });
         return data;
       }
       const blockingChecks = (data?.checks || []).filter(
         (item) => !item.ok && (item.severity || "error") === "error",
       );
       const message = blockingChecks.length
-        ? blockingChecks.map((item) => `${item.label}: ${item.message}`).join(" ")
-        : data?.next_step || "Revise a integracao Mercado Pago antes de criar a maquina.";
+        ? blockingChecks
+            .map((item) => `${item.label}: ${item.message}`)
+            .join(" ")
+        : data?.next_step ||
+          "Revise a integracao Mercado Pago antes de criar a maquina.";
       setToast({ message, type: "error" });
       return data;
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel validar o Mercado Pago."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel validar o Mercado Pago.",
+        ),
+        type: "error",
+      });
       return null;
     } finally {
       setValidatingMp(false);
@@ -231,7 +283,8 @@ export default function Maquinas() {
     e.preventDefault();
     setSaving(true);
     try {
-      const selectedProvider = form.banco_pagamento || paymentProviders[0] || "mercado_pago";
+      const selectedProvider =
+        form.banco_pagamento || paymentProviders[0] || "mercado_pago";
       const payload = {
         nome: form.nome,
         localizacao: form.localizacao,
@@ -244,28 +297,41 @@ export default function Maquinas() {
             : user.cliente_id,
       };
 
-      if (!editingMachineId && user?.role === "admin" && selectedProvider === "mercado_pago") {
+      if (
+        !editingMachineId &&
+        user?.role === "admin" &&
+        selectedProvider === "mercado_pago"
+      ) {
         const data = await validateSelectedMercadoPago();
         if (!data?.ok) {
           const blockingChecks = (data?.checks || []).filter(
             (item) => !item.ok && (item.severity || "error") === "error",
           );
           const message = blockingChecks.length
-            ? blockingChecks.map((item) => `${item.label}: ${item.message}`).join(" ")
-            : data?.next_step || "Valide a integracao Mercado Pago antes de criar a maquina.";
+            ? blockingChecks
+                .map((item) => `${item.label}: ${item.message}`)
+                .join(" ")
+            : data?.next_step ||
+              "Valide a integracao Mercado Pago antes de criar a maquina.";
           throw new Error(message);
         }
       }
 
       if (editingMachineId) {
         await api.put(`/maquinas/${editingMachineId}`, payload);
-        setToast({ message: "Maquina atualizada com sucesso.", type: "success" });
+        setToast({
+          message: "Maquina atualizada com sucesso.",
+          type: "success",
+        });
       } else {
         await api.post("/maquinas", {
           id_hardware: form.id_hardware,
           ...payload,
         });
-        setToast({ message: "Maquina cadastrada com sucesso.", type: "success" });
+        setToast({
+          message: "Maquina cadastrada com sucesso.",
+          type: "success",
+        });
       }
       setShowModal(false);
       setEditingMachineId("");
@@ -274,7 +340,10 @@ export default function Maquinas() {
       await loadMaquinas();
     } catch (error) {
       setToast({
-        message: getApiErrorMessage(error, "Nao foi possivel salvar a maquina."),
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel salvar a maquina.",
+        ),
         type: "error",
       });
     } finally {
@@ -310,7 +379,13 @@ export default function Maquinas() {
       setDeleteState(emptyDeleteState);
       await loadMaquinas();
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel excluir a maquina."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel excluir a maquina.",
+        ),
+        type: "error",
+      });
     }
   };
 
@@ -318,9 +393,18 @@ export default function Maquinas() {
     setSendingCreditId(machineId);
     try {
       await api.post(`/maquinas/${machineId}/credito-teste`);
-      setToast({ message: `Credito de teste enviado para ${machineId}.`, type: "success" });
+      setToast({
+        message: `Credito de teste enviado para ${machineId}.`,
+        type: "success",
+      });
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel enviar o credito de teste."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel enviar o credito de teste.",
+        ),
+        type: "error",
+      });
     } finally {
       setSendingCreditId("");
     }
@@ -328,7 +412,10 @@ export default function Maquinas() {
 
   const requestFirmwareUpdate = (machine) => {
     if (!machine.status_online) {
-      setToast({ message: "Maquina offline. Aguarde ela ficar online para atualizar.", type: "error" });
+      setToast({
+        message: "Maquina offline. Aguarde ela ficar online para atualizar.",
+        type: "error",
+      });
       return;
     }
     setUpdateState({
@@ -342,7 +429,10 @@ export default function Maquinas() {
     const machine = updateState.machine;
     if (!machine) return;
     if (!updateState.firmwareId) {
-      setToast({ message: "Selecione uma versao de firmware antes de atualizar.", type: "error" });
+      setToast({
+        message: "Selecione uma versao de firmware antes de atualizar.",
+        type: "error",
+      });
       return;
     }
     setSendingUpdateId(machine.id_hardware);
@@ -350,11 +440,20 @@ export default function Maquinas() {
       await api.post(`/maquinas/${machine.id_hardware}/atualizacao`, {
         firmware_version_id: Number(updateState.firmwareId),
       });
-      setToast({ message: `Atualizacao enviada para ${machine.id_hardware}.`, type: "success" });
+      setToast({
+        message: `Atualizacao enviada para ${machine.id_hardware}.`,
+        type: "success",
+      });
       setUpdateState(emptyUpdateState);
       await loadMaquinas();
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel enviar a atualizacao."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel enviar a atualizacao.",
+        ),
+        type: "error",
+      });
     } finally {
       setSendingUpdateId("");
     }
@@ -384,22 +483,48 @@ export default function Maquinas() {
               {updateState.machine?.nome || updateState.machine?.id_hardware}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-              Escolha a versao cadastrada e confirme o envio para a placa online.
+              Escolha a versao cadastrada e confirme o envio para a placa
+              online.
             </p>
           </div>
 
           <div className="grid gap-3 rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4 text-sm">
-            <InfoLine label="Maquina" value={updateState.machine?.id_hardware || "--"} />
-            <InfoLine label="Versao atual" value={updateState.machine?.firmware_version || "Aguardando sinal da placa"} />
-            <InfoLine label="Ultimo sinal" value={updateState.machine?.ultimo_sinal ? dayjs(updateState.machine.ultimo_sinal).format("DD/MM/YYYY HH:mm:ss") : "Sem sinal"} />
+            <InfoLine
+              label="Maquina"
+              value={updateState.machine?.id_hardware || "--"}
+            />
+            <InfoLine
+              label="Versao atual"
+              value={
+                updateState.machine?.firmware_version ||
+                "Aguardando sinal da placa"
+              }
+            />
+            <InfoLine
+              label="Ultimo sinal"
+              value={
+                updateState.machine?.ultimo_sinal
+                  ? dayjs(updateState.machine.ultimo_sinal).format(
+                      "DD/MM/YYYY HH:mm:ss",
+                    )
+                  : "Sem sinal"
+              }
+            />
           </div>
 
           <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">Versao para enviar</span>
+            <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+              Versao para enviar
+            </span>
             <select
               className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
               value={updateState.firmwareId}
-              onChange={(event) => setUpdateState((current) => ({ ...current, firmwareId: event.target.value }))}
+              onChange={(event) =>
+                setUpdateState((current) => ({
+                  ...current,
+                  firmwareId: event.target.value,
+                }))
+              }
               required
             >
               <option value="">Selecione a versao</option>
@@ -413,31 +538,49 @@ export default function Maquinas() {
 
           {updateState.firmwareId ? (
             <div className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 text-sm">
-              <div className="font-semibold text-[var(--color-text)]">URL do firmware</div>
+              <div className="font-semibold text-[var(--color-text)]">
+                URL do firmware
+              </div>
               <a
                 className="mt-2 block break-all text-[var(--color-primary-strong)] hover:underline"
-                href={firmwareVersions.find((item) => String(item.id) === String(updateState.firmwareId))?.url_bin}
+                href={
+                  firmwareVersions.find(
+                    (item) =>
+                      String(item.id) === String(updateState.firmwareId),
+                  )?.url_bin
+                }
                 target="_blank"
                 rel="noreferrer"
               >
-                {firmwareVersions.find((item) => String(item.id) === String(updateState.firmwareId))?.url_bin}
+                {
+                  firmwareVersions.find(
+                    (item) =>
+                      String(item.id) === String(updateState.firmwareId),
+                  )?.url_bin
+                }
               </a>
             </div>
           ) : null}
 
           <div className="flex gap-3 rounded-[18px] border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
             <AlertTriangle size={18} className="mt-0.5 shrink-0" />
-            Nao desligue a placa durante a atualizacao. Ela pode reiniciar sozinha e voltar informando a nova versao.
+            Nao desligue a placa durante a atualizacao. Ela pode reiniciar
+            sozinha e voltar informando a nova versao.
           </div>
 
           <Button
             type="button"
             className="w-full justify-center"
             onClick={sendFirmwareUpdate}
-            disabled={sendingUpdateId === updateState.machine?.id_hardware || !updateState.firmwareId}
+            disabled={
+              sendingUpdateId === updateState.machine?.id_hardware ||
+              !updateState.firmwareId
+            }
           >
             <UploadCloud size={18} />
-            {sendingUpdateId === updateState.machine?.id_hardware ? "Enviando..." : "Enviar atualizacao"}
+            {sendingUpdateId === updateState.machine?.id_hardware
+              ? "Enviando..."
+              : "Enviar atualizacao"}
           </Button>
         </div>
       </Modal>
@@ -447,10 +590,7 @@ export default function Maquinas() {
         description="Cadastre novas unidades, gere IDs para o ESP e crie automaticamente o caixa no Mercado Pago do cliente."
         actions={
           user?.role === "admin" ? (
-            <Button
-              className="justify-center"
-              onClick={openCreateMachineModal}
-            >
+            <Button className="justify-center" onClick={openCreateMachineModal}>
               <Plus size={18} />
               Nova maquina
             </Button>
@@ -494,7 +634,8 @@ export default function Maquinas() {
                   <option value="">Selecione um cliente</option>
                   {usuarios.map((item) => (
                     <option key={item.id} value={item.cliente_id ?? ""}>
-                      {(item.nome || item.email) + (item.cliente_id ? ` - ${item.cliente_id}` : "")}
+                      {(item.nome || item.email) +
+                        (item.cliente_id ? ` - ${item.cliente_id}` : "")}
                     </option>
                   ))}
                 </select>
@@ -531,55 +672,69 @@ export default function Maquinas() {
                 Selecione um cliente para listar as maquinas
               </div>
               <div className="max-w-md text-sm leading-6 text-[var(--color-text-soft)]">
-                A listagem fica filtrada por cliente para manter a tela rapida e organizada mesmo com muitas maquinas cadastradas.
+                A listagem fica filtrada por cliente para manter a tela rapida e
+                organizada mesmo com muitas maquinas cadastradas.
               </div>
             </div>
           ) : loading ? (
             <LoadingSpinner className="h-40" />
           ) : maquinas.length === 0 ? (
             <div className="flex h-40 items-center justify-center px-6 text-center text-sm text-[var(--color-text-soft)]">
-              Nenhuma maquina cadastrada ainda. Gere um ID, configure o ESP e crie a unidade por aqui.
+              Nenhuma maquina cadastrada ainda. Gere um ID, configure o ESP e
+              crie a unidade por aqui.
             </div>
           ) : (
             <>
-            <div className="grid gap-3 p-3 md:hidden">
-              {maquinas.map((m) => (
-                <MachineMobileCard
-                  key={m.id_hardware}
-                  machine={m}
-                  user={user}
-                  sendingCreditId={sendingCreditId}
-                  sendingUpdateId={sendingUpdateId}
-                  canUpdateFirmware={Boolean(m.status_online && firmwareVersions.length > 0)}
-                  onOpen={() => navigate(`/maquinas/${m.id_hardware}`)}
-                  onSendCredit={() => sendTestCredit(m.id_hardware)}
-                  onSendUpdate={() => requestFirmwareUpdate(m)}
-                  onEdit={() => handleEditMachine(m)}
-                  onDelete={() => requestDeleteMachine(m.id_hardware)}
-                />
-              ))}
-            </div>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="min-w-full">
-                <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
-                  <tr>
-                    <th className="px-5 py-4 whitespace-nowrap">ID da maquina</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Nome</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Status</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Ultima atividade</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Localizacao</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Banco</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Caixa MP</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Firmware</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Faturamento</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Teste</th>
-                    {user?.role === "admin" ? (
-                      <th className="px-5 py-4 whitespace-nowrap">Gerenciar</th>
-                    ) : null}
-                  </tr>
-                </thead>
-                <tbody>
-                  {maquinas.map((m) => (
+              <div className="grid gap-3 p-3 md:hidden">
+                {maquinas.map((m) => (
+                  <MachineMobileCard
+                    key={m.id_hardware}
+                    machine={m}
+                    user={user}
+                    sendingCreditId={sendingCreditId}
+                    sendingUpdateId={sendingUpdateId}
+                    canUpdateFirmware={Boolean(
+                      m.status_online && firmwareVersions.length > 0,
+                    )}
+                    onOpen={() => navigate(`/maquinas/${m.id_hardware}`)}
+                    onSendCredit={() => sendTestCredit(m.id_hardware)}
+                    onSendUpdate={() => requestFirmwareUpdate(m)}
+                    onEdit={() => handleEditMachine(m)}
+                    onDelete={() => requestDeleteMachine(m.id_hardware)}
+                  />
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+                <table className="min-w-full">
+                  <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+                    <tr>
+                      <th className="px-5 py-4 whitespace-nowrap">
+                        ID da maquina
+                      </th>
+                      <th className="px-5 py-4 whitespace-nowrap">Nome</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Status</th>
+                      <th className="px-5 py-4 whitespace-nowrap">
+                        Ultima atividade
+                      </th>
+                      <th className="px-5 py-4 whitespace-nowrap">
+                        Localizacao
+                      </th>
+                      <th className="px-5 py-4 whitespace-nowrap">Banco</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Caixa MP</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Firmware</th>
+                      <th className="px-5 py-4 whitespace-nowrap">
+                        Faturamento
+                      </th>
+                      <th className="px-5 py-4 whitespace-nowrap">Teste</th>
+                      {user?.role === "admin" ? (
+                        <th className="px-5 py-4 whitespace-nowrap">
+                          Gerenciar
+                        </th>
+                      ) : null}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {maquinas.map((m) => (
                       <tr
                         key={m.id_hardware}
                         className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
@@ -588,7 +743,9 @@ export default function Maquinas() {
                           <button
                             type="button"
                             className="text-left"
-                            onClick={() => navigate(`/maquinas/${m.id_hardware}`)}
+                            onClick={() =>
+                              navigate(`/maquinas/${m.id_hardware}`)
+                            }
                           >
                             <div className="font-semibold text-[var(--color-primary-strong)] hover:underline">
                               {m.id_hardware}
@@ -598,7 +755,9 @@ export default function Maquinas() {
                             Clique para abrir pagamentos e testes da maquina
                           </div>
                         </td>
-                        <td className="px-5 py-4 min-w-[180px] font-medium">{m.nome || "--"}</td>
+                        <td className="px-5 py-4 min-w-[180px] font-medium">
+                          {m.nome || "--"}
+                        </td>
                         <td className="px-5 py-4 min-w-[140px]">
                           <span
                             className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold"
@@ -617,21 +776,23 @@ export default function Maquinas() {
                                     : "var(--color-error)",
                             }}
                           >
-                            {m.status_operacional === "operando" ? (
+                            {m.status_online ? (
                               <CheckCircle2 size={15} />
                             ) : (
                               <XCircle size={15} />
                             )}
-                            {m.status_operacional === "operando"
-                              ? "Operando"
-                              : m.status_operacional === "atencao"
-                                ? "Atencao"
+                            {m.status_online
+                              ? "Online"
+                              : m.status_operacional === "operando"
+                                ? "Operando"
                                 : "Offline"}
                           </span>
                         </td>
                         <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
                           {m.ultima_atividade_em
-                            ? dayjs(m.ultima_atividade_em).format("DD/MM/YYYY HH:mm:ss")
+                            ? dayjs(m.ultima_atividade_em).format(
+                                "DD/MM/YYYY HH:mm:ss",
+                              )
                             : "Sem atividade"}
                           <div className="mt-1 text-xs">
                             {m.ultimo_pagamento_em
@@ -647,19 +808,29 @@ export default function Maquinas() {
                           {m.localizacao || "--"}
                         </td>
                         <td className="px-5 py-4 min-w-[150px] font-semibold text-[var(--color-text)]">
-                          {paymentProviderLabels[m.banco_pagamento || "mercado_pago"] || m.banco_pagamento || "--"}
+                          {paymentProviderLabels[
+                            m.banco_pagamento || "mercado_pago"
+                          ] ||
+                            m.banco_pagamento ||
+                            "--"}
                         </td>
                         <td className="px-5 py-4 min-w-[170px]">
-                          <div className="font-semibold text-[var(--color-text)]">{m.mp_pos_external_id || "--"}</div>
+                          <div className="font-semibold text-[var(--color-text)]">
+                            {m.mp_pos_external_id || "--"}
+                          </div>
                           <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                            {m.mp_pos_id ? `POS ${m.mp_pos_id}` : "Ainda nao criado"}
+                            {m.mp_pos_id
+                              ? `POS ${m.mp_pos_id}`
+                              : "Ainda nao criado"}
                           </div>
                         </td>
                         <td className="px-5 py-4 min-w-[230px]">
                           <FirmwareBadge machine={m} />
                         </td>
                         <td className="px-5 py-4 min-w-[140px] font-semibold">
-                          {m.faturamento?.toFixed ? `R$ ${m.faturamento.toFixed(2)}` : "--"}
+                          {m.faturamento?.toFixed
+                            ? `R$ ${m.faturamento.toFixed(2)}`
+                            : "--"}
                         </td>
                         <td className="px-5 py-4 min-w-[170px]">
                           <button
@@ -669,7 +840,9 @@ export default function Maquinas() {
                             disabled={sendingCreditId === m.id_hardware}
                           >
                             <Rocket size={15} />
-                            {sendingCreditId === m.id_hardware ? "Enviando..." : "Enviar credito"}
+                            {sendingCreditId === m.id_hardware
+                              ? "Enviando..."
+                              : "Enviar credito"}
                           </button>
                         </td>
                         {user?.role === "admin" ? (
@@ -679,11 +852,23 @@ export default function Maquinas() {
                                 type="button"
                                 className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
                                 onClick={() => requestFirmwareUpdate(m)}
-                                disabled={sendingUpdateId === m.id_hardware || !m.status_online || firmwareVersions.length === 0}
-                                title={!m.status_online ? "Maquina offline" : firmwareVersions.length === 0 ? "Cadastre uma versao em Firmwares" : "Atualizar firmware"}
+                                disabled={
+                                  sendingUpdateId === m.id_hardware ||
+                                  !m.status_online ||
+                                  firmwareVersions.length === 0
+                                }
+                                title={
+                                  !m.status_online
+                                    ? "Maquina offline"
+                                    : firmwareVersions.length === 0
+                                      ? "Cadastre uma versao em Firmwares"
+                                      : "Atualizar firmware"
+                                }
                               >
                                 <UploadCloud size={15} />
-                                {sendingUpdateId === m.id_hardware ? "Enviando" : "Atualizar"}
+                                {sendingUpdateId === m.id_hardware
+                                  ? "Enviando"
+                                  : "Atualizar"}
                               </button>
                               <button
                                 type="button"
@@ -696,7 +881,9 @@ export default function Maquinas() {
                               <button
                                 type="button"
                                 className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-                                onClick={() => requestDeleteMachine(m.id_hardware)}
+                                onClick={() =>
+                                  requestDeleteMachine(m.id_hardware)
+                                }
                               >
                                 <Trash2 size={15} />
                                 Excluir
@@ -705,10 +892,10 @@ export default function Maquinas() {
                           </td>
                         ) : null}
                       </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </>
           )}
         </div>
@@ -727,7 +914,9 @@ export default function Maquinas() {
               Cadastro de maquina
             </div>
             <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
-              {editingMachineId ? "Editar maquina" : "Cadastrar e vincular ao ESP"}
+              {editingMachineId
+                ? "Editar maquina"
+                : "Cadastrar e vincular ao ESP"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
               {editingMachineId
@@ -747,7 +936,10 @@ export default function Maquinas() {
                   placeholder="Ex.: 1000"
                   value={form.id_hardware}
                   onChange={(e) =>
-                    setForm((current) => ({ ...current, id_hardware: e.target.value.toUpperCase() }))
+                    setForm((current) => ({
+                      ...current,
+                      id_hardware: e.target.value.toUpperCase(),
+                    }))
                   }
                   disabled={Boolean(editingMachineId)}
                 />
@@ -757,7 +949,10 @@ export default function Maquinas() {
                   onClick={generateId}
                   disabled={generatingId || Boolean(editingMachineId)}
                 >
-                  <RefreshCcw size={16} className={generatingId ? "animate-spin" : ""} />
+                  <RefreshCcw
+                    size={16}
+                    className={generatingId ? "animate-spin" : ""}
+                  />
                   {generatingId ? "Gerando" : "Proximo ID"}
                 </button>
                 <button
@@ -771,7 +966,11 @@ export default function Maquinas() {
                 </button>
               </div>
               <div className="mt-3 text-xs text-[var(--color-text-soft)]">
-                O ID e gerado automaticamente a partir de <span className="font-semibold text-[var(--color-text)]">1000</span>, mas voce pode alterar antes de cadastrar.
+                O ID e gerado automaticamente a partir de{" "}
+                <span className="font-semibold text-[var(--color-text)]">
+                  1000
+                </span>
+                , mas voce pode alterar antes de cadastrar.
               </div>
               {copyFeedback ? (
                 <div className="mt-3 text-sm font-medium text-[var(--color-success)]">
@@ -791,7 +990,9 @@ export default function Maquinas() {
                     value={form.cliente_id || ""}
                     onChange={(e) =>
                       setForm((current) => {
-                        const cliente = usuarios.find((item) => String(item.cliente_id) === e.target.value);
+                        const cliente = usuarios.find(
+                          (item) => String(item.cliente_id) === e.target.value,
+                        );
                         const providers = getPaymentProviders(cliente);
                         return {
                           ...current,
@@ -805,7 +1006,10 @@ export default function Maquinas() {
                     <option value="">Selecione o cliente responsavel</option>
                     {usuarios.map((item) => (
                       <option key={item.id} value={item.cliente_id ?? ""}>
-                        {(item.nome || item.email) + (item.cliente_id ? ` - cliente ${item.cliente_id}` : "")}
+                        {(item.nome || item.email) +
+                          (item.cliente_id
+                            ? ` - cliente ${item.cliente_id}`
+                            : "")}
                         {item.mp_configurado ? "" : " - Mercado Pago pendente"}
                       </option>
                     ))}
@@ -822,13 +1026,22 @@ export default function Maquinas() {
                     className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
                     value={form.banco_pagamento}
                     onChange={(e) =>
-                      setForm((current) => ({ ...current, banco_pagamento: e.target.value }))
+                      setForm((current) => ({
+                        ...current,
+                        banco_pagamento: e.target.value,
+                      }))
                     }
                     required
-                    disabled={!form.cliente_id || paymentProviders.length === 0 || Boolean(editingMachineId)}
+                    disabled={
+                      !form.cliente_id ||
+                      paymentProviders.length === 0 ||
+                      Boolean(editingMachineId)
+                    }
                   >
                     <option value="">
-                      {form.cliente_id ? "Selecione o banco da maquina" : "Selecione um cliente primeiro"}
+                      {form.cliente_id
+                        ? "Selecione o banco da maquina"
+                        : "Selecione um cliente primeiro"}
                     </option>
                     {paymentProviders.map((provider) => (
                       <option
@@ -836,7 +1049,8 @@ export default function Maquinas() {
                         value={provider}
                         disabled={provider !== "mercado_pago"}
                       >
-                        {paymentProviderLabels[provider]}{provider !== "mercado_pago" ? " - em breve" : ""}
+                        {paymentProviderLabels[provider]}
+                        {provider !== "mercado_pago" ? " - em breve" : ""}
                       </option>
                     ))}
                   </select>
@@ -845,20 +1059,30 @@ export default function Maquinas() {
                       Este cliente ainda nao tem banco de pagamento habilitado.
                     </span>
                   ) : null}
-                  {form.cliente_id && form.banco_pagamento === "mercado_pago" && !selectedCliente?.mp_configurado ? (
+                  {form.cliente_id &&
+                  form.banco_pagamento === "mercado_pago" &&
+                  !selectedCliente?.mp_configurado ? (
                     <span className="mt-2 block rounded-[14px] bg-amber-50 px-3 py-2 text-xs font-medium leading-5 text-[var(--color-warning)]">
-                      Antes de cadastrar, o sistema vai validar o Mercado Pago deste cliente. Se faltar token ou conta valida, o cadastro sera bloqueado.
+                      Antes de cadastrar, o sistema vai validar o Mercado Pago
+                      deste cliente. Se faltar token ou conta valida, o cadastro
+                      sera bloqueado.
                     </span>
                   ) : null}
-                  {form.cliente_id && form.banco_pagamento === "mercado_pago" ? (
+                  {form.cliente_id &&
+                  form.banco_pagamento === "mercado_pago" ? (
                     <button
                       type="button"
                       className="mt-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)]"
                       onClick={validateSelectedMercadoPago}
                       disabled={validatingMp}
                     >
-                      <RefreshCcw size={15} className={validatingMp ? "animate-spin" : ""} />
-                      {validatingMp ? "Validando MP..." : "Validar MP deste cliente"}
+                      <RefreshCcw
+                        size={15}
+                        className={validatingMp ? "animate-spin" : ""}
+                      />
+                      {validatingMp
+                        ? "Validando MP..."
+                        : "Validar MP deste cliente"}
                     </button>
                   ) : null}
                 </label>
@@ -888,14 +1112,25 @@ export default function Maquinas() {
                   placeholder="Ex.: Piso 2 - corredor central"
                   value={form.localizacao}
                   onChange={(e) =>
-                    setForm((current) => ({ ...current, localizacao: e.target.value }))
+                    setForm((current) => ({
+                      ...current,
+                      localizacao: e.target.value,
+                    }))
                   }
                 />
               </label>
             </div>
 
-            <Button type="submit" className="w-full justify-center" disabled={saving}>
-              {saving ? "Salvando maquina..." : editingMachineId ? "Salvar alteracoes" : "Cadastrar maquina"}
+            <Button
+              type="submit"
+              className="w-full justify-center"
+              disabled={saving}
+            >
+              {saving
+                ? "Salvando maquina..."
+                : editingMachineId
+                  ? "Salvar alteracoes"
+                  : "Cadastrar maquina"}
             </Button>
           </form>
         </div>
@@ -934,7 +1169,9 @@ function CardSectionHeader({ title, description, actions }) {
             {description}
           </p>
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-3">{actions}</div> : null}
+        {actions ? (
+          <div className="flex flex-wrap items-center gap-3">{actions}</div>
+        ) : null}
       </div>
     </section>
   );
@@ -951,10 +1188,14 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className={`text-sm font-semibold ${featured ? "text-white/72" : "text-[var(--color-text-soft)]"}`}>
+          <div
+            className={`text-sm font-semibold ${featured ? "text-white/72" : "text-[var(--color-text-soft)]"}`}
+          >
             {label}
           </div>
-          <div className="mt-4 text-4xl font-extrabold tracking-[-0.05em]">{value}</div>
+          <div className="mt-4 text-4xl font-extrabold tracking-[-0.05em]">
+            {value}
+          </div>
         </div>
         <div
           className={`flex h-11 w-11 items-center justify-center rounded-full ${
@@ -966,14 +1207,27 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
           {icon}
         </div>
       </div>
-      <div className={`mt-4 text-sm ${featured ? "text-white/74" : "text-[var(--color-text-soft)]"}`}>
+      <div
+        className={`mt-4 text-sm ${featured ? "text-white/74" : "text-[var(--color-text-soft)]"}`}
+      >
         {helper}
       </div>
     </section>
   );
 }
 
-function MachineMobileCard({ machine, user, sendingCreditId, sendingUpdateId, canUpdateFirmware, onOpen, onSendCredit, onSendUpdate, onEdit, onDelete }) {
+function MachineMobileCard({
+  machine,
+  user,
+  sendingCreditId,
+  sendingUpdateId,
+  canUpdateFirmware,
+  onOpen,
+  onSendCredit,
+  onSendUpdate,
+  onEdit,
+  onDelete,
+}) {
   return (
     <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
       <div className="flex items-start justify-between gap-3">
@@ -989,12 +1243,30 @@ function MachineMobileCard({ machine, user, sendingCreditId, sendingUpdateId, ca
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-        <InfoPill label="Faturamento" value={machine.faturamento?.toFixed ? `R$ ${machine.faturamento.toFixed(2)}` : "--"} />
-        <InfoPill label="Banco" value={paymentProviderLabels[machine.banco_pagamento || "mercado_pago"] || machine.banco_pagamento || "--"} />
+        <InfoPill
+          label="Faturamento"
+          value={
+            machine.faturamento?.toFixed
+              ? `R$ ${machine.faturamento.toFixed(2)}`
+              : "--"
+          }
+        />
+        <InfoPill
+          label="Banco"
+          value={
+            paymentProviderLabels[machine.banco_pagamento || "mercado_pago"] ||
+            machine.banco_pagamento ||
+            "--"
+          }
+        />
         <InfoPill label="Local" value={machine.localizacao || "--"} wide />
         <InfoPill
           label="Ultima atividade"
-          value={machine.ultima_atividade_em ? dayjs(machine.ultima_atividade_em).format("DD/MM HH:mm") : "Sem atividade"}
+          value={
+            machine.ultima_atividade_em
+              ? dayjs(machine.ultima_atividade_em).format("DD/MM HH:mm")
+              : "Sem atividade"
+          }
           wide
         />
       </div>
@@ -1027,11 +1299,21 @@ function MachineMobileCard({ machine, user, sendingCreditId, sendingUpdateId, ca
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
               onClick={onSendUpdate}
-              disabled={sendingUpdateId === machine.id_hardware || !canUpdateFirmware}
-              title={!machine.status_online ? "Maquina offline" : !canUpdateFirmware ? "Cadastre uma versao em Firmwares" : "Atualizar firmware"}
+              disabled={
+                sendingUpdateId === machine.id_hardware || !canUpdateFirmware
+              }
+              title={
+                !machine.status_online
+                  ? "Maquina offline"
+                  : !canUpdateFirmware
+                    ? "Cadastre uma versao em Firmwares"
+                    : "Atualizar firmware"
+              }
             >
               <UploadCloud size={15} />
-              {sendingUpdateId === machine.id_hardware ? "Enviando" : "Atualizar"}
+              {sendingUpdateId === machine.id_hardware
+                ? "Enviando"
+                : "Atualizar"}
             </button>
             <button
               type="button"
@@ -1063,9 +1345,12 @@ function FirmwareBadge({ machine }) {
   const hasCurrent = Boolean(currentVersion);
   const hasTarget = Boolean(targetVersion);
   const isUpdated = hasCurrent && hasTarget && currentVersion === targetVersion;
-  const needsUpdate = hasCurrent && hasTarget && currentVersion !== targetVersion;
+  const needsUpdate =
+    hasCurrent && hasTarget && currentVersion !== targetVersion;
   const updateLabel = formatFirmwareUpdateStatus(updateStatus);
-  const isUpdating = ["sent", "downloading", "restarting"].includes(updateStatus);
+  const isUpdating = ["sent", "downloading", "restarting"].includes(
+    updateStatus,
+  );
   const isFailed = updateStatus === "failed";
 
   const tone = !hasCurrent
@@ -1073,21 +1358,36 @@ function FirmwareBadge({ machine }) {
     : isFailed
       ? "border-rose-200 bg-rose-50 text-rose-800"
       : needsUpdate || isUpdating
-      ? "border-amber-200 bg-amber-50 text-amber-800"
-      : "border-emerald-200 bg-emerald-50 text-emerald-800";
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : "border-emerald-200 bg-emerald-50 text-emerald-800";
 
   return (
-    <div className={`inline-flex max-w-full items-start gap-2 rounded-xl border px-3 py-2 text-xs ${tone}`}>
+    <div
+      className={`inline-flex max-w-full items-start gap-2 rounded-xl border px-3 py-2 text-xs ${tone}`}
+    >
       <Cpu size={15} className="mt-0.5 shrink-0" />
       <div className="min-w-0">
         <div className="font-bold">
-          {updateLabel || (!hasCurrent ? "Sem versao" : isUpdated ? "Atualizado" : needsUpdate ? "Atualizacao pendente" : "Instalado")}
+          {updateLabel ||
+            (!hasCurrent
+              ? "Sem versao"
+              : isUpdated
+                ? "Atualizado"
+                : needsUpdate
+                  ? "Atualizacao pendente"
+                  : "Instalado")}
         </div>
-        <div className="mt-1 max-w-[190px] truncate font-semibold" title={currentVersion || "Aguardando sinal da placa"}>
+        <div
+          className="mt-1 max-w-[190px] truncate font-semibold"
+          title={currentVersion || "Aguardando sinal da placa"}
+        >
           {currentVersion || "Aguardando sinal da placa"}
         </div>
         {hasTarget && !isUpdated ? (
-          <div className="mt-1 max-w-[190px] truncate text-[11px]" title={targetVersion}>
+          <div
+            className="mt-1 max-w-[190px] truncate text-[11px]"
+            title={targetVersion}
+          >
             Alvo: {targetVersion}
           </div>
         ) : null}
@@ -1120,10 +1420,17 @@ function MachineStatusBadge({ status }) {
       : status === "atencao"
         ? "bg-amber-50 text-[var(--color-warning)]"
         : "bg-rose-50 text-[var(--color-error)]";
-  const label = status === "operando" ? "Operando" : status === "atencao" ? "Atencao" : "Offline";
-  const Icon = status === "operando" ? CheckCircle2 : XCircle;
+  const label =
+    status === "offline"
+      ? "Offline"
+      : status === "operando"
+        ? "Operando"
+        : "Online";
+  const Icon = status === "offline" ? XCircle : CheckCircle2;
   return (
-    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold ${tone}`}>
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold ${tone}`}
+    >
       <Icon size={14} />
       {label}
     </span>
@@ -1132,9 +1439,15 @@ function MachineStatusBadge({ status }) {
 
 function InfoPill({ label, value, wide = false }) {
   return (
-    <div className={`rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2 ${wide ? "col-span-2" : ""}`}>
-      <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">{label}</div>
-      <div className="mt-1 truncate font-semibold text-[var(--color-text)]">{value}</div>
+    <div
+      className={`rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2 ${wide ? "col-span-2" : ""}`}
+    >
+      <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
+        {label}
+      </div>
+      <div className="mt-1 truncate font-semibold text-[var(--color-text)]">
+        {value}
+      </div>
     </div>
   );
 }
@@ -1142,8 +1455,12 @@ function InfoPill({ label, value, wide = false }) {
 function InfoLine({ label, value }) {
   return (
     <div className="flex min-w-0 items-center justify-between gap-3">
-      <span className="shrink-0 font-semibold text-[var(--color-text-soft)]">{label}</span>
-      <span className="min-w-0 truncate text-right font-bold text-[var(--color-text)]">{value}</span>
+      <span className="shrink-0 font-semibold text-[var(--color-text-soft)]">
+        {label}
+      </span>
+      <span className="min-w-0 truncate text-right font-bold text-[var(--color-text)]">
+        {value}
+      </span>
     </div>
   );
 }

@@ -27,12 +27,18 @@ import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useAuth } from "../context/useAuth";
 
-function buildDashboardParams({ dateRange, selectedClientId, selectedMachineId, userRole }) {
+function buildDashboardParams({
+  dateRange,
+  selectedClientId,
+  selectedMachineId,
+  userRole,
+}) {
   const params = new URLSearchParams();
   if (dateRange.start) params.set("data_inicio", dateRange.start);
   if (dateRange.end) params.set("data_fim", dateRange.end);
   if (!dateRange.start || !dateRange.end) params.set("periodo", "mes");
-  if (userRole === "admin" && selectedClientId) params.set("cliente_id", selectedClientId);
+  if (userRole === "admin" && selectedClientId)
+    params.set("cliente_id", selectedClientId);
   if (selectedMachineId) params.set("id_hardware", selectedMachineId);
   return params.toString() ? `?${params.toString()}` : "";
 }
@@ -42,7 +48,9 @@ export default function Dashboard() {
   const isAdmin = user?.role === "admin";
   const persistedFilters = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem("compactpay.dashboard.filters") || "{}");
+      return JSON.parse(
+        localStorage.getItem("compactpay.dashboard.filters") || "{}",
+      );
     } catch {
       return {};
     }
@@ -63,17 +71,30 @@ export default function Dashboard() {
   const [clientesResumo, setClientesResumo] = useState([]);
   const [maquinas, setMaquinas] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
-  const [selectedClientId, setSelectedClientId] = useState(persistedFilters.selectedClientId || "");
-  const [selectedMachineId, setSelectedMachineId] = useState(persistedFilters.selectedMachineId || "");
-  const [filterSearch, setFilterSearch] = useState(persistedFilters.filterSearch || "");
-  const [dateRange, setDateRange] = useState(persistedFilters.dateRange || { start: "", end: "" });
+  const [selectedClientId, setSelectedClientId] = useState(
+    persistedFilters.selectedClientId || "",
+  );
+  const [selectedMachineId, setSelectedMachineId] = useState(
+    persistedFilters.selectedMachineId || "",
+  );
+  const [filterSearch, setFilterSearch] = useState(
+    persistedFilters.filterSearch || "",
+  );
+  const [dateRange, setDateRange] = useState(
+    persistedFilters.dateRange || { start: "", end: "" },
+  );
   const [loading, setLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(
       "compactpay.dashboard.filters",
-      JSON.stringify({ selectedClientId, selectedMachineId, filterSearch, dateRange }),
+      JSON.stringify({
+        selectedClientId,
+        selectedMachineId,
+        filterSearch,
+        dateRange,
+      }),
     );
   }, [dateRange, filterSearch, selectedClientId, selectedMachineId]);
 
@@ -85,7 +106,9 @@ export default function Dashboard() {
         setClientes(Array.isArray(data) ? data : []);
       })
       .catch((error) => {
-        setErrorMessage(getApiErrorMessage(error, "Nao foi possivel carregar os clientes."));
+        setErrorMessage(
+          getApiErrorMessage(error, "Nao foi possivel carregar os clientes."),
+        );
       });
   }, [isAdmin, user]);
 
@@ -101,12 +124,17 @@ export default function Dashboard() {
       .then(({ data }) => {
         const items = Array.isArray(data) ? data : [];
         setMaquinas(items);
-        if (selectedMachineId && !items.some((item) => item.id_hardware === selectedMachineId)) {
+        if (
+          selectedMachineId &&
+          !items.some((item) => item.id_hardware === selectedMachineId)
+        ) {
           setSelectedMachineId("");
         }
       })
       .catch((error) => {
-        setErrorMessage(getApiErrorMessage(error, "Nao foi possivel carregar as maquinas."));
+        setErrorMessage(
+          getApiErrorMessage(error, "Nao foi possivel carregar as maquinas."),
+        );
       });
   }, [isAdmin, selectedClientId, selectedMachineId, user]);
 
@@ -135,10 +163,14 @@ export default function Dashboard() {
         });
         setChartData(Array.isArray(data?.chart_data) ? data.chart_data : []);
         setAlerts(Array.isArray(data?.alerts) ? data.alerts : []);
-        setClientesResumo(Array.isArray(data?.clientes_resumo) ? data.clientes_resumo : []);
+        setClientesResumo(
+          Array.isArray(data?.clientes_resumo) ? data.clientes_resumo : [],
+        );
       })
       .catch((error) => {
-        setErrorMessage(getApiErrorMessage(error, "Nao foi possivel carregar o dashboard."));
+        setErrorMessage(
+          getApiErrorMessage(error, "Nao foi possivel carregar o dashboard."),
+        );
       })
       .finally(() => setLoading(false));
   }, [dateRange, selectedClientId, selectedMachineId, user]);
@@ -189,13 +221,23 @@ export default function Dashboard() {
         setShowSuggestions(false);
       },
     })),
-  ].filter((item, index, items) => searchTerm && items.findIndex((entry) => entry.key === item.key) === index);
+  ].filter(
+    (item, index, items) =>
+      searchTerm &&
+      items.findIndex((entry) => entry.key === item.key) === index,
+  );
 
-  const selectedClient = clientes.find((cliente) => String(cliente.id) === String(selectedClientId));
-  const selectedMachine = maquinas.find((maquina) => maquina.id_hardware === selectedMachineId);
+  const selectedClient = clientes.find(
+    (cliente) => String(cliente.id) === String(selectedClientId),
+  );
+  const selectedMachine = maquinas.find(
+    (maquina) => maquina.id_hardware === selectedMachineId,
+  );
   const machineStatusRows = (selectedMachine ? [selectedMachine] : maquinas)
     .slice()
-    .sort((left, right) => Number(right.status_online) - Number(left.status_online))
+    .sort(
+      (left, right) => Number(right.status_online) - Number(left.status_online),
+    )
     .slice(0, 6);
 
   const statCards = [
@@ -236,7 +278,13 @@ export default function Dashboard() {
 
   const exportClientesCsv = () => {
     const rows = [
-      ["cliente", "maquinas", "maquinas_online", "faturamento", "ultima_atividade"],
+      [
+        "cliente",
+        "maquinas",
+        "maquinas_online",
+        "faturamento",
+        "ultima_atividade",
+      ],
       ...clientesResumo.map((item) => [
         item.cliente_nome,
         item.maquinas,
@@ -246,7 +294,11 @@ export default function Dashboard() {
       ]),
     ];
     const csv = rows
-      .map((row) => row.map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`).join(","))
+      .map((row) =>
+        row
+          .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
+          .join(","),
+      )
       .join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -264,7 +316,10 @@ export default function Dashboard() {
       <section className="app-panel flex min-w-0 flex-col gap-4 rounded-[22px] p-3 sm:rounded-[30px] sm:p-5 md:p-6">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="relative flex min-w-0 flex-1 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-3 py-3 sm:gap-3 sm:rounded-full sm:px-4">
-            <Search size={18} className="shrink-0 text-[var(--color-text-soft)]" />
+            <Search
+              size={18}
+              className="shrink-0 text-[var(--color-text-soft)]"
+            />
             <input
               value={filterSearch}
               onChange={(event) => setFilterSearch(event.target.value)}
@@ -287,10 +342,17 @@ export default function Dashboard() {
                     onClick={item.action}
                   >
                     <div>
-                      <div className="font-semibold text-[var(--color-text)]">{item.label}</div>
-                      <div className="mt-1 text-sm text-[var(--color-text-soft)]">{item.helper}</div>
+                      <div className="font-semibold text-[var(--color-text)]">
+                        {item.label}
+                      </div>
+                      <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+                        {item.helper}
+                      </div>
                     </div>
-                    <ArrowUpRight size={16} className="text-[var(--color-text-soft)]" />
+                    <ArrowUpRight
+                      size={16}
+                      className="text-[var(--color-text-soft)]"
+                    />
                   </button>
                 ))}
               </div>
@@ -315,7 +377,9 @@ export default function Dashboard() {
                 <div className="text-sm font-semibold text-[var(--color-text)]">
                   {isAdmin ? "Administrador" : "Operador"}
                 </div>
-                <div className="max-w-[150px] truncate text-xs text-[var(--color-text-soft)] sm:max-w-[220px]">{user?.email}</div>
+                <div className="max-w-[150px] truncate text-xs text-[var(--color-text-soft)] sm:max-w-[220px]">
+                  {user?.email}
+                </div>
               </div>
             </div>
           </div>
@@ -344,13 +408,18 @@ export default function Dashboard() {
           ) : null}
 
           <label className="flex items-center gap-3 rounded-[24px] border border-[var(--color-border)] bg-white px-4 py-3">
-            <MonitorSmartphone size={18} className="text-[var(--color-text-soft)]" />
+            <MonitorSmartphone
+              size={18}
+              className="text-[var(--color-text-soft)]"
+            />
             <select
               value={selectedMachineId}
               onChange={(event) => setSelectedMachineId(event.target.value)}
               className="w-full bg-transparent text-sm text-[var(--color-text)] outline-none"
             >
-              <option value="">{isAdmin ? "Todas as maquinas" : "Todas as minhas maquinas"}</option>
+              <option value="">
+                {isAdmin ? "Todas as maquinas" : "Todas as minhas maquinas"}
+              </option>
               {filteredMaquinas.map((maquina) => (
                 <option key={maquina.id_hardware} value={maquina.id_hardware}>
                   {maquina.nome || maquina.id_hardware}
@@ -364,7 +433,10 @@ export default function Dashboard() {
             <DateRangePicker value={dateRange} onChange={setDateRange} />
           </div>
 
-          <button type="button" className="pill-button pill-button--primary w-full px-5 py-3 font-semibold lg:w-auto">
+          <button
+            type="button"
+            className="pill-button pill-button--primary w-full px-5 py-3 font-semibold lg:w-auto"
+          >
             Atualizar resumo
           </button>
         </div>
@@ -388,7 +460,8 @@ export default function Dashboard() {
                   Operacao em foco.
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
-                  Acompanhe receita, volume de premios e ritmo da operacao em um painel unico, com leitura mais limpa e decisao mais rapida.
+                  Acompanhe receita, volume de premios e ritmo da operacao em um
+                  painel unico, com leitura mais limpa e decisao mais rapida.
                 </p>
               </div>
 
@@ -396,7 +469,9 @@ export default function Dashboard() {
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
                   Recorte atual
                 </div>
-                <div className="mt-2 break-words text-lg font-bold text-[var(--color-text)]">{scopeLabel}</div>
+                <div className="mt-2 break-words text-lg font-bold text-[var(--color-text)]">
+                  {scopeLabel}
+                </div>
                 <div className="mt-1 text-sm text-[var(--color-text-soft)]">
                   {selectedMachine
                     ? "Resumo filtrado por maquina especifica."
@@ -407,7 +482,7 @@ export default function Dashboard() {
               </div>
             </div>
           </Card>
-          
+
           <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-4">
             {statCards.map((item, index) => {
               const Icon = item.icon;
@@ -423,18 +498,33 @@ export default function Dashboard() {
                 >
                   <div className="flex min-w-0 items-start justify-between gap-3 sm:gap-4">
                     <div className="min-w-0">
-                      <div className={`text-sm font-semibold ${featured ? "text-white/72" : "text-[var(--color-text-soft)]"}`}>
+                      <div
+                        className={`text-sm font-semibold ${featured ? "text-white/72" : "text-[var(--color-text-soft)]"}`}
+                      >
                         {item.label}
                       </div>
-                      <div className="mt-4 break-words text-[clamp(1.7rem,8vw,2.25rem)] font-extrabold leading-tight sm:mt-5">{item.value}</div>
+                      <div className="mt-4 break-words text-[clamp(1.7rem,8vw,2.25rem)] font-extrabold leading-tight sm:mt-5">
+                        {item.value}
+                      </div>
                     </div>
-                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${featured ? "bg-white/16 text-white" : "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"}`}>
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${featured ? "bg-white/16 text-white" : "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"}`}
+                    >
                       <Icon size={18} />
                     </div>
                   </div>
-                  <div className={`mt-4 text-sm ${featured ? "text-white/74" : "text-[var(--color-text-soft)]"}`}>{item.caption}</div>
-                  <div className={`mt-6 h-1 rounded-full ${featured ? "bg-white/18" : "bg-[var(--color-bg-muted)]"}`}>
-                    <div className={`h-1 rounded-full ${featured ? "bg-white" : "bg-[var(--color-primary)]"}`} style={{ width: `${58 + index * 9}%` }} />
+                  <div
+                    className={`mt-4 text-sm ${featured ? "text-white/74" : "text-[var(--color-text-soft)]"}`}
+                  >
+                    {item.caption}
+                  </div>
+                  <div
+                    className={`mt-6 h-1 rounded-full ${featured ? "bg-white/18" : "bg-[var(--color-bg-muted)]"}`}
+                  >
+                    <div
+                      className={`h-1 rounded-full ${featured ? "bg-white" : "bg-[var(--color-primary)]"}`}
+                      style={{ width: `${58 + index * 9}%` }}
+                    />
                   </div>
                 </Card>
               );
@@ -445,8 +535,12 @@ export default function Dashboard() {
             <Card className="rounded-[22px] sm:rounded-[30px]">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <div className="text-xl font-bold text-[var(--color-text)]">Analise semanal</div>
-                  <div className="mt-1 text-sm text-[var(--color-text-soft)]">Leitura compacta do movimento operacional.</div>
+                  <div className="text-xl font-bold text-[var(--color-text)]">
+                    Analise semanal
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+                    Leitura compacta do movimento operacional.
+                  </div>
                 </div>
                 <span className="w-fit rounded-full bg-[var(--color-primary-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)]">
                   {loading ? "Sincronizando" : "Atualizado"}
@@ -459,16 +553,45 @@ export default function Dashboard() {
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} barCategoryGap={22}>
-                      <CartesianGrid vertical={false} stroke="rgba(35, 57, 38, 0.08)" />
-                      <XAxis dataKey="dia" tickLine={false} axisLine={false} tick={{ fill: "#6d7b6f", fontSize: 12, fontWeight: 600 }} />
-                      <YAxis tickLine={false} axisLine={false} tick={{ fill: "#6d7b6f", fontSize: 12 }} />
+                      <CartesianGrid
+                        vertical={false}
+                        stroke="rgba(35, 57, 38, 0.08)"
+                      />
+                      <XAxis
+                        dataKey="dia"
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{
+                          fill: "#6d7b6f",
+                          fontSize: 12,
+                          fontWeight: 600,
+                        }}
+                      />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fill: "#6d7b6f", fontSize: 12 }}
+                      />
                       <Tooltip
                         cursor={{ fill: "rgba(31,122,76,0.06)" }}
-                        contentStyle={{ borderRadius: "18px", border: "1px solid rgba(31,122,76,0.08)", boxShadow: "0 18px 40px rgba(22,44,28,0.12)" }}
+                        contentStyle={{
+                          borderRadius: "18px",
+                          border: "1px solid rgba(31,122,76,0.08)",
+                          boxShadow: "0 18px 40px rgba(22,44,28,0.12)",
+                        }}
                       />
                       <Bar dataKey="valor" radius={[18, 18, 18, 18]}>
                         {chartData.map((entry, index) => (
-                          <Cell key={`${entry.dia}-${index}`} fill={index === 3 ? "#165636" : index === 2 ? "#5eb888" : "#d7dfd2"} />
+                          <Cell
+                            key={`${entry.dia}-${index}`}
+                            fill={
+                              index === 3
+                                ? "#165636"
+                                : index === 2
+                                  ? "#5eb888"
+                                  : "#d7dfd2"
+                            }
+                          />
                         ))}
                       </Bar>
                     </BarChart>
@@ -480,8 +603,12 @@ export default function Dashboard() {
             <Card className="rounded-[22px] bg-[linear-gradient(180deg,#ffffff_0%,#f6faf6_100%)] sm:rounded-[30px]">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-xl font-bold text-[var(--color-text)]">Resumo de hoje</div>
-                  <div className="mt-1 text-sm text-[var(--color-text-soft)]">Indicadores sinteticos para a operacao.</div>
+                  <div className="text-xl font-bold text-[var(--color-text)]">
+                    Resumo de hoje
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+                    Indicadores sinteticos para a operacao.
+                  </div>
                 </div>
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
                   <Sparkles size={18} />
@@ -490,16 +617,28 @@ export default function Dashboard() {
 
               <div className="mt-8 grid gap-4">
                 <div className="rounded-[24px] bg-[var(--color-bg-muted)] p-5">
-                  <div className="text-sm font-semibold text-[var(--color-text-soft)]">Receita consolidada</div>
-                  <div className="mt-3 break-words text-[clamp(1.7rem,8vw,1.875rem)] font-extrabold leading-tight text-[var(--color-text)]">R$ {stats.faturamento_total.toFixed(2)}</div>
+                  <div className="text-sm font-semibold text-[var(--color-text-soft)]">
+                    Receita consolidada
+                  </div>
+                  <div className="mt-3 break-words text-[clamp(1.7rem,8vw,1.875rem)] font-extrabold leading-tight text-[var(--color-text)]">
+                    R$ {stats.faturamento_total.toFixed(2)}
+                  </div>
                 </div>
                 <div className="rounded-[24px] border border-[var(--color-border)] p-5">
-                  <div className="text-sm font-semibold text-[var(--color-text-soft)]">Maquinas online</div>
+                  <div className="text-sm font-semibold text-[var(--color-text-soft)]">
+                    Maquinas online
+                  </div>
                   <div className="mt-4 h-3 rounded-full bg-[var(--color-bg-muted)]">
-                    <div className="h-3 rounded-full bg-[linear-gradient(135deg,var(--color-primary),var(--color-primary-strong))]" style={{ width: `${Math.min(100, Math.max(6, stats.percentual_ativas))}%` }} />
+                    <div
+                      className="h-3 rounded-full bg-[linear-gradient(135deg,var(--color-primary),var(--color-primary-strong))]"
+                      style={{
+                        width: `${Math.min(100, Math.max(6, stats.percentual_ativas))}%`,
+                      }}
+                    />
                   </div>
                   <div className="mt-4 text-sm text-[var(--color-text-soft)]">
-                    {stats.maquinas_ativas} de {stats.total_maquinas} maquinas reportando nos ultimos 90 segundos.
+                    {stats.maquinas_ativas} de {stats.total_maquinas} maquinas
+                    reportando nos ultimos 90 segundos.
                   </div>
                 </div>
               </div>
@@ -510,19 +649,37 @@ export default function Dashboard() {
         <section className="min-w-0 space-y-4">
           <Card
             className="rounded-[22px] p-4 shadow-[0_26px_50px_rgba(17,66,40,0.30)] sm:rounded-[30px] sm:p-6"
-            style={{ background: "linear-gradient(150deg, #0a2314 0%, #114228 55%, #165d38 100%)", color: "#ffffff" }}
+            style={{
+              background:
+                "linear-gradient(150deg, #0a2314 0%, #114228 55%, #165d38 100%)",
+              color: "#ffffff",
+            }}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold uppercase tracking-[0.24em]" style={{ color: "rgba(255,255,255,0.6)" }}>
+                <div
+                  className="text-sm font-semibold uppercase tracking-[0.24em]"
+                  style={{ color: "rgba(255,255,255,0.6)" }}
+                >
                   Painel rapido
                 </div>
-                <div className="mt-3 text-3xl font-extrabold tracking-[-0.05em]">{stats.percentual_ativas.toFixed(0)}%</div>
-                <div className="mt-2 max-w-xs text-sm leading-6" style={{ color: "rgba(255,255,255,0.78)" }}>
+                <div className="mt-3 text-3xl font-extrabold tracking-[-0.05em]">
+                  {stats.percentual_ativas.toFixed(0)}%
+                </div>
+                <div
+                  className="mt-2 max-w-xs text-sm leading-6"
+                  style={{ color: "rgba(255,255,255,0.78)" }}
+                >
                   Percentual atual de maquinas online no parque monitorado.
                 </div>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.14)", color: "#ffffff" }}>
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-full"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.14)",
+                  color: "#ffffff",
+                }}
+              >
                 <ArrowUpRight size={18} />
               </div>
             </div>
@@ -533,7 +690,11 @@ export default function Dashboard() {
                 ["Ativas", stats.maquinas_ativas],
                 ["Alertas", stats.alertas],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-[22px] p-4" style={{ backgroundColor: "rgba(255,255,255,0.1)" }}>
+                <div
+                  key={label}
+                  className="rounded-[22px] p-4"
+                  style={{ backgroundColor: "rgba(255,255,255,0.1)" }}
+                >
                   <div style={{ color: "rgba(255,255,255,0.66)" }}>{label}</div>
                   <div className="mt-3 text-xl font-bold">{value}</div>
                 </div>
@@ -544,8 +705,12 @@ export default function Dashboard() {
           <Card className="rounded-[22px] sm:rounded-[30px]">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <div className="text-xl font-bold text-[var(--color-text)]">Maquinas e status</div>
-                <div className="mt-1 text-sm text-[var(--color-text-soft)]">Semaforo operacional e ultima atividade do recorte atual.</div>
+                <div className="text-xl font-bold text-[var(--color-text)]">
+                  Maquinas e status
+                </div>
+                <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+                  Semaforo operacional e ultima atividade do recorte atual.
+                </div>
               </div>
               <span className="w-fit rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-soft)]">
                 {machineStatusRows.length} itens
@@ -553,7 +718,9 @@ export default function Dashboard() {
             </div>
             <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
               {machineStatusRows.length === 0 ? (
-                <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">Nenhuma maquina encontrada para esse recorte.</div>
+                <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">
+                  Nenhuma maquina encontrada para esse recorte.
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-[520px] bg-white text-sm">
@@ -566,10 +733,17 @@ export default function Dashboard() {
                     </thead>
                     <tbody>
                       {machineStatusRows.map((maquina) => (
-                        <tr key={maquina.id_hardware} className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]">
+                        <tr
+                          key={maquina.id_hardware}
+                          className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                        >
                           <td className="px-5 py-4">
-                            <div className="font-semibold">{maquina.nome || maquina.id_hardware}</div>
-                            <div className="mt-1 text-xs text-[var(--color-text-soft)]">{maquina.localizacao || maquina.id_hardware}</div>
+                            <div className="font-semibold">
+                              {maquina.nome || maquina.id_hardware}
+                            </div>
+                            <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+                              {maquina.localizacao || maquina.id_hardware}
+                            </div>
                           </td>
                           <td className="px-5 py-4">
                             <span
@@ -589,16 +763,14 @@ export default function Dashboard() {
                                       : "var(--color-error)",
                               }}
                             >
-                              {maquina.status_operacional === "operando"
-                                ? "Verde"
-                                : maquina.status_operacional === "atencao"
-                                  ? "Amarelo"
-                                  : "Vermelho"}
+                              {maquina.status_online ? "Online" : "Offline"}
                             </span>
                           </td>
                           <td className="px-5 py-4 text-[var(--color-text-soft)]">
                             {maquina.ultima_atividade_em
-                              ? new Date(maquina.ultima_atividade_em).toLocaleString("pt-BR")
+                              ? new Date(
+                                  maquina.ultima_atividade_em,
+                                ).toLocaleString("pt-BR")
                               : "Sem atividade no periodo"}
                           </td>
                         </tr>
@@ -614,17 +786,27 @@ export default function Dashboard() {
             <Card className="rounded-[22px] sm:rounded-[30px]">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <div className="text-xl font-bold text-[var(--color-text)]">Resumo por cliente</div>
-                  <div className="mt-1 text-sm text-[var(--color-text-soft)]">Consolidado financeiro e operacional por cliente.</div>
+                  <div className="text-xl font-bold text-[var(--color-text)]">
+                    Resumo por cliente
+                  </div>
+                  <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+                    Consolidado financeiro e operacional por cliente.
+                  </div>
                 </div>
-                <button type="button" className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:w-auto" onClick={exportClientesCsv}>
+                <button
+                  type="button"
+                  className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:w-auto"
+                  onClick={exportClientesCsv}
+                >
                   <Download size={16} />
                   Exportar CSV
                 </button>
               </div>
               <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
                 {clientesResumo.length === 0 ? (
-                  <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">Nenhum cliente encontrado para esse recorte.</div>
+                  <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">
+                    Nenhum cliente encontrado para esse recorte.
+                  </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="min-w-[720px] bg-white text-sm">
@@ -639,13 +821,26 @@ export default function Dashboard() {
                       </thead>
                       <tbody>
                         {clientesResumo.map((item) => (
-                          <tr key={item.cliente_id || item.cliente_nome} className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]">
-                            <td className="px-5 py-4 font-semibold">{item.cliente_nome}</td>
+                          <tr
+                            key={item.cliente_id || item.cliente_nome}
+                            className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                          >
+                            <td className="px-5 py-4 font-semibold">
+                              {item.cliente_nome}
+                            </td>
                             <td className="px-5 py-4">{item.maquinas}</td>
-                            <td className="px-5 py-4">{item.maquinas_online}</td>
-                            <td className="px-5 py-4 font-semibold">R$ {Number(item.total_faturado || 0).toFixed(2)}</td>
+                            <td className="px-5 py-4">
+                              {item.maquinas_online}
+                            </td>
+                            <td className="px-5 py-4 font-semibold">
+                              R$ {Number(item.total_faturado || 0).toFixed(2)}
+                            </td>
                             <td className="px-5 py-4 text-[var(--color-text-soft)]">
-                              {item.ultima_atividade_em ? new Date(item.ultima_atividade_em).toLocaleString("pt-BR") : "Sem atividade"}
+                              {item.ultima_atividade_em
+                                ? new Date(
+                                    item.ultima_atividade_em,
+                                  ).toLocaleString("pt-BR")
+                                : "Sem atividade"}
                             </td>
                           </tr>
                         ))}
@@ -660,8 +855,12 @@ export default function Dashboard() {
           <Card className="rounded-[22px] sm:rounded-[30px]">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <div className="text-xl font-bold text-[var(--color-text)]">Fila operacional</div>
-                <div className="mt-1 text-sm text-[var(--color-text-soft)]">Tarefas sugeridas para a proxima rodada.</div>
+                <div className="text-xl font-bold text-[var(--color-text)]">
+                  Fila operacional
+                </div>
+                <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+                  Tarefas sugeridas para a proxima rodada.
+                </div>
               </div>
               <span className="w-fit rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-soft)]">
                 {alerts.length} itens
@@ -670,12 +869,21 @@ export default function Dashboard() {
 
             <div className="mt-5 space-y-3">
               {alerts.map((task) => (
-                <div key={task.title} className="flex flex-col gap-3 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:rounded-[22px]">
+                <div
+                  key={task.title}
+                  className="flex flex-col gap-3 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:rounded-[22px]"
+                >
                   <div className="min-w-0">
-                    <div className="font-semibold text-[var(--color-text)]">{task.title}</div>
-                    <div className="mt-1 text-sm text-[var(--color-text-soft)]">Acao recomendada para manter o painel limpo e responsivo.</div>
+                    <div className="font-semibold text-[var(--color-text)]">
+                      {task.title}
+                    </div>
+                    <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+                      Acao recomendada para manter o painel limpo e responsivo.
+                    </div>
                   </div>
-                  <span className={`text-sm font-semibold ${task.tone === "error" ? "text-[var(--color-error)]" : task.tone === "warning" ? "text-[var(--color-warning)]" : "text-[var(--color-success)]"}`}>
+                  <span
+                    className={`text-sm font-semibold ${task.tone === "error" ? "text-[var(--color-error)]" : task.tone === "warning" ? "text-[var(--color-warning)]" : "text-[var(--color-success)]"}`}
+                  >
                     {task.status}
                   </span>
                 </div>
