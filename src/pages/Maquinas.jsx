@@ -10,6 +10,7 @@ import {
   Rocket,
   Server,
   Trash2,
+  UploadCloud,
   XCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -76,6 +77,7 @@ export default function Maquinas() {
   const [validatingMp, setValidatingMp] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState("");
   const [sendingCreditId, setSendingCreditId] = useState("");
+  const [sendingUpdateId, setSendingUpdateId] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [deleteState, setDeleteState] = useState(emptyDeleteState);
   const selectedCliente = usuarios.find((item) => String(item.cliente_id) === String(form.cliente_id));
@@ -291,6 +293,18 @@ export default function Maquinas() {
     }
   };
 
+  const sendFirmwareUpdate = async (machineId) => {
+    setSendingUpdateId(machineId);
+    try {
+      await api.post(`/maquinas/${machineId}/atualizacao`, {});
+      setToast({ message: `Atualizacao enviada para ${machineId}.`, type: "success" });
+    } catch (error) {
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel enviar a atualizacao."), type: "error" });
+    } finally {
+      setSendingUpdateId("");
+    }
+  };
+
   const onlineCount = maquinas.filter((m) => m.status_online).length;
 
   return (
@@ -408,8 +422,10 @@ export default function Maquinas() {
                   machine={m}
                   user={user}
                   sendingCreditId={sendingCreditId}
+                  sendingUpdateId={sendingUpdateId}
                   onOpen={() => navigate(`/maquinas/${m.id_hardware}`)}
                   onSendCredit={() => sendTestCredit(m.id_hardware)}
+                  onSendUpdate={() => sendFirmwareUpdate(m.id_hardware)}
                   onEdit={() => handleEditMachine(m)}
                   onDelete={() => requestDeleteMachine(m.id_hardware)}
                 />
@@ -527,6 +543,15 @@ export default function Maquinas() {
                         {user?.role === "admin" ? (
                           <td className="px-5 py-4 min-w-[220px]">
                             <div className="flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                                onClick={() => sendFirmwareUpdate(m.id_hardware)}
+                                disabled={sendingUpdateId === m.id_hardware}
+                              >
+                                <UploadCloud size={15} />
+                                {sendingUpdateId === m.id_hardware ? "Enviando" : "Atualizar"}
+                              </button>
                               <button
                                 type="button"
                                 className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
@@ -815,7 +840,7 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
   );
 }
 
-function MachineMobileCard({ machine, user, sendingCreditId, onOpen, onSendCredit, onEdit, onDelete }) {
+function MachineMobileCard({ machine, user, sendingCreditId, sendingUpdateId, onOpen, onSendCredit, onSendUpdate, onEdit, onDelete }) {
   return (
     <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
       <div className="flex items-start justify-between gap-3">
@@ -861,6 +886,15 @@ function MachineMobileCard({ machine, user, sendingCreditId, onOpen, onSendCredi
         </button>
         {user?.role === "admin" ? (
           <>
+            <button
+              type="button"
+              className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+              onClick={onSendUpdate}
+              disabled={sendingUpdateId === machine.id_hardware}
+            >
+              <UploadCloud size={15} />
+              {sendingUpdateId === machine.id_hardware ? "Enviando" : "Atualizar"}
+            </button>
             <button
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
