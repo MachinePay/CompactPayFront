@@ -26,6 +26,8 @@ export default function FirmwareVersions() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteStep, setDeleteStep] = useState(1);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "success" });
 
@@ -123,15 +125,29 @@ export default function FirmwareVersions() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await api.delete(`/firmware-versions/${deleteTarget.id}`);
-      setDeleteTarget(null);
-      setToast({ message: "Versao desativada com sucesso.", type: "success" });
+      await api.delete(`/firmware-versions/${deleteTarget.id}/permanent`, {
+        params: { confirmacao: deleteConfirmation },
+      });
+      closeDeleteConfirmation();
+      setToast({ message: "Firmware excluido permanentemente.", type: "success" });
       await loadFirmwares();
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel desativar a versao."), type: "error" });
+      setToast({ message: getApiErrorMessage(error, "Nao foi possivel excluir o firmware."), type: "error" });
     } finally {
       setDeleting(false);
     }
+  };
+
+  const openDeleteConfirmation = (firmware) => {
+    setDeleteTarget(firmware);
+    setDeleteStep(1);
+    setDeleteConfirmation("");
+  };
+
+  const closeDeleteConfirmation = () => {
+    setDeleteTarget(null);
+    setDeleteStep(1);
+    setDeleteConfirmation("");
   };
 
   const activeCount = firmwares.filter((item) => item.ativo).length;
@@ -145,12 +161,25 @@ export default function FirmwareVersions() {
       />
       <ConfirmModal
         open={Boolean(deleteTarget)}
-        title="Desativar versao"
-        description={`A versao ${deleteTarget?.nome || ""} nao aparecera mais para atualizacao.`}
-        confirmLabel="Desativar"
+        title={deleteStep === 1 ? "Excluir firmware?" : "Confirmacao final"}
+        description={
+          deleteStep === 1
+            ? `O firmware ${deleteTarget?.nome || ""} sera removido permanentemente. Esta acao nao pode ser desfeita.`
+            : `Para excluir definitivamente ${deleteTarget?.nome || ""}, digite EXCLUIR abaixo.`
+        }
+        confirmLabel={deleteStep === 1 ? "Continuar" : "Excluir definitivamente"}
         loading={deleting}
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        requireText={deleteStep === 2 ? "EXCLUIR" : ""}
+        inputValue={deleteConfirmation}
+        onInputChange={setDeleteConfirmation}
+        onCancel={closeDeleteConfirmation}
+        onConfirm={() => {
+          if (deleteStep === 1) {
+            setDeleteStep(2);
+            return;
+          }
+          handleDelete();
+        }}
       />
 
       <section className="app-panel rounded-[30px] p-5 md:p-7">
@@ -206,7 +235,7 @@ export default function FirmwareVersions() {
                     firmware={firmware}
                     onEdit={() => openEdit(firmware)}
                     onToggle={() => toggleActive(firmware)}
-                    onDelete={() => setDeleteTarget(firmware)}
+                    onDelete={() => openDeleteConfirmation(firmware)}
                   />
                 ))}
               </div>
@@ -248,10 +277,12 @@ export default function FirmwareVersions() {
                               <Power size={15} />
                               {firmware.ativo ? "Inativar" : "Ativar"}
                             </button>
-                            <button type="button" className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)]" onClick={() => setDeleteTarget(firmware)}>
-                              <Trash2 size={15} />
-                              Desativar
-                            </button>
+                            {!firmware.ativo ? (
+                              <button type="button" className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)]" onClick={() => openDeleteConfirmation(firmware)}>
+                                <Trash2 size={15} />
+                                Excluir
+                              </button>
+                            ) : null}
                           </div>
                         </td>
                       </tr>
@@ -411,10 +442,12 @@ function FirmwareMobileCard({ firmware, onEdit, onToggle, onDelete }) {
           <Power size={15} />
           {firmware.ativo ? "Inativar" : "Ativar"}
         </button>
-        <button type="button" className="col-span-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)]" onClick={onDelete}>
-          <Trash2 size={15} />
-          Desativar
-        </button>
+        {!firmware.ativo ? (
+          <button type="button" className="col-span-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)]" onClick={onDelete}>
+            <Trash2 size={15} />
+            Excluir permanentemente
+          </button>
+        ) : null}
       </div>
     </article>
   );
