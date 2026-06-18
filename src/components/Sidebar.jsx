@@ -7,7 +7,6 @@ import {
   Home,
   LogOut,
   Menu,
-  QrCode,
   Server,
   Users,
   X,
@@ -48,15 +47,6 @@ export default function Sidebar() {
           onClick={closeMobile}
         >
           <BarChart3 size={20} /> Relatorio Maquina
-        </NavLink>
-      </li>
-      <li>
-        <NavLink
-          to="/teste-pagamento"
-          className={linkClassName}
-          onClick={closeMobile}
-        >
-          <QrCode size={20} /> Teste Pagamento
         </NavLink>
       </li>
       <li>
