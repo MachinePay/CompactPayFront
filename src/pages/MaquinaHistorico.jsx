@@ -51,6 +51,11 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     start: dayjs().subtract(30, "day").format("YYYY-MM-DD"),
     end: dayjs().format("YYYY-MM-DD"),
   });
+  const [appliedPeriodo, setAppliedPeriodo] = useState("");
+  const [appliedDateRange, setAppliedDateRange] = useState({
+    start: dayjs().subtract(30, "day").format("YYYY-MM-DD"),
+    end: dayjs().format("YYYY-MM-DD"),
+  });
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [observacao, setObservacao] = useState("");
   const [savingObservacao, setSavingObservacao] = useState(false);
@@ -59,22 +64,22 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   const [refundState, setRefundState] = useState({ open: false, venda: null, confirmationText: "" });
   const [refundingId, setRefundingId] = useState("");
 
-  const buildQuery = useCallback((selectedPeriodo = periodo, selectedRange = dateRange) => {
+  const buildQuery = useCallback((selectedPeriodo = appliedPeriodo, selectedRange = appliedDateRange) => {
     const params = [];
     if (selectedPeriodo) params.push(`periodo=${selectedPeriodo}`);
     if (selectedRange.start) params.push(`data_inicio=${selectedRange.start}`);
     if (selectedRange.end) params.push(`data_fim=${selectedRange.end}`);
     return params.length ? `?${params.join("&")}` : "";
-  }, [dateRange, periodo]);
+  }, [appliedDateRange, appliedPeriodo]);
 
   const fetchHistorico = useCallback(async (options = {}) => {
     if (!machineId) return null;
-    const currentPeriodo = options.periodo ?? periodo;
-    const currentRange = options.dateRange ?? dateRange;
+    const currentPeriodo = options.periodo ?? appliedPeriodo;
+    const currentRange = options.dateRange ?? appliedDateRange;
     const query = buildQuery(currentPeriodo, currentRange);
     const { data } = await api.get(`/maquinas/${machineId}/historico${query}`);
     return data;
-  }, [buildQuery, dateRange, machineId, periodo]);
+  }, [appliedDateRange, appliedPeriodo, buildQuery, machineId]);
 
   const loadHistorico = useCallback(async (options = {}) => {
     if (!machineId) return null;
@@ -442,6 +447,8 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     const nextRange = { start: hoje, end: hoje };
     setPeriodo("dia");
     setDateRange(nextRange);
+    setAppliedPeriodo("dia");
+    setAppliedDateRange(nextRange);
     try {
       const data = await loadHistorico({ periodo: "dia", dateRange: nextRange });
       if (!data) return;
@@ -459,6 +466,41 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         message: getApiErrorMessage(error, "Nao foi possivel gerar o fechamento do dia."),
         type: "error",
       });
+    }
+  };
+
+  const handlePeriodoChange = (value) => {
+    setPeriodo(value);
+    const hoje = dayjs();
+    if (value === "dia") {
+      const today = hoje.format("YYYY-MM-DD");
+      setDateRange({ start: today, end: today });
+      return;
+    }
+    if (value === "mes") {
+      setDateRange({
+        start: hoje.startOf("month").format("YYYY-MM-DD"),
+        end: hoje.format("YYYY-MM-DD"),
+      });
+      return;
+    }
+    setDateRange({
+      start: hoje.subtract(30, "day").format("YYYY-MM-DD"),
+      end: hoje.format("YYYY-MM-DD"),
+    });
+  };
+
+  const handleApplyFilters = async () => {
+    const sameFilters =
+      appliedPeriodo === periodo &&
+      appliedDateRange.start === dateRange.start &&
+      appliedDateRange.end === dateRange.end;
+
+    setAppliedPeriodo(periodo);
+    setAppliedDateRange({ ...dateRange });
+
+    if (sameFilters) {
+      await loadHistorico({ periodo, dateRange });
     }
   };
 
@@ -563,15 +605,21 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               <select
                 className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none sm:flex-none"
                 value={periodo}
-                onChange={(e) => setPeriodo(e.target.value)}
+                onChange={(e) => handlePeriodoChange(e.target.value)}
               >
-                <option value="">Ultimos 30 dias / data selecionada</option>
+                <option value="">Ultimos 30 dias</option>
                 <option value="dia">Hoje</option>
                 <option value="mes">Mes atual</option>
               </select>
             </label>
             <div className="w-full min-w-0 sm:w-auto">
-              <DateRangePicker value={dateRange} onChange={setDateRange} />
+              <DateRangePicker
+                value={dateRange}
+                onChange={(range) => {
+                  setDateRange(range);
+                  setPeriodo("");
+                }}
+              />
             </div>
             <label className="flex w-full min-w-0 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)] sm:min-w-[240px] sm:w-auto sm:rounded-full">
               <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
@@ -582,6 +630,15 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </label>
+            <button
+              type="button"
+              className="pill-button pill-button--primary inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold sm:w-auto"
+              onClick={handleApplyFilters}
+              disabled={loading || !machineId}
+            >
+              <Search size={16} />
+              {loading ? "Aplicando..." : "Aplicar filtros"}
+            </button>
           </div>
         </div>
       </section>
@@ -625,7 +682,11 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
           helper={formatResumoData(historico.resumo.ultima_saida_em, "Ultima saida")}
           icon={<Sparkles size={18} />}
         />
-        <StatusCard maquina={maquina} eventos={historico.eventos_dispositivo || []} />
+        <StatusCard
+          maquina={maquina}
+          eventos={historico.eventos_dispositivo || []}
+          showFirmware={user?.role === "admin"}
+        />
       </div>
       ) : null}
 
@@ -885,7 +946,7 @@ function SummaryCard({ label, value, helper, icon, featured = false }) {
   );
 }
 
-function StatusCard({ maquina, eventos = [] }) {
+function StatusCard({ maquina, eventos = [], showFirmware = false }) {
   const online = Boolean(maquina?.status_online);
   const ultimoEvento = eventos[0];
   return (
@@ -915,19 +976,21 @@ function StatusCard({ maquina, eventos = [] }) {
           </div>
         </div>
       ) : null}
-      <div className="mt-4 rounded-[16px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm">
-        <div className="font-semibold text-[var(--color-text)]">Firmware</div>
-        <div className="mt-2 grid gap-2 text-xs text-[var(--color-text-soft)]">
-          <InfoRow label="Instalado" value={maquina?.firmware_version || "Aguardando fw da placa"} />
-          <InfoRow label="Alvo" value={maquina?.firmware_target_version || "--"} />
-          <InfoRow label="Status OTA" value={formatFirmwareUpdateStatus(maquina?.firmware_update_status) || "--"} />
-          <InfoRow
-            label="Solicitado"
-            value={maquina?.firmware_update_requested_at ? brasiliaDate(maquina.firmware_update_requested_at).format("DD/MM/YYYY HH:mm:ss") : "--"}
-          />
-          <InfoRow label="URL" value={maquina?.firmware_update_url || "--"} />
+      {showFirmware ? (
+        <div className="mt-4 rounded-[16px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm">
+          <div className="font-semibold text-[var(--color-text)]">Firmware</div>
+          <div className="mt-2 grid gap-2 text-xs text-[var(--color-text-soft)]">
+            <InfoRow label="Instalado" value={maquina?.firmware_version || "Aguardando fw da placa"} />
+            <InfoRow label="Alvo" value={maquina?.firmware_target_version || "--"} />
+            <InfoRow label="Status OTA" value={formatFirmwareUpdateStatus(maquina?.firmware_update_status) || "--"} />
+            <InfoRow
+              label="Solicitado"
+              value={maquina?.firmware_update_requested_at ? brasiliaDate(maquina.firmware_update_requested_at).format("DD/MM/YYYY HH:mm:ss") : "--"}
+            />
+            <InfoRow label="URL" value={maquina?.firmware_update_url || "--"} />
+          </div>
         </div>
-      </div>
+      ) : null}
     </section>
   );
 }

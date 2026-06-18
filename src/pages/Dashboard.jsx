@@ -315,59 +315,63 @@ export default function Dashboard() {
     <div className="flex min-h-full min-w-0 flex-col gap-4">
       <section className="app-panel flex min-w-0 flex-col gap-4 rounded-[22px] p-3 sm:rounded-[30px] sm:p-5 md:p-6">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div className="relative flex min-w-0 flex-1 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-3 py-3 sm:gap-3 sm:rounded-full sm:px-4">
-            <Search
-              size={18}
-              className="shrink-0 text-[var(--color-text-soft)]"
-            />
-            <input
-              value={filterSearch}
-              onChange={(event) => setFilterSearch(event.target.value)}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
-              placeholder="Buscar cliente, maquina ou localizacao"
-              className="min-w-0 w-full bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-soft)]"
-            />
-            <span className="hidden rounded-full bg-[var(--color-bg-muted)] px-3 py-1 text-xs font-semibold text-[var(--color-text-soft)] sm:inline-flex">
-              Busca
-            </span>
-            {showSuggestions && searchSuggestions.length > 0 ? (
-              <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-white shadow-[0_18px_40px_rgba(22,44,28,0.12)]">
-                {searchSuggestions.map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    className="flex w-full items-start justify-between gap-3 border-t border-[var(--color-border)] px-4 py-3 text-left first:border-t-0 hover:bg-[var(--color-bg-muted)]"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={item.action}
-                  >
-                    <div>
-                      <div className="font-semibold text-[var(--color-text)]">
-                        {item.label}
+          {isAdmin ? (
+            <div className="relative flex min-w-0 flex-1 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-3 py-3 sm:gap-3 sm:rounded-full sm:px-4">
+              <Search
+                size={18}
+                className="shrink-0 text-[var(--color-text-soft)]"
+              />
+              <input
+                value={filterSearch}
+                onChange={(event) => setFilterSearch(event.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+                placeholder="Buscar cliente, maquina ou localizacao"
+                className="min-w-0 w-full bg-transparent text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-soft)]"
+              />
+              <span className="hidden rounded-full bg-[var(--color-bg-muted)] px-3 py-1 text-xs font-semibold text-[var(--color-text-soft)] sm:inline-flex">
+                Busca
+              </span>
+              {showSuggestions && searchSuggestions.length > 0 ? (
+                <div className="absolute left-0 right-0 top-[calc(100%+10px)] z-20 overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-white shadow-[0_18px_40px_rgba(22,44,28,0.12)]">
+                  {searchSuggestions.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className="flex w-full items-start justify-between gap-3 border-t border-[var(--color-border)] px-4 py-3 text-left first:border-t-0 hover:bg-[var(--color-bg-muted)]"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={item.action}
+                    >
+                      <div>
+                        <div className="font-semibold text-[var(--color-text)]">
+                          {item.label}
+                        </div>
+                        <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+                          {item.helper}
+                        </div>
                       </div>
-                      <div className="mt-1 text-sm text-[var(--color-text-soft)]">
-                        {item.helper}
-                      </div>
-                    </div>
-                    <ArrowUpRight
-                      size={16}
-                      className="text-[var(--color-text-soft)]"
-                    />
-                  </button>
-                ))}
+                      <ArrowUpRight
+                        size={16}
+                        className="text-[var(--color-text-soft)]"
+                      />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="flex min-w-0 items-center justify-end gap-2">
+            {isAdmin ? (
+              <div className="flex items-center gap-2">
+                <button className="pill-button flex h-12 w-12 items-center justify-center">
+                  <Bell size={18} />
+                </button>
+                <button className="pill-button flex h-12 w-12 items-center justify-center">
+                  <ArrowUpRight size={18} />
+                </button>
               </div>
             ) : null}
-          </div>
-
-          <div className="flex min-w-0 items-center justify-between gap-2 xl:justify-end">
-            <div className="flex items-center gap-2">
-              <button className="pill-button flex h-12 w-12 items-center justify-center">
-                <Bell size={18} />
-              </button>
-              <button className="pill-button flex h-12 w-12 items-center justify-center">
-                <ArrowUpRight size={18} />
-              </button>
-            </div>
 
             <div className="flex min-w-0 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-2 py-2 sm:gap-3 sm:rounded-full sm:px-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-lg font-bold text-[var(--color-primary)] sm:h-12 sm:w-12">
