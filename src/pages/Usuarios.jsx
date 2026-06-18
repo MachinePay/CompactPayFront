@@ -8,6 +8,12 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import Button from "../components/Button";
 import ConfirmModal from "../components/ConfirmModal";
 
+const PROTECTED_ADMIN_EMAILS = new Set(["admin@compactpay.com.br"]);
+
+function isProtectedUser(item) {
+  return PROTECTED_ADMIN_EMAILS.has(String(item?.email || "").trim().toLowerCase());
+}
+
 const brazilStates = [
   "Acre",
   "Alagoas",
@@ -416,14 +422,21 @@ export default function Usuarios() {
                                 </button>
                               </>
                             ) : null}
-                            <button
-                              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-                              onClick={() => setDeleteUser(item)}
-                              type="button"
-                            >
-                              <Trash2 size={15} />
-                              Excluir
-                            </button>
+                            {isProtectedUser(item) ? (
+                              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
+                                <ShieldCheck size={15} />
+                                Conta protegida
+                              </span>
+                            ) : (
+                              <button
+                                className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
+                                onClick={() => setDeleteUser(item)}
+                                type="button"
+                              >
+                                <Trash2 size={15} />
+                                Excluir
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -830,6 +843,7 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
 
 function UserMobileCard({ item, validatingClienteId, onEdit, onConnectMp, onValidateMp, onDelete }) {
   const isCliente = item.role === "cliente";
+  const protectedAccount = isProtectedUser(item);
 
   return (
     <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
@@ -894,14 +908,21 @@ function UserMobileCard({ item, validatingClienteId, onEdit, onConnectMp, onVali
             {validatingClienteId === item.cliente_id ? "Validando" : "Validar"}
           </button>
         ) : null}
-        <button
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-          onClick={onDelete}
-          type="button"
-        >
-          <Trash2 size={16} />
-          Excluir
-        </button>
+        {protectedAccount ? (
+          <span className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+            <ShieldCheck size={16} />
+            Protegida
+          </span>
+        ) : (
+          <button
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
+            onClick={onDelete}
+            type="button"
+          >
+            <Trash2 size={16} />
+            Excluir
+          </button>
+        )}
       </div>
     </article>
   );
