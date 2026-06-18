@@ -113,7 +113,6 @@ export default function Transacoes() {
         "tipo",
         "metodo",
         "valor",
-        "taxa",
       ],
       ...transacoes.map((item) => [
         dayjs(item.data_hora).format("YYYY-MM-DD"),
@@ -123,7 +122,6 @@ export default function Transacoes() {
         item.tipo,
         item.metodo,
         Number(item.valor || 0).toFixed(2),
-        item.taxa ? Number(item.taxa).toFixed(2) : "",
       ]),
     ];
 
@@ -294,7 +292,6 @@ export default function Transacoes() {
                       <th className="px-5 py-4 whitespace-nowrap">Tipo</th>
                       <th className="px-5 py-4 whitespace-nowrap">Metodo</th>
                       <th className="px-5 py-4 whitespace-nowrap">Valor</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Taxa</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -335,11 +332,6 @@ export default function Transacoes() {
                         </td>
                         <td className="px-5 py-4 min-w-[120px] font-semibold">
                           R$ {Number(transacao.valor).toFixed(2)}
-                        </td>
-                        <td className="px-5 py-4 min-w-[120px] font-semibold text-[var(--color-error)]">
-                          {transacao.taxa
-                            ? `R$ ${Number(transacao.taxa).toFixed(2)}`
-                            : "--"}
                         </td>
                       </tr>
                     ))}
@@ -442,7 +434,7 @@ function TransactionMobileCard({ transacao }) {
           {entrada ? "Entrada" : "Saida"}
         </span>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-2 gap-2">
         <div className="rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
           <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
             Metodo
@@ -457,14 +449,6 @@ function TransactionMobileCard({ transacao }) {
           </div>
           <div className="mt-1 font-extrabold text-[var(--color-text)]">
             R$ {Number(transacao.valor).toFixed(2)}
-          </div>
-        </div>
-        <div className="rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
-          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
-            Taxa
-          </div>
-          <div className="mt-1 font-extrabold text-[var(--color-error)]">
-            {transacao.taxa ? `R$ ${Number(transacao.taxa).toFixed(2)}` : "--"}
           </div>
         </div>
       </div>

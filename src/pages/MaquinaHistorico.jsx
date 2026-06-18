@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Wallet, Wrench } from "lucide-react";
+import { CreditCard, Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Wallet, Wifi, WifiOff, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -78,13 +78,13 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   const loadHistorico = useCallback(async (options = {}) => {
     if (!machineId) return null;
     if (selectable && user?.role === "admin" && !selectedClienteId) return null;
-    setLoading(true);
+    if (!options.silent) setLoading(true);
     try {
       const data = await fetchHistorico(options);
       setHistorico(data);
       return data;
     } finally {
-      setLoading(false);
+      if (!options.silent) setLoading(false);
     }
   }, [fetchHistorico, machineId, selectable, selectedClienteId, user?.role]);
 
@@ -100,9 +100,15 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   useEffect(() => {
     const status = historico.maquina?.firmware_update_status;
     if (!["sent", "downloading", "restarting"].includes(status)) return undefined;
-    const timer = window.setInterval(loadHistorico, 5000);
+    const timer = window.setInterval(() => loadHistorico({ silent: true }), 5000);
     return () => window.clearInterval(timer);
   }, [historico.maquina?.firmware_update_status, loadHistorico]);
+
+  useEffect(() => {
+    if (!machineId) return undefined;
+    const timer = window.setInterval(() => loadHistorico({ silent: true }), 30000);
+    return () => window.clearInterval(timer);
+  }, [loadHistorico, machineId]);
 
   useEffect(() => {
     if (!selectable || !user) return;
@@ -990,9 +996,9 @@ function SalesReportTable({ vendas, searchTerm, maquina, onRefund, refundingId }
                 <th className="px-4 py-4">Opcoes</th>
                 <th className="px-4 py-4">Data</th>
                 <th className="px-4 py-4">Valor</th>
-                <th className="px-4 py-4">Taxa</th>
                 <th className="px-4 py-4">Total</th>
                 <th className="px-4 py-4">Ponto</th>
+                <th className="px-4 py-4">Maquininha</th>
                 <th className="px-4 py-4">Banco/Metodo</th>
                 <th className="px-4 py-4">Pago/Devolver</th>
                 <th className="px-4 py-4">Machine Pay</th>
@@ -1026,15 +1032,6 @@ function SalesReportTable({ vendas, searchTerm, maquina, onRefund, refundingId }
                     <div className="mt-1 text-xs text-[var(--color-primary)]">Cliente pagou</div>
                   </td>
                   <td className="px-4 py-4">
-                    {item.taxa == null ? (
-                      <span className="rounded-full bg-[var(--color-bg-muted)] px-3 py-2 text-xs font-semibold text-[var(--color-text-soft)]">
-                        Nao informado
-                      </span>
-                    ) : (
-                      <MoneyBadge value={item.taxa} tone="orange" />
-                    )}
-                  </td>
-                  <td className="px-4 py-4">
                     <MoneyBadge value={item.total} tone="green" />
                     <div className="mt-1 text-xs text-[var(--color-success)]">Voce recebeu</div>
                   </td>
@@ -1045,6 +1042,9 @@ function SalesReportTable({ vendas, searchTerm, maquina, onRefund, refundingId }
                     <div className="mt-2 rounded-[10px] bg-black px-3 py-1 text-xs font-semibold text-yellow-300">
                       Caixa: {maquina?.mp_pos_external_id || maquina?.id_hardware}
                     </div>
+                  </td>
+                  <td className="px-4 py-4 min-w-[165px]">
+                    <TerminalBadge maquina={maquina} />
                   </td>
                   <td className="px-4 py-4 min-w-[220px]">
                     {item.is_test ? (
@@ -1138,6 +1138,12 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
             {item.ponto || maquina?.nome || maquina?.id_hardware}
           </div>
         </div>
+        <div className="col-span-2 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3">
+          <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
+            Maquininha
+          </div>
+          <TerminalBadge maquina={maquina} compact />
+        </div>
         <div className="col-span-2">
           <PulseBadge status={item.pulse_status} />
         </div>
@@ -1158,6 +1164,41 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
         {refundingId === String(item.id) ? "Devolvendo" : "Devolver"}
       </button>
     </article>
+  );
+}
+
+function TerminalBadge({ maquina, compact = false }) {
+  const status = maquina?.terminal_status || "not_linked";
+  const online = status === "online";
+  const unavailable = status === "unavailable";
+  const notLinked = status === "not_linked";
+  const Icon = online ? Wifi : WifiOff;
+  const label = online
+    ? "Online"
+    : unavailable
+      ? "Indisponivel"
+      : notLinked
+        ? "Nao vinculada"
+        : "Offline";
+  const statusClass = online
+    ? "bg-emerald-100 text-emerald-700"
+    : unavailable || notLinked
+      ? "bg-slate-100 text-slate-600"
+      : "bg-rose-100 text-rose-700";
+
+  return (
+    <div className={compact ? "flex items-center justify-between gap-3" : "text-center"}>
+      <div className={`flex items-center gap-2 ${compact ? "" : "justify-center"}`}>
+        <CreditCard size={compact ? 20 : 23} className="text-sky-600" />
+        <Icon size={18} className={online ? "text-emerald-600" : "text-slate-500"} />
+        <span className={`rounded-full px-2 py-1 text-xs font-bold ${statusClass}`}>
+          {label}
+        </span>
+      </div>
+      <div className={`${compact ? "" : "mt-2"} break-all text-xs font-semibold text-[var(--color-text)]`}>
+        {maquina?.terminal_id || "ID nao identificado"}
+      </div>
+    </div>
   );
 }
 
