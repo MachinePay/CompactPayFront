@@ -109,6 +109,7 @@ export default function Maquinas() {
   const [copyFeedback, setCopyFeedback] = useState("");
   const [sendingCreditId, setSendingCreditId] = useState("");
   const [sendingUpdateId, setSendingUpdateId] = useState("");
+  const [verifyingMachineId, setVerifyingMachineId] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [deleteState, setDeleteState] = useState(emptyDeleteState);
   const [updateState, setUpdateState] = useState(emptyUpdateState);
@@ -462,6 +463,33 @@ export default function Maquinas() {
       machine,
       firmwareId: firmwareVersions[0]?.id ? String(firmwareVersions[0].id) : "",
     });
+  };
+
+  const verifyMachineOnline = async (machine) => {
+    setVerifyingMachineId(machine.id_hardware);
+    try {
+      const { data } = await api.post(
+        `/maquinas/${machine.id_hardware}/verificar-online`,
+      );
+      setToast({
+        message: data.online
+          ? `A placa ${machine.id_hardware} respondeu e esta online.`
+          : `A placa ${machine.id_hardware} nao respondeu e foi marcada como offline.`,
+        type: data.online ? "success" : "error",
+      });
+      await loadMaquinas();
+    } catch (error) {
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel verificar a placa.",
+        ),
+        type: "error",
+      });
+      await loadMaquinas();
+    } finally {
+      setVerifyingMachineId("");
+    }
   };
 
   const sendFirmwareUpdate = async () => {
@@ -833,11 +861,13 @@ export default function Maquinas() {
                     user={user}
                     sendingCreditId={sendingCreditId}
                     sendingUpdateId={sendingUpdateId}
+                    verifyingMachineId={verifyingMachineId}
                     canUpdateFirmware={Boolean(
                       m.status_online && firmwareVersions.length > 0,
                     )}
                     onOpen={() => navigate(`/maquinas/${m.id_hardware}`)}
                     onSendCredit={() => openCreditModal(m)}
+                    onVerify={() => verifyMachineOnline(m)}
                     onSendUpdate={() => requestFirmwareUpdate(m)}
                     onEdit={() => handleEditMachine(m)}
                     onDelete={() => requestDeleteMachine(m.id_hardware)}
@@ -927,6 +957,24 @@ export default function Maquinas() {
                                 ? "Operando"
                                 : "Offline"}
                           </span>
+                          <button
+                            type="button"
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)] disabled:cursor-wait disabled:opacity-60"
+                            onClick={() => verifyMachineOnline(m)}
+                            disabled={verifyingMachineId === m.id_hardware}
+                          >
+                            <RefreshCcw
+                              size={13}
+                              className={
+                                verifyingMachineId === m.id_hardware
+                                  ? "animate-spin"
+                                  : ""
+                              }
+                            />
+                            {verifyingMachineId === m.id_hardware
+                              ? "Verificando"
+                              : "Verificar placa"}
+                          </button>
                         </td>
                         <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
                           {m.ultima_atividade_em
@@ -1361,9 +1409,11 @@ function MachineMobileCard({
   user,
   sendingCreditId,
   sendingUpdateId,
+  verifyingMachineId,
   canUpdateFirmware,
   onOpen,
   onSendCredit,
+  onVerify,
   onSendUpdate,
   onEdit,
   onDelete,
@@ -1416,6 +1466,22 @@ function MachineMobileCard({
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          className="col-span-2 pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+          onClick={onVerify}
+          disabled={verifyingMachineId === machine.id_hardware}
+        >
+          <RefreshCcw
+            size={15}
+            className={
+              verifyingMachineId === machine.id_hardware ? "animate-spin" : ""
+            }
+          />
+          {verifyingMachineId === machine.id_hardware
+            ? "Verificando placa..."
+            : "Verificar se a placa esta online"}
+        </button>
         <button
           type="button"
           className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
