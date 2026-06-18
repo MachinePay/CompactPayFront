@@ -62,6 +62,21 @@ const emptyUpdateState = {
   firmwareId: "",
 };
 
+const emptyCreditState = {
+  open: false,
+  machine: null,
+  value: "",
+};
+
+const quickCreditValues = [2, 5, 10, 20, 50, 100];
+
+function formatCurrency(value) {
+  return Number(value || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
 export default function Maquinas() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -97,6 +112,7 @@ export default function Maquinas() {
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [deleteState, setDeleteState] = useState(emptyDeleteState);
   const [updateState, setUpdateState] = useState(emptyUpdateState);
+  const [creditState, setCreditState] = useState(emptyCreditState);
   const selectedCliente = usuarios.find(
     (item) => String(item.cliente_id) === String(form.cliente_id),
   );
@@ -389,14 +405,37 @@ export default function Maquinas() {
     }
   };
 
-  const sendTestCredit = async (machineId) => {
-    setSendingCreditId(machineId);
-    try {
-      await api.post(`/maquinas/${machineId}/credito-teste`);
+  const openCreditModal = (machine) => {
+    setCreditState({
+      open: true,
+      machine,
+      value: "",
+    });
+  };
+
+  const sendTestCredit = async () => {
+    const machine = creditState.machine;
+    if (!machine) return;
+    const value = Number(String(creditState.value).replace(",", "."));
+    if (!Number.isFinite(value) || value <= 0) {
       setToast({
-        message: `Credito de teste enviado para ${machineId}.`,
+        message: "Informe um valor maior que zero.",
+        type: "error",
+      });
+      return;
+    }
+
+    setSendingCreditId(machine.id_hardware);
+    try {
+      await api.post(`/maquinas/${machine.id_hardware}/credito-teste`, {
+        valor: value,
+      });
+      setCreditState(emptyCreditState);
+      setToast({
+        message: `Pagamento de teste de ${formatCurrency(value)} enviado para ${machine.id_hardware}.`,
         type: "success",
       });
+      await loadMaquinas();
     } catch (error) {
       setToast({
         message: getApiErrorMessage(
@@ -585,6 +624,103 @@ export default function Maquinas() {
         </div>
       </Modal>
 
+      <Modal
+        open={creditState.open}
+        onClose={() => {
+          if (!sendingCreditId) setCreditState(emptyCreditState);
+        }}
+      >
+        <div className="mx-auto max-w-xl space-y-5">
+          <div className="text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+              <Rocket size={25} />
+            </div>
+            <h2 className="mt-4 text-3xl font-extrabold text-[var(--color-text)]">
+              Enviar crédito
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+              Escolha ou digite o valor para enviar à máquina{" "}
+              <strong>{creditState.machine?.nome || creditState.machine?.id_hardware}</strong>.
+              O envio será registrado como pagamento de teste.
+            </p>
+          </div>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+              Valor do crédito
+            </span>
+            <div className="flex items-center rounded-[18px] border border-[var(--color-border)] bg-white px-4 focus-within:border-[var(--color-primary)]">
+              <span className="font-extrabold text-[var(--color-primary)]">R$</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                autoFocus
+                className="min-w-0 flex-1 bg-transparent px-3 py-4 text-xl font-extrabold text-[var(--color-text)] outline-none"
+                placeholder="Ex.: 10,00"
+                value={creditState.value}
+                onChange={(event) =>
+                  setCreditState((current) => ({
+                    ...current,
+                    value: event.target.value.replace(/[^\d.,]/g, ""),
+                  }))
+                }
+              />
+            </div>
+          </label>
+
+          <div>
+            <div className="mb-2 text-sm font-semibold text-[var(--color-text)]">
+              Valores rápidos
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {quickCreditValues.map((value) => {
+                const selected =
+                  Number(String(creditState.value).replace(",", ".")) === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`rounded-[14px] border px-3 py-3 text-sm font-extrabold transition ${
+                      selected
+                        ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
+                        : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                    }`}
+                    onClick={() =>
+                      setCreditState((current) => ({
+                        ...current,
+                        value: value.toFixed(2).replace(".", ","),
+                      }))
+                    }
+                  >
+                    {formatCurrency(value)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              className="pill-button inline-flex items-center justify-center px-5 py-3 font-semibold"
+              onClick={() => setCreditState(emptyCreditState)}
+              disabled={Boolean(sendingCreditId)}
+            >
+              Fechar
+            </button>
+            <Button
+              type="button"
+              className="justify-center"
+              onClick={sendTestCredit}
+              disabled={Boolean(sendingCreditId) || !creditState.value}
+            >
+              <Rocket size={17} />
+              {sendingCreditId ? "Enviando..." : "Enviar crédito"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       <CardSectionHeader
         title="Maquinas"
         description="Cadastre novas unidades, gere IDs para o ESP e crie automaticamente o caixa no Mercado Pago do cliente."
@@ -697,7 +833,7 @@ export default function Maquinas() {
                       m.status_online && firmwareVersions.length > 0,
                     )}
                     onOpen={() => navigate(`/maquinas/${m.id_hardware}`)}
-                    onSendCredit={() => sendTestCredit(m.id_hardware)}
+                    onSendCredit={() => openCreditModal(m)}
                     onSendUpdate={() => requestFirmwareUpdate(m)}
                     onEdit={() => handleEditMachine(m)}
                     onDelete={() => requestDeleteMachine(m.id_hardware)}
@@ -836,8 +972,8 @@ export default function Maquinas() {
                           <button
                             type="button"
                             className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold"
-                            onClick={() => sendTestCredit(m.id_hardware)}
-                            disabled={sendingCreditId === m.id_hardware}
+                            onClick={() => openCreditModal(m)}
+                            disabled={Boolean(sendingCreditId)}
                           >
                             <Rocket size={15} />
                             {sendingCreditId === m.id_hardware
