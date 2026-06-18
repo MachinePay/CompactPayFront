@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import dayjs from "dayjs";
+import { brasiliaDate } from "../utils/dateTime";
 import { ClipboardList, Filter, RefreshCcw, ShieldCheck } from "lucide-react";
 
 import api from "../api/axios";
@@ -164,10 +164,10 @@ export default function AuditoriaSistema() {
                     >
                       <td className="px-5 py-4 min-w-[180px]">
                         <div className="font-semibold">
-                          {dayjs(item.created_at).format("DD/MM/YYYY")}
+                          {brasiliaDate(item.created_at).format("DD/MM/YYYY")}
                         </div>
                         <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                          {dayjs(item.created_at).format("HH:mm:ss")}
+                          {brasiliaDate(item.created_at).format("HH:mm:ss")}
                         </div>
                       </td>
                       <td className="px-5 py-4 min-w-[170px]">
@@ -257,10 +257,10 @@ function AuditMobileCard({ item }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-extrabold text-[var(--color-text)]">
-            {dayjs(item.created_at).format("DD/MM/YYYY")}
+            {brasiliaDate(item.created_at).format("DD/MM/YYYY")}
           </div>
           <div className="mt-1 text-xs font-semibold text-[var(--color-text-soft)]">
-            {dayjs(item.created_at).format("HH:mm:ss")}
+            {brasiliaDate(item.created_at).format("HH:mm:ss")}
           </div>
         </div>
         <span className="shrink-0 rounded-full bg-[var(--color-primary-soft)] px-3 py-1.5 text-xs font-bold text-[var(--color-success)]">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import dayjs from "dayjs";
+import { brasiliaDate } from "../utils/dateTime";
 import { Cpu, Link as LinkIcon, Pencil, Plus, Power, RefreshCcw, Trash2, UploadCloud } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -262,7 +262,7 @@ export default function FirmwareVersions() {
                         </td>
                         <td className="px-5 py-4 min-w-[260px] text-[var(--color-text-soft)]">{firmware.observacao || "--"}</td>
                         <td className="px-5 py-4 min-w-[160px] text-[var(--color-text-soft)]">
-                          {dayjs(firmware.updated_at).format("DD/MM/YYYY HH:mm")}
+                          {brasiliaDate(firmware.updated_at).format("DD/MM/YYYY HH:mm")}
                         </td>
                         <td className="px-5 py-4 min-w-[120px]">
                           <StatusPill active={firmware.ativo} />
@@ -425,7 +425,7 @@ function FirmwareMobileCard({ firmware, onEdit, onToggle, onDelete }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="truncate text-base font-extrabold text-[var(--color-primary-strong)]">{firmware.nome}</div>
-          <div className="mt-1 text-xs text-[var(--color-text-soft)]">{dayjs(firmware.updated_at).format("DD/MM/YYYY HH:mm")}</div>
+          <div className="mt-1 text-xs text-[var(--color-text-soft)]">{brasiliaDate(firmware.updated_at).format("DD/MM/YYYY HH:mm")}</div>
         </div>
         <StatusPill active={firmware.ativo} />
       </div>

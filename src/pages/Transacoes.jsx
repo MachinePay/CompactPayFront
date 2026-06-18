@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
+import { brasiliaDate, nowInBrasilia } from "../utils/dateTime";
 import {
   Activity,
   BanknoteArrowDown,
@@ -85,7 +86,7 @@ export default function Transacoes() {
     );
     const rows = [
       ["relatorio", "Transacoes CompactPay"],
-      ["gerado_em", dayjs().format("YYYY-MM-DD HH:mm:ss")],
+      ["gerado_em", nowInBrasilia().format("YYYY-MM-DD HH:mm:ss")],
       [
         "periodo",
         dateRange.start && dateRange.end
@@ -115,8 +116,8 @@ export default function Transacoes() {
         "valor",
       ],
       ...transacoes.map((item) => [
-        dayjs(item.data_hora).format("YYYY-MM-DD"),
-        dayjs(item.data_hora).format("HH:mm:ss"),
+        brasiliaDate(item.data_hora).format("YYYY-MM-DD"),
+        brasiliaDate(item.data_hora).format("HH:mm:ss"),
         item.maquina_id,
         item.maquina_nome || "",
         item.tipo,
@@ -302,10 +303,10 @@ export default function Transacoes() {
                       >
                         <td className="px-5 py-4 min-w-[180px]">
                           <div className="font-semibold">
-                            {dayjs(transacao.data_hora).format("DD/MM/YYYY")}
+                            {brasiliaDate(transacao.data_hora).format("DD/MM/YYYY")}
                           </div>
                           <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                            {dayjs(transacao.data_hora).format("HH:mm:ss")}
+                            {brasiliaDate(transacao.data_hora).format("HH:mm:ss")}
                           </div>
                         </td>
                         <td className="px-5 py-4 min-w-[220px]">
@@ -415,7 +416,7 @@ function TransactionMobileCard({ transacao }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xs font-semibold text-[var(--color-text-soft)]">
-            {dayjs(transacao.data_hora).format("DD/MM/YYYY HH:mm:ss")}
+            {brasiliaDate(transacao.data_hora).format("DD/MM/YYYY HH:mm:ss")}
           </div>
           <div className="mt-1 text-base font-extrabold text-[var(--color-text)]">
             {transacao.maquina_nome || transacao.maquina_id}

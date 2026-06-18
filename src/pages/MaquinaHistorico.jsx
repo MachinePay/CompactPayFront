@@ -10,6 +10,7 @@ import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
+import { brasiliaDate, nowInBrasilia } from "../utils/dateTime";
 
 export default function MaquinaHistorico({ detailed = false, selectable = false }) {
   const { machineId: routeMachineId } = useParams();
@@ -153,7 +154,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       .map(
         (item) => `
           <tr>
-            <td>${dayjs(item.data_hora).format("DD/MM/YYYY HH:mm")}</td>
+            <td>${brasiliaDate(item.data_hora).format("DD/MM/YYYY HH:mm")}</td>
             <td>${item.metodo}</td>
             <td>R$ ${Number(item.valor).toFixed(2)}</td>
           </tr>`,
@@ -164,7 +165,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       .map(
         (item) => `
           <tr>
-            <td>${dayjs(item.created_at).format("DD/MM/YYYY HH:mm")}</td>
+            <td>${brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm")}</td>
             <td>${item.descricao}</td>
           </tr>`,
       )
@@ -233,7 +234,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 .map(
                   (item) => `
           <tr>
-            <td>${dayjs(item.data_hora).format("DD/MM/YYYY HH:mm")}</td>
+            <td>${brasiliaDate(item.data_hora).format("DD/MM/YYYY HH:mm")}</td>
             <td>${item.metodo}</td>
             <td>R$ ${Number(item.valor).toFixed(2)}</td>
           </tr>`,
@@ -335,7 +336,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     const periodoLabel = formatPeriodoLabel(periodo, dateRange);
     const rows = [
       ["relatorio", "Historico da Maquina CompactPay"],
-      ["gerado_em", dayjs().format("YYYY-MM-DD HH:mm:ss")],
+      ["gerado_em", nowInBrasilia().format("YYYY-MM-DD HH:mm:ss")],
       ["periodo", periodoLabel],
       ["maquina_id", maquina.id_hardware],
       ["maquina_nome", maquina.nome || maquina.id_hardware],
@@ -381,35 +382,35 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         item.quantidade_testes || 0,
         item.quantidade_saidas || 0,
         item.criado_por_email || "",
-        dayjs(item.created_at).format("YYYY-MM-DD HH:mm:ss"),
+        brasiliaDate(item.created_at).format("YYYY-MM-DD HH:mm:ss"),
       ]),
       [],
       ["detalhes"],
       ["secao", "data", "metodo", "valor", "descricao"],
       ...historico.pagamentos.map((item) => [
         "pagamento",
-        dayjs(item.data_hora).format("YYYY-MM-DD HH:mm:ss"),
+        brasiliaDate(item.data_hora).format("YYYY-MM-DD HH:mm:ss"),
         item.metodo,
         Number(item.valor).toFixed(2),
         "",
       ]),
       ...historico.saidas.map((item) => [
         "saida",
-        dayjs(item.data_hora).format("YYYY-MM-DD HH:mm:ss"),
+        brasiliaDate(item.data_hora).format("YYYY-MM-DD HH:mm:ss"),
         item.metodo,
         Number(item.valor).toFixed(2),
         "",
       ]),
       ...historico.testes.map((item) => [
         "teste",
-        dayjs(item.created_at).format("YYYY-MM-DD HH:mm:ss"),
+        brasiliaDate(item.created_at).format("YYYY-MM-DD HH:mm:ss"),
         "",
         "",
         item.descricao,
       ]),
       ...(historico.observacoes || []).map((item) => [
         "observacao",
-        dayjs(item.created_at).format("YYYY-MM-DD HH:mm:ss"),
+        brasiliaDate(item.created_at).format("YYYY-MM-DD HH:mm:ss"),
         "",
         "",
         item.descricao,
@@ -728,7 +729,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 empty="Nenhum evento encontrado para essa maquina."
                 columns={["Data", "Tipo", "Titulo", "Descricao"]}
                 rows={(historico.timeline || []).map((item) => [
-                  dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                  brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
                   item.tipo,
                   item.titulo,
                   item.descricao,
@@ -763,7 +764,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                     empty="Nenhuma observacao registrada."
                     columns={["Data", "Descricao"]}
                     rows={(historico.observacoes || []).map((item) => [
-                      dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                      brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
                       item.descricao,
                     ])}
                   />
@@ -772,7 +773,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                     empty="Nenhum evento tecnico recebido da placa."
                     columns={["Data", "Status", "Comando", "Descricao"]}
                     rows={(historico.eventos_dispositivo || []).map((item) => [
-                      dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                      brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
                       formatPulseStatus(item.pulse_status),
                       item.command_id || "--",
                       item.descricao,
@@ -788,7 +789,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 empty="Nenhum fechamento salvo para esta maquina ainda."
                 columns={["Criado em", "Periodo", "Total", "Por"]}
                 rows={historico.fechamentos.map((item) => [
-                  dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                  brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
                   `${dayjs(item.periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${dayjs(item.periodo_fim).format("DD/MM/YYYY HH:mm")}`,
                   `R$ ${Number(item.total_pagamentos).toFixed(2)}`,
                   item.criado_por_email,
@@ -799,7 +800,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 empty="Nenhum evento de auditoria encontrado."
                 columns={["Data", "Acao", "Usuario", "Descricao"]}
                 rows={historico.auditoria.map((item) => [
-                  dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                  brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
                   item.acao,
                   item.executado_por_email,
                   item.descricao,
@@ -813,7 +814,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 empty="Nenhum pagamento encontrado no periodo."
                 columns={["Data", "Metodo", "Valor"]}
                 rows={historico.pagamentos.map((item) => [
-                  dayjs(item.data_hora).format("DD/MM/YYYY HH:mm:ss"),
+                  brasiliaDate(item.data_hora).format("DD/MM/YYYY HH:mm:ss"),
                   item.metodo,
                   `R$ ${Number(item.valor).toFixed(2)}`,
                 ])}
@@ -823,7 +824,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 empty="Nenhuma saida encontrada no periodo."
                 columns={["Data", "Metodo", "Valor"]}
                 rows={historico.saidas.map((item) => [
-                  dayjs(item.data_hora).format("DD/MM/YYYY HH:mm:ss"),
+                  brasiliaDate(item.data_hora).format("DD/MM/YYYY HH:mm:ss"),
                   item.metodo,
                   `R$ ${Number(item.valor).toFixed(2)}`,
                 ])}
@@ -833,7 +834,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 empty="Nenhum teste encontrado no periodo."
                 columns={["Data", "Descricao"]}
                 rows={historico.testes.map((item) => [
-                  dayjs(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                  brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
                   item.descricao,
                 ])}
               />
@@ -902,7 +903,7 @@ function StatusCard({ maquina, eventos = [] }) {
         </span>
         <span className="text-sm text-[var(--color-text-soft)]">
           {maquina?.ultimo_sinal
-            ? `Ultimo sinal em ${dayjs(maquina.ultimo_sinal).format("DD/MM/YYYY HH:mm:ss")}`
+            ? `Ultimo sinal em ${brasiliaDate(maquina.ultimo_sinal).format("DD/MM/YYYY HH:mm:ss")}`
             : "Sem sinal recebido ainda"}
         </span>
       </div>
@@ -910,7 +911,7 @@ function StatusCard({ maquina, eventos = [] }) {
         <div className="mt-4 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-3 text-sm text-[var(--color-text)]">
           <div className="font-semibold">Ultimo evento da placa: {formatPulseStatus(ultimoEvento.pulse_status)}</div>
           <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-            {dayjs(ultimoEvento.created_at).format("DD/MM/YYYY HH:mm:ss")} {ultimoEvento.command_id ? `cmd ${ultimoEvento.command_id}` : ""}
+            {brasiliaDate(ultimoEvento.created_at).format("DD/MM/YYYY HH:mm:ss")} {ultimoEvento.command_id ? `cmd ${ultimoEvento.command_id}` : ""}
           </div>
         </div>
       ) : null}
@@ -922,7 +923,7 @@ function StatusCard({ maquina, eventos = [] }) {
           <InfoRow label="Status OTA" value={formatFirmwareUpdateStatus(maquina?.firmware_update_status) || "--"} />
           <InfoRow
             label="Solicitado"
-            value={maquina?.firmware_update_requested_at ? dayjs(maquina.firmware_update_requested_at).format("DD/MM/YYYY HH:mm:ss") : "--"}
+            value={maquina?.firmware_update_requested_at ? brasiliaDate(maquina.firmware_update_requested_at).format("DD/MM/YYYY HH:mm:ss") : "--"}
           />
           <InfoRow label="URL" value={maquina?.firmware_update_url || "--"} />
         </div>
@@ -1019,8 +1020,8 @@ function SalesReportTable({ vendas, searchTerm, maquina, onRefund, refundingId }
                     </span>
                   </td>
                   <td className="px-4 py-4 min-w-[150px]">
-                    <div className="font-semibold">{dayjs(item.data).format("DD/MM/YYYY")}</div>
-                    <div className="text-xs text-[var(--color-text-soft)]">{dayjs(item.data).format("HH:mm:ss")}</div>
+                    <div className="font-semibold">{brasiliaDate(item.data).format("DD/MM/YYYY")}</div>
+                    <div className="text-xs text-[var(--color-text-soft)]">{brasiliaDate(item.data).format("HH:mm:ss")}</div>
                     {item.is_test ? (
                       <div className="mt-2 rounded-full bg-amber-200 px-3 py-1 text-center text-xs font-extrabold uppercase text-amber-900">
                         TESTE
@@ -1114,7 +1115,7 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xs font-semibold text-[var(--color-text-soft)]">
-            {dayjs(item.data).format("DD/MM/YYYY HH:mm:ss")}
+            {brasiliaDate(item.data).format("DD/MM/YYYY HH:mm:ss")}
           </div>
           <div className="mt-1 text-base font-extrabold text-[var(--color-text)]">
             {item.is_test ? "Pagamento de teste" : formatProvider(item.provider)}
@@ -1303,7 +1304,7 @@ function formatPaymentMethod(item) {
 
 function formatResumoData(value, label) {
   if (!value) return `${label}: nenhum registro no periodo`;
-  return `${label}: ${dayjs(value).format("DD/MM/YYYY HH:mm:ss")}`;
+  return `${label}: ${brasiliaDate(value).format("DD/MM/YYYY HH:mm:ss")}`;
 }
 
 function formatPeriodoLabel(periodo, range) {

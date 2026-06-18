@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import dayjs from "dayjs";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -24,6 +23,7 @@ import Modal from "../components/Modal";
 import Button from "../components/Button";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
+import { brasiliaDate } from "../utils/dateTime";
 
 const emptyForm = {
   id_hardware: "",
@@ -543,7 +543,7 @@ export default function Maquinas() {
               label="Ultimo sinal"
               value={
                 updateState.machine?.ultimo_sinal
-                  ? dayjs(updateState.machine.ultimo_sinal).format(
+                  ? brasiliaDate(updateState.machine.ultimo_sinal).format(
                       "DD/MM/YYYY HH:mm:ss",
                     )
                   : "Sem sinal"
@@ -632,10 +632,14 @@ export default function Maquinas() {
       >
         <div className="mx-auto max-w-xl space-y-5">
           <div className="text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-              <Rocket size={25} />
+            <div className="mx-auto flex h-24 w-52 items-center justify-center overflow-hidden rounded-2xl bg-white">
+              <img
+                src="/logoCompactpay.jpeg"
+                alt="CompactPay"
+                className="h-full w-full object-contain"
+              />
             </div>
-            <h2 className="mt-4 text-3xl font-extrabold text-[var(--color-text)]">
+            <h2 className="mt-3 text-3xl font-extrabold text-[var(--color-text)]">
               Enviar crédito
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
@@ -926,17 +930,17 @@ export default function Maquinas() {
                         </td>
                         <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
                           {m.ultima_atividade_em
-                            ? dayjs(m.ultima_atividade_em).format(
+                            ? brasiliaDate(m.ultima_atividade_em).format(
                                 "DD/MM/YYYY HH:mm:ss",
                               )
                             : "Sem atividade"}
                           <div className="mt-1 text-xs">
                             {m.ultimo_pagamento_em
-                              ? `Pag.: ${dayjs(m.ultimo_pagamento_em).format("DD/MM HH:mm")}`
+                              ? `Pag.: ${brasiliaDate(m.ultimo_pagamento_em).format("DD/MM HH:mm")}`
                               : m.ultimo_teste_em
-                                ? `Teste: ${dayjs(m.ultimo_teste_em).format("DD/MM HH:mm")}`
+                                ? `Teste: ${brasiliaDate(m.ultimo_teste_em).format("DD/MM HH:mm")}`
                                 : m.ultima_saida_em
-                                  ? `Saida: ${dayjs(m.ultima_saida_em).format("DD/MM HH:mm")}`
+                                  ? `Saida: ${brasiliaDate(m.ultima_saida_em).format("DD/MM HH:mm")}`
                                   : "Sem eventos recentes"}
                           </div>
                         </td>
@@ -1400,7 +1404,7 @@ function MachineMobileCard({
           label="Ultima atividade"
           value={
             machine.ultima_atividade_em
-              ? dayjs(machine.ultima_atividade_em).format("DD/MM HH:mm")
+              ? brasiliaDate(machine.ultima_atividade_em).format("DD/MM HH:mm")
               : "Sem atividade"
           }
           wide
@@ -1529,7 +1533,7 @@ function FirmwareBadge({ machine }) {
         ) : null}
         {machine.firmware_updated_at ? (
           <div className="mt-1 text-[11px] opacity-80">
-            {dayjs(machine.firmware_updated_at).format("DD/MM HH:mm")}
+            {brasiliaDate(machine.firmware_updated_at).format("DD/MM HH:mm")}
           </div>
         ) : null}
       </div>
