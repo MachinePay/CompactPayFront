@@ -1173,9 +1173,12 @@ function TerminalBadge({ maquina, compact = false }) {
   const online = status === "online";
   const unavailable = status === "unavailable";
   const notLinked = status === "not_linked";
-  const Icon = online ? Wifi : WifiOff;
+  const linked = status === "linked";
+  const Icon = online ? Wifi : linked ? CreditCard : WifiOff;
   const label = online
     ? "Online"
+    : linked
+      ? "Vinculada"
     : unavailable
       ? "Indisponivel"
       : notLinked
@@ -1183,6 +1186,8 @@ function TerminalBadge({ maquina, compact = false }) {
         : "Offline";
   const statusClass = online
     ? "bg-emerald-100 text-emerald-700"
+    : linked
+      ? "bg-sky-100 text-sky-700"
     : unavailable || notLinked
       ? "bg-slate-100 text-slate-600"
       : "bg-rose-100 text-rose-700";
@@ -1191,7 +1196,16 @@ function TerminalBadge({ maquina, compact = false }) {
     <div className={compact ? "flex items-center justify-between gap-3" : "text-center"}>
       <div className={`flex items-center gap-2 ${compact ? "" : "justify-center"}`}>
         <CreditCard size={compact ? 20 : 23} className="text-sky-600" />
-        <Icon size={18} className={online ? "text-emerald-600" : "text-slate-500"} />
+        <Icon
+          size={18}
+          className={
+            online
+              ? "text-emerald-600"
+              : linked
+                ? "text-sky-600"
+                : "text-slate-500"
+          }
+        />
         <span className={`rounded-full px-2 py-1 text-xs font-bold ${statusClass}`}>
           {label}
         </span>
