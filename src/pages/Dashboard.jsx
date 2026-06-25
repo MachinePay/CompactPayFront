@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
+  Banknote,
   Bell,
   CreditCard,
   Download,
@@ -61,6 +62,7 @@ export default function Dashboard() {
     premios_entregues: 0,
     maquinas_ativas: 0,
     total_maquinas: 0,
+    total_fisico: 0,
     ticket_medio: 0,
     percentual_ativas: 0,
     alertas: 0,
@@ -157,6 +159,7 @@ export default function Dashboard() {
           premios_entregues: data?.stats?.premios_entregues ?? 0,
           maquinas_ativas: data?.stats?.maquinas_ativas ?? 0,
           total_maquinas: data?.stats?.total_maquinas ?? 0,
+          total_fisico: data?.stats?.total_fisico ?? 0,
           ticket_medio: data?.stats?.ticket_medio ?? 0,
           percentual_ativas: data?.stats?.percentual_ativas ?? 0,
           alertas: data?.stats?.alertas ?? 0,
@@ -259,6 +262,12 @@ export default function Dashboard() {
       value: String(stats.maquinas_ativas),
       caption: `${stats.total_maquinas} maquinas dentro do filtro atual`,
       icon: MonitorSmartphone,
+    },
+    {
+      label: "Dinheiro Fisico",
+      value: `R$ ${stats.total_fisico.toFixed(2)}`,
+      caption: "Moedas e notas detectadas pelo contador IN",
+      icon: Banknote,
     },
     {
       label: "Ticket Medio",
@@ -487,7 +496,7 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-4">
+          <div className="grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-5">
             {statCards.map((item, index) => {
               const Icon = item.icon;
               const featured = item.featured;
