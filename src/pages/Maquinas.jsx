@@ -895,6 +895,9 @@ export default function Maquinas() {
                       <th className="px-5 py-4 whitespace-nowrap">
                         Faturamento
                       </th>
+                      <th className="px-5 py-4 whitespace-nowrap">
+                        Pelucias
+                      </th>
                       <th className="px-5 py-4 whitespace-nowrap">Teste</th>
                       {user?.role === "admin" ? (
                         <th className="px-5 py-4 whitespace-nowrap">
@@ -1019,6 +1022,9 @@ export default function Maquinas() {
                           {m.faturamento?.toFixed
                             ? `R$ ${m.faturamento.toFixed(2)}`
                             : "--"}
+                        </td>
+                        <td className="px-5 py-4 min-w-[120px] font-semibold text-[var(--color-text)]">
+                          {m.quantidade_saidas ?? 0}
                         </td>
                         <td className="px-5 py-4 min-w-[170px]">
                           <button
@@ -1440,6 +1446,10 @@ function MachineMobileCard({
               ? `R$ ${machine.faturamento.toFixed(2)}`
               : "--"
           }
+        />
+        <InfoPill
+          label="Pelucias"
+          value={String(machine.quantidade_saidas ?? 0)}
         />
         <InfoPill
           label="Banco"
