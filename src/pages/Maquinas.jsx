@@ -672,8 +672,10 @@ export default function Maquinas() {
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
               Escolha ou digite o valor para enviar à máquina{" "}
-              <strong>{creditState.machine?.nome || creditState.machine?.id_hardware}</strong>.
-              O envio será registrado como pagamento de teste.
+              <strong>
+                {creditState.machine?.nome || creditState.machine?.id_hardware}
+              </strong>
+              . O envio será registrado como pagamento de teste.
             </p>
           </div>
 
@@ -682,7 +684,9 @@ export default function Maquinas() {
               Valor do crédito
             </span>
             <div className="flex items-center rounded-[18px] border border-[var(--color-border)] bg-white px-4 focus-within:border-[var(--color-primary)]">
-              <span className="font-extrabold text-[var(--color-primary)]">R$</span>
+              <span className="font-extrabold text-[var(--color-primary)]">
+                R$
+              </span>
               <input
                 type="text"
                 inputMode="decimal"
@@ -766,7 +770,7 @@ export default function Maquinas() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="hidden md:grid gap-4 md:grid-cols-3">
         <SummaryCard
           icon={<Server size={18} />}
           label="Maquinas cadastradas"
@@ -895,9 +899,7 @@ export default function Maquinas() {
                       <th className="px-5 py-4 whitespace-nowrap">
                         Faturamento
                       </th>
-                      <th className="px-5 py-4 whitespace-nowrap">
-                        Pelucias
-                      </th>
+                      <th className="px-5 py-4 whitespace-nowrap">Pelucias</th>
                       <th className="px-5 py-4 whitespace-nowrap">Teste</th>
                       {user?.role === "admin" ? (
                         <th className="px-5 py-4 whitespace-nowrap">
