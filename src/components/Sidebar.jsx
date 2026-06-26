@@ -10,6 +10,7 @@ import {
   Server,
   Users,
   X,
+  ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
@@ -18,6 +19,8 @@ import { useAuth } from "../context/useAuth";
 export default function Sidebar() {
   const { user, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
 
   const linkClassName = ({ isActive }) =>
     `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition lg:text-base ${
@@ -35,6 +38,7 @@ export default function Sidebar() {
           <Server size={20} /> Maquinas
         </NavLink>
       </li>
+
       <li>
         <NavLink
           to="/dashboard"
@@ -45,54 +49,90 @@ export default function Sidebar() {
           <Home size={20} /> Dashboard
         </NavLink>
       </li>
+
       <li>
-        <NavLink
-          to="/relatorio-maquina"
-          className={linkClassName}
-          onClick={closeMobile}
+        <button
+          type="button"
+          onClick={() => setReportsOpen((v) => !v)}
+          className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[var(--color-text-soft)] hover:bg-white hover:text-[var(--color-text)]"
         >
-          <BarChart3 size={20} /> Relatorio Maquina
-        </NavLink>
+          <BarChart3 size={20} /> Relatórios
+          <ChevronDown
+            size={18}
+            className={`ml-auto transition-transform ${reportsOpen ? "-rotate-180" : "rotate-0"}`}
+          />
+        </button>
+
+        {reportsOpen && (
+          <ul className="mt-2 space-y-1 pl-6">
+            <li>
+              <NavLink
+                to="/relatorio-maquina"
+                className={linkClassName}
+                onClick={closeMobile}
+              >
+                <BarChart3 size={16} /> Relatorio Maquina
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/transacoes"
+                className={linkClassName}
+                onClick={closeMobile}
+              >
+                <Activity size={16} /> Transacoes
+              </NavLink>
+            </li>
+          </ul>
+        )}
       </li>
-      <li>
-        <NavLink
-          to="/transacoes"
-          className={linkClassName}
-          onClick={closeMobile}
-        >
-          <Activity size={20} /> Transacoes
-        </NavLink>
-      </li>
+
       {user?.role === "admin" && (
-        <>
-          <li>
-            <NavLink
-              to="/usuarios"
-              className={linkClassName}
-              onClick={closeMobile}
-            >
-              <Users size={20} /> Usuarios
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/firmwares"
-              className={linkClassName}
-              onClick={closeMobile}
-            >
-              <Cpu size={20} /> Firmwares
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/auditoria"
-              className={linkClassName}
-              onClick={closeMobile}
-            >
-              <ClipboardList size={20} /> Auditoria
-            </NavLink>
-          </li>
-        </>
+        <li>
+          <button
+            type="button"
+            onClick={() => setAdminOpen((v) => !v)}
+            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold text-[var(--color-text-soft)] hover:bg-white hover:text-[var(--color-text)]"
+          >
+            <Users size={20} /> Admin
+            <ChevronDown
+              size={18}
+              className={`ml-auto transition-transform ${adminOpen ? "-rotate-180" : "rotate-0"}`}
+            />
+          </button>
+
+          {adminOpen && (
+            <ul className="mt-2 space-y-1 pl-6">
+              <li>
+                <NavLink
+                  to="/usuarios"
+                  className={linkClassName}
+                  onClick={closeMobile}
+                >
+                  <Users size={16} /> Usuarios
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/firmwares"
+                  className={linkClassName}
+                  onClick={closeMobile}
+                >
+                  <Cpu size={16} /> Firmwares
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/auditoria"
+                  className={linkClassName}
+                  onClick={closeMobile}
+                >
+                  <ClipboardList size={16} /> Auditoria
+                </NavLink>
+              </li>
+            </ul>
+          )}
+        </li>
       )}
     </ul>
   );
