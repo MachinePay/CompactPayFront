@@ -93,6 +93,14 @@ function RouteContent() {
             }
           />
           <Route
+            path="/dashboard"
+            element={
+              <PrivatePage>
+                <Dashboard />
+              </PrivatePage>
+            }
+          />
+          <Route
             path="/maquinas"
             element={
               <PrivatePage>
@@ -116,7 +124,10 @@ function RouteContent() {
               </PrivatePage>
             }
           />
-          <Route path="/teste-pagamento" element={<Navigate to="/maquinas" replace />} />
+          <Route
+            path="/teste-pagamento"
+            element={<Navigate to="/maquinas" replace />}
+          />
           <Route
             path="/transacoes"
             element={

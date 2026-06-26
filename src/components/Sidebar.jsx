@@ -31,13 +31,18 @@ export default function Sidebar() {
   const navItems = (
     <ul className="space-y-2">
       <li>
-        <NavLink to="/" end className={linkClassName} onClick={closeMobile}>
-          <Home size={20} /> Dashboard
+        <NavLink to="/maquinas" className={linkClassName} onClick={closeMobile}>
+          <Server size={20} /> Maquinas
         </NavLink>
       </li>
       <li>
-        <NavLink to="/maquinas" className={linkClassName} onClick={closeMobile}>
-          <Server size={20} /> Maquinas
+        <NavLink
+          to="/dashboard"
+          end
+          className={linkClassName}
+          onClick={closeMobile}
+        >
+          <Home size={20} /> Dashboard
         </NavLink>
       </li>
       <li>
