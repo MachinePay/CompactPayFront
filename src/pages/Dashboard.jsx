@@ -496,7 +496,7 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          <div className="hidden sm:grid min-w-0 gap-4 md:grid-cols-2 2xl:grid-cols-5">
+          <div className="hidden sm:grid min-w-0 gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3">
             {statCards.map((item, index) => {
               const Icon = item.icon;
               const featured = item.featured;
