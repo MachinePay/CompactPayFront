@@ -61,6 +61,12 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   const [savingObservacao, setSavingObservacao] = useState(false);
   const [deleteState, setDeleteState] = useState({ open: false, confirmationText: "" });
   const [searchTerm, setSearchTerm] = useState("");
+  const [saleFilters, setSaleFilters] = useState({
+    registro: "todos",
+    origem: "todos",
+    forma: "todos",
+    pulso: "todos",
+  });
   const [refundState, setRefundState] = useState({ open: false, venda: null, confirmationText: "" });
   const [refundingId, setRefundingId] = useState("");
 
@@ -630,6 +636,56 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </label>
+            <FilterSelect
+              label="Registro"
+              value={saleFilters.registro}
+              onChange={(value) =>
+                setSaleFilters((current) => ({ ...current, registro: value }))
+              }
+              options={[
+                ["todos", "Todos"],
+                ["reais", "Pagamentos reais"],
+                ["testes", "Testes"],
+              ]}
+            />
+            <FilterSelect
+              label="Origem"
+              value={saleFilters.origem}
+              onChange={(value) =>
+                setSaleFilters((current) => ({ ...current, origem: value }))
+              }
+              options={[
+                ["todos", "Fisico + digital"],
+                ["fisico", "Fisico"],
+                ["digital", "Digital"],
+              ]}
+            />
+            <FilterSelect
+              label="Forma"
+              value={saleFilters.forma}
+              onChange={(value) =>
+                setSaleFilters((current) => ({ ...current, forma: value }))
+              }
+              options={[
+                ["todos", "Todas"],
+                ["pix", "Pix"],
+                ["cartao", "Cartao"],
+                ["credito", "Credito"],
+                ["debito", "Debito"],
+              ]}
+            />
+            <FilterSelect
+              label="Pulso"
+              value={saleFilters.pulso}
+              onChange={(value) =>
+                setSaleFilters((current) => ({ ...current, pulso: value }))
+              }
+              options={[
+                ["todos", "Todos"],
+                ["confirmados", "Confirmados"],
+                ["ausentes", "Ausentes"],
+              ]}
+            />
             <button
               type="button"
               className="pill-button pill-button--primary inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold sm:w-auto"
@@ -767,6 +823,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <SalesReportTable
               vendas={historico.vendas || []}
               searchTerm={searchTerm}
+              filters={saleFilters}
               maquina={maquina}
               onRefund={requestRefund}
               refundingId={refundingId}
@@ -1004,21 +1061,115 @@ function InfoRow({ label, value }) {
   );
 }
 
-function SalesReportTable({ vendas, searchTerm, maquina, onRefund, refundingId }) {
+function FilterSelect({ label, value, onChange, options }) {
+  return (
+    <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] sm:w-auto sm:rounded-full">
+      {label}
+      <select
+        className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none sm:flex-none"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map(([optionValue, optionLabel]) => (
+          <option key={optionValue} value={optionValue}>
+            {optionLabel}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+const PULSE_CONFIRMED_STATUSES = new Set([
+  "pulso_confirmado",
+  "pulsos_confirmados",
+  "pulso_enviado",
+  "pulso_unitario",
+  "liberado",
+  "fisico",
+]);
+
+const PULSE_ABSENT_STATUSES = new Set([
+  "falha",
+  "falha_timeout",
+  "falha_sem_confirmacao",
+  "falha_publicacao",
+  "falha_cmd_ignorado",
+  "falha_bloqueado",
+  "pulso_sem_retorno",
+]);
+
+function getSaleSearchValues(item) {
+  return [
+    item.descricao,
+    item.provider_payment_id,
+    item.payment_type,
+    item.card_brand,
+    item.bank_name,
+    item.situacao,
+    item.ponto,
+    item.provider,
+    item.pulse_status,
+  ].filter(Boolean);
+}
+
+function isPhysicalSale(item) {
+  return (
+    item.provider === "fisico" ||
+    item.kind === "pagamento_fisico" ||
+    String(item.payment_type || "").toLowerCase() === "fisico"
+  );
+}
+
+function getPaymentMethodText(item) {
+  return [item.payment_type, item.card_brand, item.bank_name, item.provider]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function matchesSaleFilters(item, filters) {
+  if (filters.registro === "reais" && item.is_test) return false;
+  if (filters.registro === "testes" && !item.is_test) return false;
+
+  const physical = isPhysicalSale(item);
+  if (filters.origem === "fisico" && !physical) return false;
+  if (filters.origem === "digital" && (physical || item.is_test)) return false;
+
+  const methodText = getPaymentMethodText(item);
+  if (filters.forma === "pix" && !methodText.includes("pix")) return false;
+  if (
+    filters.forma === "cartao" &&
+    !/(card|cartao|credito|credit|debito|debit|visa|master|elo|amex|hiper)/.test(methodText)
+  ) {
+    return false;
+  }
+  if (filters.forma === "credito" && !/(credit|credito)/.test(methodText)) return false;
+  if (filters.forma === "debito" && !/(debit|debito)/.test(methodText)) return false;
+
+  const pulseStatus = String(item.pulse_status || "").toLowerCase();
+  if (filters.pulso === "confirmados" && !PULSE_CONFIRMED_STATUSES.has(pulseStatus)) {
+    return false;
+  }
+  if (
+    filters.pulso === "ausentes" &&
+    !pulseStatus.startsWith("falha") &&
+    !PULSE_ABSENT_STATUSES.has(pulseStatus)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refundingId }) {
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filtered = vendas.filter((item) => {
+    if (!matchesSaleFilters(item, filters)) return false;
     if (!normalizedSearch) return true;
-    return [
-      item.descricao,
-      item.provider_payment_id,
-      item.payment_type,
-      item.card_brand,
-      item.bank_name,
-      item.situacao,
-      item.ponto,
-    ]
-      .filter(Boolean)
-      .some((value) => String(value).toLowerCase().includes(normalizedSearch));
+    return getSaleSearchValues(item).some((value) =>
+      String(value).toLowerCase().includes(normalizedSearch),
+    );
   });
 
   return (
@@ -1331,6 +1482,7 @@ function formatPulseStatus(status) {
     update_sem_novidade: "Sem novidade",
     update_falhou: "Atualizacao falhou",
     teste: "Pulso de teste",
+    fisico: "Pagamento fisico",
   };
   return labels[normalized] || status || "Sem status";
 }
@@ -1374,6 +1526,7 @@ function formatProvider(provider) {
   const labels = {
     mercado_pago: "Mercado Pago",
     manual: "Lancamento manual",
+    fisico: "Pagamento fisico",
     pagbank: "PagBank",
     s6pay: "S6Pay",
   };
