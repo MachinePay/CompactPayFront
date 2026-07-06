@@ -1,5 +1,6 @@
 import {
   Activity,
+  Bell,
   BarChart3,
   ClipboardList,
   Cpu,
@@ -42,6 +43,12 @@ export default function Sidebar() {
       <li>
         <NavLink to="/saude-maquinas" className={linkClassName} onClick={closeMobile}>
           <Activity size={20} /> Saude das maquinas
+        </NavLink>
+      </li>
+
+      <li>
+        <NavLink to="/alertas-maquinas" className={linkClassName} onClick={closeMobile}>
+          <Bell size={20} /> Alertas
         </NavLink>
       </li>
 

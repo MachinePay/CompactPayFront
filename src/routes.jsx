@@ -13,6 +13,7 @@ import LoadingSpinner from "./components/LoadingSpinner";
 import RouteErrorBoundary from "./components/RouteErrorBoundary";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const AlertasMaquinas = lazy(() => import("./pages/AlertasMaquinas"));
 const AuditoriaSistema = lazy(() => import("./pages/AuditoriaSistema"));
 const FirmwareVersions = lazy(() => import("./pages/FirmwareVersions"));
 const MaquinaHistorico = lazy(() => import("./pages/MaquinaHistorico"));
@@ -114,6 +115,14 @@ function RouteContent() {
             element={
               <PrivatePage>
                 <SaudeMaquinas />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/alertas-maquinas"
+            element={
+              <PrivatePage>
+                <AlertasMaquinas />
               </PrivatePage>
             }
           />
