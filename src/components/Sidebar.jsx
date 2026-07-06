@@ -6,6 +6,7 @@ import {
   Cpu,
   CreditCard,
   Home,
+  ListRestart,
   LogOut,
   Menu,
   Server,
@@ -49,6 +50,12 @@ export default function Sidebar() {
       <li>
         <NavLink to="/alertas-maquinas" className={linkClassName} onClick={closeMobile}>
           <Bell size={20} /> Alertas
+        </NavLink>
+      </li>
+
+      <li>
+        <NavLink to="/comandos-maquinas" className={linkClassName} onClick={closeMobile}>
+          <ListRestart size={20} /> Comandos
         </NavLink>
       </li>
 

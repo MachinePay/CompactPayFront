@@ -15,6 +15,7 @@ import RouteErrorBoundary from "./components/RouteErrorBoundary";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AlertasMaquinas = lazy(() => import("./pages/AlertasMaquinas"));
 const AuditoriaSistema = lazy(() => import("./pages/AuditoriaSistema"));
+const ComandosMaquinas = lazy(() => import("./pages/ComandosMaquinas"));
 const FirmwareVersions = lazy(() => import("./pages/FirmwareVersions"));
 const MaquinaHistorico = lazy(() => import("./pages/MaquinaHistorico"));
 const RelatorioDetalhadoMaquina = lazy(
@@ -123,6 +124,14 @@ function RouteContent() {
             element={
               <PrivatePage>
                 <AlertasMaquinas />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/comandos-maquinas"
+            element={
+              <PrivatePage>
+                <ComandosMaquinas />
               </PrivatePage>
             }
           />
