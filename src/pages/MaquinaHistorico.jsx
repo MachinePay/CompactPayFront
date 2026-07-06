@@ -67,25 +67,47 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     forma: "todos",
     pulso: "todos",
   });
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
+  const [appliedSaleFilters, setAppliedSaleFilters] = useState({
+    registro: "todos",
+    origem: "todos",
+    forma: "todos",
+    pulso: "todos",
+  });
   const [refundState, setRefundState] = useState({ open: false, venda: null, confirmationText: "" });
   const [refundingId, setRefundingId] = useState("");
 
-  const buildQuery = useCallback((selectedPeriodo = appliedPeriodo, selectedRange = appliedDateRange) => {
+  const buildQuery = useCallback((
+    selectedPeriodo = appliedPeriodo,
+    selectedRange = appliedDateRange,
+    selectedSaleFilters = appliedSaleFilters,
+    selectedSearchTerm = appliedSearchTerm,
+  ) => {
     const params = [];
-    if (selectedPeriodo) params.push(`periodo=${selectedPeriodo}`);
-    if (selectedRange.start) params.push(`data_inicio=${selectedRange.start}`);
-    if (selectedRange.end) params.push(`data_fim=${selectedRange.end}`);
+    const addParam = (key, value) => {
+      if (value) params.push(`${key}=${encodeURIComponent(value)}`);
+    };
+    addParam("periodo", selectedPeriodo);
+    addParam("data_inicio", selectedRange.start);
+    addParam("data_fim", selectedRange.end);
+    if (selectedSaleFilters.registro !== "todos") addParam("registro", selectedSaleFilters.registro);
+    if (selectedSaleFilters.origem !== "todos") addParam("origem", selectedSaleFilters.origem);
+    if (selectedSaleFilters.forma !== "todos") addParam("forma", selectedSaleFilters.forma);
+    if (selectedSaleFilters.pulso !== "todos") addParam("pulso", selectedSaleFilters.pulso);
+    addParam("busca", selectedSearchTerm.trim());
     return params.length ? `?${params.join("&")}` : "";
-  }, [appliedDateRange, appliedPeriodo]);
+  }, [appliedDateRange, appliedPeriodo, appliedSaleFilters, appliedSearchTerm]);
 
   const fetchHistorico = useCallback(async (options = {}) => {
     if (!machineId) return null;
     const currentPeriodo = options.periodo ?? appliedPeriodo;
     const currentRange = options.dateRange ?? appliedDateRange;
-    const query = buildQuery(currentPeriodo, currentRange);
+    const currentSaleFilters = options.saleFilters ?? appliedSaleFilters;
+    const currentSearchTerm = options.searchTerm ?? appliedSearchTerm;
+    const query = buildQuery(currentPeriodo, currentRange, currentSaleFilters, currentSearchTerm);
     const { data } = await api.get(`/maquinas/${machineId}/historico${query}`);
     return data;
-  }, [appliedDateRange, appliedPeriodo, buildQuery, machineId]);
+  }, [appliedDateRange, appliedPeriodo, appliedSaleFilters, appliedSearchTerm, buildQuery, machineId]);
 
   const loadHistorico = useCallback(async (options = {}) => {
     if (!machineId) return null;
@@ -161,23 +183,17 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     if (!maquina) return;
     const periodoLabel = formatPeriodoLabel(snapshotPeriodo, snapshotRange);
 
-    const rowsPagamentos = snapshot.pagamentos
+    const rowsVendas = (snapshot.vendas || [])
       .map(
         (item) => `
           <tr>
-            <td>${brasiliaDate(item.data_hora).format("DD/MM/YYYY HH:mm")}</td>
-            <td>${item.metodo}</td>
+            <td>${brasiliaDate(item.data).format("DD/MM/YYYY HH:mm")}</td>
+            <td>${item.is_test ? "Teste" : formatProvider(item.provider)}</td>
+            <td>${formatPaymentMethod(item)}</td>
+            <td>${formatPulseStatus(item.pulse_status)}</td>
             <td>R$ ${Number(item.valor).toFixed(2)}</td>
-          </tr>`,
-      )
-      .join("");
-
-    const rowsTestes = snapshot.testes
-      .map(
-        (item) => `
-          <tr>
-            <td>${brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm")}</td>
-            <td>${item.descricao}</td>
+            <td>R$ ${Number(item.total).toFixed(2)}</td>
+            <td>${item.provider_payment_id || "--"}</td>
           </tr>`,
       )
       .join("");
@@ -232,10 +248,10 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <thead><tr><th>Dia</th><th>Total</th></tr></thead>
             <tbody>${rowsResumoDiario || "<tr><td colspan='2'>Sem pagamentos no periodo.</td></tr>"}</tbody>
           </table>
-          <h2>Pagamentos</h2>
+          <h2>Vendas filtradas</h2>
           <table>
-            <thead><tr><th>Data</th><th>Metodo</th><th>Valor</th></tr></thead>
-            <tbody>${rowsPagamentos || "<tr><td colspan='3'>Nenhum pagamento no periodo.</td></tr>"}</tbody>
+            <thead><tr><th>Data</th><th>Origem</th><th>Forma</th><th>Pulso</th><th>Valor</th><th>Total</th><th>ID pagamento</th></tr></thead>
+            <tbody>${rowsVendas || "<tr><td colspan='7'>Nenhuma venda ou teste no filtro aplicado.</td></tr>"}</tbody>
           </table>
           <h2 style="margin-top: 28px;">Saidas</h2>
           <table>
@@ -252,11 +268,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 )
                 .join("") || "<tr><td colspan='3'>Nenhuma saida no periodo.</td></tr>"
             }</tbody>
-          </table>
-          <h2 style="margin-top: 28px;">Testes</h2>
-          <table>
-            <thead><tr><th>Data</th><th>Descricao</th></tr></thead>
-            <tbody>${rowsTestes || "<tr><td colspan='2'>Nenhum teste no periodo.</td></tr>"}</tbody>
           </table>
         </body>
       </html>
@@ -354,6 +365,11 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       ["cliente", maquina.cliente_nome || ""],
       ["localizacao", maquina.localizacao || ""],
       ["operador", user?.email || ""],
+      ["busca", appliedSearchTerm],
+      ["filtro_registro", appliedSaleFilters.registro],
+      ["filtro_origem", appliedSaleFilters.origem],
+      ["filtro_forma", appliedSaleFilters.forma],
+      ["filtro_pulso", appliedSaleFilters.pulso],
       [],
       ["resumo"],
       ["total_pagamentos", Number(historico.resumo.total_pagamentos || 0).toFixed(2)],
@@ -397,31 +413,36 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       ]),
       [],
       ["detalhes"],
-      ["secao", "data", "metodo", "valor", "descricao"],
-      ...historico.pagamentos.map((item) => [
-        "pagamento",
-        brasiliaDate(item.data_hora).format("YYYY-MM-DD HH:mm:ss"),
-        item.metodo,
-        Number(item.valor).toFixed(2),
-        "",
+      ["secao", "data", "origem", "forma", "pulso", "valor", "total", "provider_payment_id", "descricao"],
+      ...(historico.vendas || []).map((item) => [
+        item.is_test ? "teste" : "venda",
+        brasiliaDate(item.data).format("YYYY-MM-DD HH:mm:ss"),
+        item.is_test ? "teste" : formatProvider(item.provider),
+        formatPaymentMethod(item),
+        formatPulseStatus(item.pulse_status),
+        Number(item.valor || 0).toFixed(2),
+        Number(item.total || 0).toFixed(2),
+        item.provider_payment_id || "",
+        item.descricao || "",
       ]),
       ...historico.saidas.map((item) => [
         "saida",
         brasiliaDate(item.data_hora).format("YYYY-MM-DD HH:mm:ss"),
+        "",
         item.metodo,
+        "",
         Number(item.valor).toFixed(2),
         "",
-      ]),
-      ...historico.testes.map((item) => [
-        "teste",
-        brasiliaDate(item.created_at).format("YYYY-MM-DD HH:mm:ss"),
         "",
         "",
-        item.descricao,
       ]),
       ...(historico.observacoes || []).map((item) => [
         "observacao",
         brasiliaDate(item.created_at).format("YYYY-MM-DD HH:mm:ss"),
+        "",
+        "",
+        "",
+        "",
         "",
         "",
         item.descricao,
@@ -500,13 +521,20 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     const sameFilters =
       appliedPeriodo === periodo &&
       appliedDateRange.start === dateRange.start &&
-      appliedDateRange.end === dateRange.end;
+      appliedDateRange.end === dateRange.end &&
+      appliedSearchTerm === searchTerm &&
+      appliedSaleFilters.registro === saleFilters.registro &&
+      appliedSaleFilters.origem === saleFilters.origem &&
+      appliedSaleFilters.forma === saleFilters.forma &&
+      appliedSaleFilters.pulso === saleFilters.pulso;
 
     setAppliedPeriodo(periodo);
     setAppliedDateRange({ ...dateRange });
+    setAppliedSearchTerm(searchTerm);
+    setAppliedSaleFilters({ ...saleFilters });
 
     if (sameFilters) {
-      await loadHistorico({ periodo, dateRange });
+      await loadHistorico({ periodo, dateRange, saleFilters, searchTerm });
     }
   };
 
@@ -822,8 +850,8 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
           <div className="mt-6 space-y-4">
             <SalesReportTable
               vendas={historico.vendas || []}
-              searchTerm={searchTerm}
-              filters={saleFilters}
+              searchTerm={appliedSearchTerm}
+              filters={appliedSaleFilters}
               maquina={maquina}
               onRefund={requestRefund}
               refundingId={refundingId}
