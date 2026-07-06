@@ -20,6 +20,7 @@ const RelatorioDetalhadoMaquina = lazy(
   () => import("./pages/RelatorioDetalhadoMaquina"),
 );
 const Maquinas = lazy(() => import("./pages/Maquinas"));
+const SaudeMaquinas = lazy(() => import("./pages/SaudeMaquinas"));
 const Transacoes = lazy(() => import("./pages/Transacoes"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Login = lazy(() => import("./pages/Login"));
@@ -105,6 +106,14 @@ function RouteContent() {
             element={
               <PrivatePage>
                 <Maquinas />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/saude-maquinas"
+            element={
+              <PrivatePage>
+                <SaudeMaquinas />
               </PrivatePage>
             }
           />

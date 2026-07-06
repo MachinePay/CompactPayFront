@@ -40,6 +40,12 @@ export default function Sidebar() {
       </li>
 
       <li>
+        <NavLink to="/saude-maquinas" className={linkClassName} onClick={closeMobile}>
+          <Activity size={20} /> Saude das maquinas
+        </NavLink>
+      </li>
+
+      <li>
         <NavLink
           to="/dashboard"
           end
