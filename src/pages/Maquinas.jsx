@@ -11,6 +11,7 @@ import {
   Server,
   Trash2,
   UploadCloud,
+  Wifi,
   XCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -126,14 +127,15 @@ export default function Maquinas() {
     );
   }, [dateRange, periodo, selectedClienteId]);
 
-  const loadMaquinas = useCallback(async () => {
+  const loadMaquinas = useCallback(async (options = {}) => {
+    const silent = Boolean(options?.silent);
     if (!user) return;
     if (user.role === "admin" && !selectedClienteId) {
       setMaquinas([]);
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!silent) setLoading(true);
     const params = [];
     if (periodo) params.push(`periodo=${periodo}`);
     if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
@@ -154,7 +156,7 @@ export default function Maquinas() {
         type: "error",
       });
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [dateRange, periodo, selectedClienteId, user]);
 
@@ -194,6 +196,17 @@ export default function Maquinas() {
     const timer = window.setTimeout(loadMaquinas, 0);
     return () => window.clearTimeout(timer);
   }, [loadMaquinas]);
+
+  useEffect(() => {
+    if (!user || (user.role === "admin" && !selectedClienteId)) {
+      return undefined;
+    }
+    const timer = window.setInterval(
+      () => loadMaquinas({ silent: true }),
+      10000,
+    );
+    return () => window.clearInterval(timer);
+  }, [loadMaquinas, selectedClienteId, user]);
 
   useEffect(() => {
     const timer = window.setTimeout(loadUsuarios, 0);
@@ -887,6 +900,7 @@ export default function Maquinas() {
                       </th>
                       <th className="px-5 py-4 whitespace-nowrap">Nome</th>
                       <th className="px-5 py-4 whitespace-nowrap">Status</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Wi-Fi</th>
                       <th className="px-5 py-4 whitespace-nowrap">
                         Ultima atividade
                       </th>
@@ -980,6 +994,13 @@ export default function Maquinas() {
                               ? "Verificando"
                               : "Verificar placa"}
                           </button>
+                        </td>
+                        <td className="px-5 py-4 min-w-[150px]">
+                          <WifiSignal
+                            online={m.status_online}
+                            quality={m.wifi_quality}
+                            rssi={m.wifi_rssi}
+                          />
                         </td>
                         <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
                           {m.ultima_atividade_em
@@ -1454,6 +1475,17 @@ function MachineMobileCard({
           value={String(machine.quantidade_saidas ?? 0)}
         />
         <InfoPill
+          label="Wi-Fi"
+          value={
+            <WifiSignal
+              online={machine.status_online}
+              quality={machine.wifi_quality}
+              rssi={machine.wifi_rssi}
+              compact
+            />
+          }
+        />
+        <InfoPill
           label="Banco"
           value={
             paymentProviderLabels[machine.banco_pagamento || "mercado_pago"] ||
@@ -1652,6 +1684,73 @@ function MachineStatusBadge({ status }) {
       <Icon size={14} />
       {label}
     </span>
+  );
+}
+
+function getWifiSignalMeta(online, quality) {
+  const normalized =
+    Number.isFinite(Number(quality)) && online
+      ? Math.max(0, Math.min(100, Number(quality)))
+      : null;
+  if (!online || normalized === null) {
+    return {
+      label: online ? "Sem leitura" : "Offline",
+      color: "text-slate-400",
+      bar: "bg-slate-300",
+      width: "20%",
+      quality: normalized,
+    };
+  }
+  if (normalized >= 70) {
+    return {
+      label: "Otimo",
+      color: "text-emerald-700",
+      bar: "bg-emerald-500",
+      width: `${normalized}%`,
+      quality: normalized,
+    };
+  }
+  if (normalized >= 40) {
+    return {
+      label: "Bom",
+      color: "text-amber-700",
+      bar: "bg-amber-500",
+      width: `${normalized}%`,
+      quality: normalized,
+    };
+  }
+  return {
+    label: "Ruim",
+    color: "text-rose-700",
+    bar: "bg-rose-500",
+    width: `${Math.max(normalized, 12)}%`,
+    quality: normalized,
+  };
+}
+
+function WifiSignal({ online, quality, rssi, compact = false }) {
+  const meta = getWifiSignalMeta(online, quality);
+  return (
+    <div className="min-w-[120px]">
+      <div className={`flex items-center gap-2 text-xs font-bold ${meta.color}`}>
+        <Wifi size={compact ? 14 : 16} />
+        <span>{meta.label}</span>
+        {meta.quality !== null ? <span>{meta.quality}%</span> : null}
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className={`h-full rounded-full transition-all ${meta.bar}`}
+          style={{ width: meta.width }}
+        />
+      </div>
+      {!compact ? (
+        <div className="mt-1 text-[11px] font-semibold text-[var(--color-text-soft)]">
+          {online && Number.isFinite(Number(rssi))
+            ? `${rssi} dBm`
+            : "Aguardando sinal"}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
