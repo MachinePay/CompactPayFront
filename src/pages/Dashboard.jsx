@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dayjs from "dayjs";
 import {
   ArrowUpRight,
   Banknote,
   Bell,
+  CalendarClock,
   CreditCard,
   Download,
+  FileDown,
   Filter,
+  FlaskConical,
   MonitorSmartphone,
+  RotateCcw,
   Search,
   Sparkles,
   Wallet,
+  Zap,
 } from "lucide-react";
 import {
   Bar,
@@ -59,14 +65,23 @@ export default function Dashboard() {
 
   const [stats, setStats] = useState({
     faturamento_total: 0,
+    faturamento_hoje: 0,
+    faturamento_mes: 0,
     premios_entregues: 0,
     maquinas_ativas: 0,
     total_maquinas: 0,
     total_fisico: 0,
+    faturamento_digital: 0,
     ticket_medio: 0,
     percentual_ativas: 0,
     alertas: 0,
+    testes_count: 0,
+    testes_valor: 0,
+    estornos_count: 0,
+    estornos_valor: 0,
+    pulsos_ausentes: 0,
   });
+  const [maquinasResumo, setMaquinasResumo] = useState([]);
   const [chartData, setChartData] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [clientes, setClientes] = useState([]);
@@ -156,18 +171,29 @@ export default function Dashboard() {
         setErrorMessage("");
         setStats({
           faturamento_total: data?.stats?.faturamento_total ?? 0,
+          faturamento_hoje: data?.stats?.faturamento_hoje ?? 0,
+          faturamento_mes: data?.stats?.faturamento_mes ?? 0,
           premios_entregues: data?.stats?.premios_entregues ?? 0,
           maquinas_ativas: data?.stats?.maquinas_ativas ?? 0,
           total_maquinas: data?.stats?.total_maquinas ?? 0,
           total_fisico: data?.stats?.total_fisico ?? 0,
+          faturamento_digital: data?.stats?.faturamento_digital ?? 0,
           ticket_medio: data?.stats?.ticket_medio ?? 0,
           percentual_ativas: data?.stats?.percentual_ativas ?? 0,
           alertas: data?.stats?.alertas ?? 0,
+          testes_count: data?.stats?.testes_count ?? 0,
+          testes_valor: data?.stats?.testes_valor ?? 0,
+          estornos_count: data?.stats?.estornos_count ?? 0,
+          estornos_valor: data?.stats?.estornos_valor ?? 0,
+          pulsos_ausentes: data?.stats?.pulsos_ausentes ?? 0,
         });
         setChartData(Array.isArray(data?.chart_data) ? data.chart_data : []);
         setAlerts(Array.isArray(data?.alerts) ? data.alerts : []);
         setClientesResumo(
           Array.isArray(data?.clientes_resumo) ? data.clientes_resumo : [],
+        );
+        setMaquinasResumo(
+          Array.isArray(data?.maquinas_resumo) ? data.maquinas_resumo : [],
         );
       })
       .catch((error) => {
@@ -245,17 +271,35 @@ export default function Dashboard() {
 
   const statCards = [
     {
-      label: "Faturamento",
-      value: `R$ ${stats.faturamento_total.toFixed(2)}`,
-      caption: "Entrada consolidada do periodo selecionado",
-      icon: Wallet,
+      label: "Faturamento Hoje",
+      value: `R$ ${stats.faturamento_hoje.toFixed(2)}`,
+      caption: "Entrada consolidada de hoje",
+      icon: CalendarClock,
       featured: true,
     },
     {
-      label: "Premios Entregues",
-      value: String(stats.premios_entregues),
-      caption: "Saidas registradas no recorte atual",
-      icon: Sparkles,
+      label: "Faturamento no Mes",
+      value: `R$ ${stats.faturamento_mes.toFixed(2)}`,
+      caption: "Entrada consolidada do mes atual",
+      icon: Wallet,
+    },
+    {
+      label: "Faturamento (filtro)",
+      value: `R$ ${stats.faturamento_total.toFixed(2)}`,
+      caption: "Entrada consolidada do periodo selecionado",
+      icon: ArrowUpRight,
+    },
+    {
+      label: "Ticket Medio",
+      value: `R$ ${stats.ticket_medio.toFixed(2)}`,
+      caption: "Media por venda real no periodo",
+      icon: CreditCard,
+    },
+    {
+      label: "Fisico vs Digital",
+      value: `R$ ${stats.total_fisico.toFixed(2)} / R$ ${stats.faturamento_digital.toFixed(2)}`,
+      caption: "Moedas e notas vs pagamentos digitais",
+      icon: Banknote,
     },
     {
       label: "Maquinas Ativas",
@@ -264,16 +308,28 @@ export default function Dashboard() {
       icon: MonitorSmartphone,
     },
     {
-      label: "Dinheiro Fisico",
-      value: `R$ ${stats.total_fisico.toFixed(2)}`,
-      caption: "Moedas e notas detectadas pelo contador IN",
-      icon: Banknote,
+      label: "Premios Entregues",
+      value: String(stats.premios_entregues),
+      caption: "Saidas registradas no recorte atual",
+      icon: Sparkles,
     },
     {
-      label: "Ticket Medio",
-      value: `R$ ${stats.ticket_medio.toFixed(2)}`,
-      caption: "Media por venda real",
-      icon: CreditCard,
+      label: "Testes",
+      value: `${stats.testes_count} (R$ ${stats.testes_valor.toFixed(2)})`,
+      caption: "Pagamentos de teste no periodo",
+      icon: FlaskConical,
+    },
+    {
+      label: "Estornos",
+      value: `${stats.estornos_count} (R$ ${stats.estornos_valor.toFixed(2)})`,
+      caption: "Extornos concluidos no periodo",
+      icon: RotateCcw,
+    },
+    {
+      label: "Pulsos Ausentes",
+      value: String(stats.pulsos_ausentes),
+      caption: "Pagamento aprovado sem confirmacao de pulso",
+      icon: Zap,
     },
   ];
 
@@ -285,21 +341,66 @@ export default function Dashboard() {
         ? "Todos os clientes"
         : "Minhas maquinas";
 
-  const exportClientesCsv = () => {
+  const periodoLabel = useMemo(() => {
+    if (dateRange.start && dateRange.end) {
+      const startLabel = dayjs(dateRange.start).format("DD/MM/YYYY");
+      const endLabel = dayjs(dateRange.end).format("DD/MM/YYYY");
+      return dateRange.start === dateRange.end ? startLabel : `${startLabel} ate ${endLabel}`;
+    }
+    return "Mes atual";
+  }, [dateRange]);
+
+  const exportCsv = () => {
     const rows = [
-      [
-        "cliente",
-        "maquinas",
-        "maquinas_online",
-        "faturamento",
-        "ultima_atividade",
-      ],
+      ["relatorio", "Dashboard financeiro CompactPay"],
+      ["gerado_em", dayjs().format("YYYY-MM-DD HH:mm:ss")],
+      ["cliente_filtro", selectedClient?.nome_empresa || "Todos"],
+      ["maquina_filtro", selectedMachine?.nome || selectedMachine?.id_hardware || "Todas"],
+      ["periodo", periodoLabel],
+      [],
+      ["totais_do_filtro"],
+      ["faturamento_hoje", stats.faturamento_hoje.toFixed(2)],
+      ["faturamento_mes", stats.faturamento_mes.toFixed(2)],
+      ["faturamento_periodo", stats.faturamento_total.toFixed(2)],
+      ["faturamento_fisico", stats.total_fisico.toFixed(2)],
+      ["faturamento_digital", stats.faturamento_digital.toFixed(2)],
+      ["ticket_medio", stats.ticket_medio.toFixed(2)],
+      ["testes_qtde", stats.testes_count],
+      ["testes_valor", stats.testes_valor.toFixed(2)],
+      ["estornos_qtde", stats.estornos_count],
+      ["estornos_valor", stats.estornos_valor.toFixed(2)],
+      ["pulsos_ausentes", stats.pulsos_ausentes],
+      [],
+      ["secao", "cliente", "maquinas", "maquinas_online", "faturamento", "fisico", "digital", "ticket_medio", "testes", "estornos", "pulsos_ausentes", "ultima_atividade"],
       ...clientesResumo.map((item) => [
+        "cliente",
         item.cliente_nome,
         item.maquinas,
         item.maquinas_online,
         Number(item.total_faturado || 0).toFixed(2),
+        Number(item.faturamento_fisico || 0).toFixed(2),
+        Number(item.faturamento_digital || 0).toFixed(2),
+        Number(item.ticket_medio || 0).toFixed(2),
+        item.testes_count || 0,
+        item.estornos_count || 0,
+        item.pulsos_ausentes || 0,
         item.ultima_atividade_em || "",
+      ]),
+      [],
+      ["secao", "maquina", "id_hardware", "cliente", "online", "faturamento", "fisico", "digital", "ticket_medio", "testes", "estornos", "pulsos_ausentes"],
+      ...maquinasResumo.map((item) => [
+        "maquina",
+        item.nome || item.id_hardware,
+        item.id_hardware,
+        item.cliente_nome,
+        item.status_online ? "sim" : "nao",
+        Number(item.total_faturado || 0).toFixed(2),
+        Number(item.faturamento_fisico || 0).toFixed(2),
+        Number(item.faturamento_digital || 0).toFixed(2),
+        Number(item.ticket_medio || 0).toFixed(2),
+        item.testes_count || 0,
+        item.estornos_count || 0,
+        item.pulsos_ausentes || 0,
       ]),
     ];
     const csv = rows
@@ -313,11 +414,101 @@ export default function Dashboard() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `consolidado-clientes-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `dashboard-financeiro-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const exportPdf = () => {
+    const printWindow = window.open("", "_blank", "width=980,height=760");
+    if (!printWindow) return;
+
+    const clientesRows = clientesResumo
+      .map(
+        (item) => `
+          <tr>
+            <td>${item.cliente_nome}</td>
+            <td>${item.maquinas}</td>
+            <td>${item.maquinas_online}</td>
+            <td>R$ ${Number(item.total_faturado || 0).toFixed(2)}</td>
+            <td>R$ ${Number(item.faturamento_fisico || 0).toFixed(2)}</td>
+            <td>R$ ${Number(item.faturamento_digital || 0).toFixed(2)}</td>
+            <td>${item.testes_count || 0}</td>
+            <td>${item.estornos_count || 0}</td>
+            <td>${item.pulsos_ausentes || 0}</td>
+          </tr>`,
+      )
+      .join("");
+
+    const maquinasRows = maquinasResumo
+      .map(
+        (item) => `
+          <tr>
+            <td>${item.nome || item.id_hardware}</td>
+            <td>${item.cliente_nome}</td>
+            <td>${item.status_online ? "Online" : "Offline"}</td>
+            <td>R$ ${Number(item.total_faturado || 0).toFixed(2)}</td>
+            <td>R$ ${Number(item.faturamento_fisico || 0).toFixed(2)}</td>
+            <td>R$ ${Number(item.faturamento_digital || 0).toFixed(2)}</td>
+            <td>${item.testes_count || 0}</td>
+            <td>${item.estornos_count || 0}</td>
+            <td>${item.pulsos_ausentes || 0}</td>
+          </tr>`,
+      )
+      .join("");
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Dashboard financeiro CompactPay</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #222; }
+            h1, h2 { margin-bottom: 8px; }
+            .meta { margin-bottom: 24px; color: #555; }
+            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0 28px; }
+            .card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+            th { background: #f4f4f4; }
+          </style>
+        </head>
+        <body>
+          <h1>Dashboard financeiro</h1>
+          <div class="meta">
+            <div><strong>Cliente:</strong> ${selectedClient?.nome_empresa || "Todos"}</div>
+            <div><strong>Maquina:</strong> ${selectedMachine?.nome || selectedMachine?.id_hardware || "Todas"}</div>
+            <div><strong>Periodo:</strong> ${periodoLabel}</div>
+            <div><strong>Gerado em:</strong> ${dayjs().format("DD/MM/YYYY HH:mm:ss")}</div>
+          </div>
+          <div class="grid">
+            <div class="card"><strong>Faturamento hoje</strong><br />R$ ${stats.faturamento_hoje.toFixed(2)}</div>
+            <div class="card"><strong>Faturamento no mes</strong><br />R$ ${stats.faturamento_mes.toFixed(2)}</div>
+            <div class="card"><strong>Faturamento no periodo</strong><br />R$ ${stats.faturamento_total.toFixed(2)}</div>
+            <div class="card"><strong>Fisico</strong><br />R$ ${stats.total_fisico.toFixed(2)}</div>
+            <div class="card"><strong>Digital</strong><br />R$ ${stats.faturamento_digital.toFixed(2)}</div>
+            <div class="card"><strong>Ticket medio</strong><br />R$ ${stats.ticket_medio.toFixed(2)}</div>
+            <div class="card"><strong>Testes</strong><br />${stats.testes_count} (R$ ${stats.testes_valor.toFixed(2)})</div>
+            <div class="card"><strong>Estornos</strong><br />${stats.estornos_count} (R$ ${stats.estornos_valor.toFixed(2)})</div>
+            <div class="card"><strong>Pulsos ausentes</strong><br />${stats.pulsos_ausentes}</div>
+          </div>
+          <h2>Resumo por cliente</h2>
+          <table>
+            <thead><tr><th>Cliente</th><th>Maquinas</th><th>Online</th><th>Faturamento</th><th>Fisico</th><th>Digital</th><th>Testes</th><th>Estornos</th><th>Pulsos ausentes</th></tr></thead>
+            <tbody>${clientesRows || "<tr><td colspan='9'>Nenhum cliente no filtro atual.</td></tr>"}</tbody>
+          </table>
+          <h2 style="margin-top: 28px;">Resumo por maquina</h2>
+          <table>
+            <thead><tr><th>Maquina</th><th>Cliente</th><th>Status</th><th>Faturamento</th><th>Fisico</th><th>Digital</th><th>Testes</th><th>Estornos</th><th>Pulsos ausentes</th></tr></thead>
+            <tbody>${maquinasRows || "<tr><td colspan='9'>Nenhuma maquina no filtro atual.</td></tr>"}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   return (
@@ -806,14 +997,24 @@ export default function Dashboard() {
                     Consolidado financeiro e operacional por cliente.
                   </div>
                 </div>
-                <button
-                  type="button"
-                  className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:w-auto"
-                  onClick={exportClientesCsv}
-                >
-                  <Download size={16} />
-                  Exportar CSV
-                </button>
+                <div className="flex w-full gap-2 sm:w-auto">
+                  <button
+                    type="button"
+                    className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:w-auto"
+                    onClick={exportCsv}
+                  >
+                    <Download size={16} />
+                    Exportar CSV
+                  </button>
+                  <button
+                    type="button"
+                    className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:w-auto"
+                    onClick={exportPdf}
+                  >
+                    <FileDown size={16} />
+                    Exportar PDF
+                  </button>
+                </div>
               </div>
               <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
                 {clientesResumo.length === 0 ? (
@@ -822,13 +1023,18 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="min-w-[720px] bg-white text-sm">
+                    <table className="min-w-[960px] bg-white text-sm">
                       <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
                         <tr>
                           <th className="px-5 py-4">Cliente</th>
                           <th className="px-5 py-4">Maquinas</th>
                           <th className="px-5 py-4">Online</th>
                           <th className="px-5 py-4">Faturamento</th>
+                          <th className="px-5 py-4">Fisico</th>
+                          <th className="px-5 py-4">Digital</th>
+                          <th className="px-5 py-4">Testes</th>
+                          <th className="px-5 py-4">Estornos</th>
+                          <th className="px-5 py-4">Pulsos ausentes</th>
                           <th className="px-5 py-4">Ultima atividade</th>
                         </tr>
                       </thead>
@@ -849,6 +1055,15 @@ export default function Dashboard() {
                               R$ {Number(item.total_faturado || 0).toFixed(2)}
                             </td>
                             <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                              R$ {Number(item.faturamento_fisico || 0).toFixed(2)}
+                            </td>
+                            <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                              R$ {Number(item.faturamento_digital || 0).toFixed(2)}
+                            </td>
+                            <td className="px-5 py-4">{item.testes_count || 0}</td>
+                            <td className="px-5 py-4">{item.estornos_count || 0}</td>
+                            <td className="px-5 py-4">{item.pulsos_ausentes || 0}</td>
+                            <td className="px-5 py-4 text-[var(--color-text-soft)]">
                               {item.ultima_atividade_em
                                 ? new Date(
                                     item.ultima_atividade_em,
@@ -864,6 +1079,80 @@ export default function Dashboard() {
               </div>
             </Card>
           ) : null}
+
+          <Card className="rounded-[22px] sm:rounded-[30px]">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="text-xl font-bold text-[var(--color-text)]">
+                  Resumo por maquina
+                </div>
+                <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+                  Faturamento, testes, estornos e pulsos ausentes por maquina no periodo selecionado.
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
+              {maquinasResumo.length === 0 ? (
+                <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">
+                  Nenhuma maquina encontrada para esse recorte.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-[900px] bg-white text-sm">
+                    <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+                      <tr>
+                        <th className="px-5 py-4">Maquina</th>
+                        {isAdmin ? <th className="px-5 py-4">Cliente</th> : null}
+                        <th className="px-5 py-4">Status</th>
+                        <th className="px-5 py-4">Faturamento</th>
+                        <th className="px-5 py-4">Fisico</th>
+                        <th className="px-5 py-4">Digital</th>
+                        <th className="px-5 py-4">Testes</th>
+                        <th className="px-5 py-4">Estornos</th>
+                        <th className="px-5 py-4">Pulsos ausentes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {maquinasResumo.map((item) => (
+                        <tr
+                          key={item.id_hardware}
+                          className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                        >
+                          <td className="px-5 py-4 font-semibold">
+                            {item.nome || item.id_hardware}
+                          </td>
+                          {isAdmin ? (
+                            <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                              {item.cliente_nome}
+                            </td>
+                          ) : null}
+                          <td className="px-5 py-4">
+                            <span
+                              className={`text-sm font-semibold ${item.status_online ? "text-[var(--color-success)]" : "text-[var(--color-error)]"}`}
+                            >
+                              {item.status_online ? "Online" : "Offline"}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 font-semibold">
+                            R$ {Number(item.total_faturado || 0).toFixed(2)}
+                          </td>
+                          <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                            R$ {Number(item.faturamento_fisico || 0).toFixed(2)}
+                          </td>
+                          <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                            R$ {Number(item.faturamento_digital || 0).toFixed(2)}
+                          </td>
+                          <td className="px-5 py-4">{item.testes_count || 0}</td>
+                          <td className="px-5 py-4">{item.estornos_count || 0}</td>
+                          <td className="px-5 py-4">{item.pulsos_ausentes || 0}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </Card>
 
           <Card className="rounded-[22px] sm:rounded-[30px]">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
