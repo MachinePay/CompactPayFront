@@ -57,6 +57,39 @@ function formatFirmwareStatus(status) {
   return labels[status] || status || "Sem status";
 }
 
+function formatUptime(seconds) {
+  if (seconds == null) return "--";
+  const total = Number(seconds);
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+function formatHeap(bytes) {
+  if (bytes == null) return "--";
+  return `${Math.round(Number(bytes) / 1024)} KB`;
+}
+
+function formatResetReason(reason) {
+  const labels = {
+    poweron: "Energizado",
+    ext: "Reset externo",
+    sw: "Reset por software",
+    panic: "Pane (panic)",
+    int_wdt: "Watchdog (int)",
+    task_wdt: "Watchdog (task)",
+    wdt: "Watchdog",
+    deepsleep: "Deep sleep",
+    brownout: "Queda de energia",
+    sdio: "SDIO",
+    unknown: "Desconhecido",
+  };
+  return labels[reason] || reason || "--";
+}
+
 function formatPulseStatus(status) {
   const labels = {
     pendente: "Aguardando envio",
@@ -283,6 +316,7 @@ export default function SaudeMaquinas() {
                     <th className="px-5 py-4">MQTT</th>
                     <th className="px-5 py-4">Ultimo pagamento</th>
                     <th className="px-5 py-4">Ultimo pulso</th>
+                    <th className="px-5 py-4">Diagnostico</th>
                     <th className="px-5 py-4">Acoes</th>
                   </tr>
                 </thead>
@@ -301,6 +335,7 @@ export default function SaudeMaquinas() {
                       <td className="px-5 py-4"><MqttBadge status={machine.mqtt_status} /></td>
                       <td className="px-5 py-4 min-w-[190px]"><PaymentInfo payment={machine.ultimo_pagamento} /></td>
                       <td className="px-5 py-4 min-w-[180px]"><PulseInfo pulse={machine.ultimo_pulso} alert={machine.pulse_alert} /></td>
+                      <td className="px-5 py-4 min-w-[210px]"><DiagnosticoInfo machine={machine} /></td>
                       <td className="px-5 py-4">
                         <button
                           type="button"
@@ -452,6 +487,28 @@ function PulseInfo({ pulse, alert }) {
   );
 }
 
+function DiagnosticoInfo({ machine }) {
+  return (
+    <div className="space-y-1 text-xs text-[var(--color-text-soft)]">
+      <div>
+        <span className="font-semibold text-[var(--color-text)]">Uptime:</span> {formatUptime(machine.uptime_seconds)}
+      </div>
+      <div>
+        <span className="font-semibold text-[var(--color-text)]">Heap livre:</span> {formatHeap(machine.free_heap_bytes)}
+      </div>
+      <div>
+        <span className="font-semibold text-[var(--color-text)]">Ultimo reset:</span> {formatResetReason(machine.last_reset_reason)}
+      </div>
+      <div>
+        <span className="font-semibold text-[var(--color-text)]">Reconexoes:</span> Wi-Fi {machine.wifi_reconnect_count ?? 0} / MQTT {machine.mqtt_reconnect_count ?? 0}
+      </div>
+      <div>
+        <span className="font-semibold text-[var(--color-text)]">Pulsos curtos:</span> {machine.short_pulse_count ?? 0}
+      </div>
+    </div>
+  );
+}
+
 function HealthMobileCard({ machine, onOpen }) {
   return (
     <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4">
@@ -472,6 +529,7 @@ function HealthMobileCard({ machine, onOpen }) {
         <InfoTile label="Firmware" value={<FirmwareBadge machine={machine} />} wide />
         <InfoTile label="Pagamento" value={<PaymentInfo payment={machine.ultimo_pagamento} />} />
         <InfoTile label="Pulso" value={<PulseInfo pulse={machine.ultimo_pulso} alert={machine.pulse_alert} />} />
+        <InfoTile label="Diagnostico" value={<DiagnosticoInfo machine={machine} />} wide />
       </div>
       <button
         type="button"
