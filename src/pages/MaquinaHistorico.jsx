@@ -117,6 +117,12 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       const data = await fetchHistorico(options);
       setHistorico(data);
       return data;
+    } catch (error) {
+      setToast({
+        message: getApiErrorMessage(error, "Nao foi possivel carregar o historico da maquina."),
+        type: "error",
+      });
+      return null;
     } finally {
       if (!options.silent) setLoading(false);
     }
@@ -148,8 +154,12 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     if (!selectable || !user) return;
     if (user.role !== "admin") return;
     const loadClientes = async () => {
-      const { data } = await api.get("/clientes");
-      setClientes(data);
+      try {
+        const { data } = await api.get("/clientes");
+        setClientes(data);
+      } catch {
+        setClientes([]);
+      }
     };
     loadClientes();
   }, [selectable, user]);
@@ -166,13 +176,17 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       if (user.role === "admin") {
         params.push(`cliente_id=${encodeURIComponent(selectedClienteId)}`);
       }
-      const { data } = await api.get(`/maquinas?${params.join("&")}`);
-      setMachineOptions(data);
-      if (!data.some((item) => item.id_hardware === selectedMachineId)) {
-        setSelectedMachineId("");
-      }
-      if (!selectedMachineId && data.length) {
-        setSelectedMachineId(data[0].id_hardware);
+      try {
+        const { data } = await api.get(`/maquinas?${params.join("&")}`);
+        setMachineOptions(data);
+        if (!data.some((item) => item.id_hardware === selectedMachineId)) {
+          setSelectedMachineId("");
+        }
+        if (!selectedMachineId && data.length) {
+          setSelectedMachineId(data[0].id_hardware);
+        }
+      } catch {
+        setMachineOptions([]);
       }
     };
     loadMachineOptions();
@@ -279,11 +293,18 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
 
   const handleDeleteHistorico = async () => {
     if (deleteState.confirmationText.trim().toLowerCase() !== "confirmar") return;
-    const query = buildQuery();
-    await api.delete(`/maquinas/${machineId}/historico${query}`);
-    setToast({ message: "Historico apagado com sucesso.", type: "success" });
-    setDeleteState({ open: false, confirmationText: "" });
-    await loadHistorico();
+    try {
+      const query = buildQuery();
+      await api.delete(`/maquinas/${machineId}/historico${query}`);
+      setToast({ message: "Historico apagado com sucesso.", type: "success" });
+      setDeleteState({ open: false, confirmationText: "" });
+      await loadHistorico();
+    } catch (error) {
+      setToast({
+        message: getApiErrorMessage(error, "Nao foi possivel apagar o historico."),
+        type: "error",
+      });
+    }
   };
 
   const requestRefund = (venda) => {

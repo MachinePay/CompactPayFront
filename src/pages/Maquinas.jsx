@@ -266,8 +266,12 @@ export default function Maquinas() {
 
   const copyMachineId = async () => {
     if (!form.id_hardware) return;
-    await navigator.clipboard.writeText(form.id_hardware);
-    setCopyFeedback("ID copiado para configurar no ESP.");
+    try {
+      await navigator.clipboard.writeText(form.id_hardware);
+      setCopyFeedback("ID copiado para configurar no ESP.");
+    } catch {
+      setCopyFeedback("Nao foi possivel copiar. Selecione o ID manualmente.");
+    }
   };
 
   const validateSelectedMercadoPago = async () => {

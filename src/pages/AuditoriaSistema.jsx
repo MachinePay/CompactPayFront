@@ -43,6 +43,8 @@ export default function AuditoriaSistema() {
       params.set("limite", filters.limite || "100");
       const { data } = await api.get(`/auditoria-sistema?${params.toString()}`);
       setItems(data);
+    } catch {
+      // Erro ja e exibido pelo toast global de erros de API.
     } finally {
       setLoading(false);
     }
@@ -50,14 +52,9 @@ export default function AuditoriaSistema() {
 
   useEffect(() => {
     if (user?.role !== "admin") return;
-    const timer = window.setTimeout(() => {
-      const params = new URLSearchParams({ limite: "100" });
-      api.get(`/auditoria-sistema?${params.toString()}`).then(({ data }) => {
-        setItems(data);
-      });
-    }, 0);
+    const timer = window.setTimeout(loadData, 0);
     return () => window.clearTimeout(timer);
-  }, [user?.role]);
+  }, [loadData, user?.role]);
 
   useEffect(() => {
     if (user?.role !== "admin") return;

@@ -86,6 +86,8 @@ export default function Usuarios() {
     try {
       const res = await api.get("/usuarios");
       setUsuarios(res.data);
+    } catch {
+      // Erro ja e exibido pelo toast global de erros de API.
     } finally {
       setLoading(false);
     }
@@ -166,6 +168,8 @@ export default function Usuarios() {
       await api.delete(`/usuarios/${deleteUser.id}`);
       setDeleteUser(null);
       fetchUsuarios();
+    } catch {
+      // Erro ja e exibido pelo toast global de erros de API.
     } finally {
       setDeletingUser(false);
     }
@@ -173,8 +177,12 @@ export default function Usuarios() {
 
   const handleConnectMercadoPago = async (clienteId) => {
     if (!clienteId) return;
-    const { data } = await api.get(`/mercado-pago/oauth/url?cliente_id=${clienteId}`);
-    window.location.href = data.url;
+    try {
+      const { data } = await api.get(`/mercado-pago/oauth/url?cliente_id=${clienteId}`);
+      window.location.href = data.url;
+    } catch {
+      // Erro ja e exibido pelo toast global de erros de API.
+    }
   };
 
   const handleValidateMercadoPago = async (cliente) => {
@@ -229,6 +237,8 @@ export default function Usuarios() {
       resetForm();
       setEditUser(null);
       fetchUsuarios();
+    } catch {
+      // Erro ja e exibido pelo toast global de erros de API.
     } finally {
       setSaving(false);
     }

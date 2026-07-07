@@ -51,10 +51,16 @@ export default function TestePagamento() {
   }, [machineId, terminalId, mpAccessToken, mpPublicKey, mpWebhookSecret]);
 
   const loadMaquinas = useCallback(async () => {
-    const { data } = await api.get("/maquinas");
-    setMaquinas(data || []);
-    if (!machineId && data?.length) {
-      setMachineId(data[0].id_hardware);
+    try {
+      const { data } = await api.get("/maquinas");
+      setMaquinas(data || []);
+      if (!machineId && data?.length) {
+        setMachineId(data[0].id_hardware);
+      }
+    } catch (error) {
+      setMaquinas([]);
+      setFeedbackType("error");
+      setFeedback(getApiErrorMessage(error, "Nao foi possivel carregar as maquinas."));
     }
   }, [machineId]);
 
