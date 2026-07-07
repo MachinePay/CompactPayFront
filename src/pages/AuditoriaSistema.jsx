@@ -3,20 +3,27 @@ import { brasiliaDate } from "../utils/dateTime";
 import { ClipboardList, Filter, RefreshCcw, ShieldCheck } from "lucide-react";
 
 import api from "../api/axios";
+import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useAuth } from "../context/useAuth";
 
 const emptyFilters = {
-  entidade_tipo: "",
-  entidade_id: "",
+  maquina_id: "",
+  usuario: "",
   acao: "",
+  periodo: "",
   limite: "100",
 };
+
+const emptyDateRange = { start: "", end: "" };
 
 export default function AuditoriaSistema() {
   const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [filters, setFilters] = useState(emptyFilters);
+  const [dateRange, setDateRange] = useState(emptyDateRange);
+  const [maquinas, setMaquinas] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -24,16 +31,22 @@ export default function AuditoriaSistema() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filters.entidade_tipo.trim()) params.set("entidade_tipo", filters.entidade_tipo.trim());
-      if (filters.entidade_id.trim()) params.set("entidade_id", filters.entidade_id.trim());
+      if (filters.maquina_id.trim()) params.set("maquina_id", filters.maquina_id.trim());
+      if (filters.usuario.trim()) params.set("usuario", filters.usuario.trim());
       if (filters.acao.trim()) params.set("acao", filters.acao.trim());
+      if (dateRange.start && dateRange.end) {
+        params.set("data_inicio", dateRange.start);
+        params.set("data_fim", dateRange.end);
+      } else if (filters.periodo) {
+        params.set("periodo", filters.periodo);
+      }
       params.set("limite", filters.limite || "100");
       const { data } = await api.get(`/auditoria-sistema?${params.toString()}`);
       setItems(data);
     } finally {
       setLoading(false);
     }
-  }, [filters, user?.role]);
+  }, [filters, dateRange, user?.role]);
 
   useEffect(() => {
     if (user?.role !== "admin") return;
@@ -44,6 +57,12 @@ export default function AuditoriaSistema() {
       });
     }, 0);
     return () => window.clearTimeout(timer);
+  }, [user?.role]);
+
+  useEffect(() => {
+    if (user?.role !== "admin") return;
+    api.get("/maquinas").then(({ data }) => setMaquinas(data || [])).catch(() => setMaquinas([]));
+    api.get("/usuarios").then(({ data }) => setUsuarios(data || [])).catch(() => setUsuarios([]));
   }, [user?.role]);
 
   const stats = useMemo(() => {
@@ -92,24 +111,59 @@ export default function AuditoriaSistema() {
       </div>
 
       <section className="app-panel rounded-[30px] p-5 md:p-6">
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_140px_auto]">
-          <input
+        <div className="grid gap-3 md:grid-cols-3">
+          <select
             className="rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-            placeholder="Tipo: maquina, usuario..."
-            value={filters.entidade_tipo}
-            onChange={(event) => setFilters((current) => ({ ...current, entidade_tipo: event.target.value }))}
-          />
-          <input
+            value={filters.maquina_id}
+            onChange={(event) => setFilters((current) => ({ ...current, maquina_id: event.target.value }))}
+          >
+            <option value="">Todas as maquinas</option>
+            {maquinas.map((item) => (
+              <option key={item.id_hardware} value={item.id_hardware}>
+                {(item.nome || item.id_hardware) + ` - ${item.id_hardware}`}
+              </option>
+            ))}
+          </select>
+          <select
             className="rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-            placeholder="ID da entidade"
-            value={filters.entidade_id}
-            onChange={(event) => setFilters((current) => ({ ...current, entidade_id: event.target.value }))}
-          />
+            value={filters.usuario}
+            onChange={(event) => setFilters((current) => ({ ...current, usuario: event.target.value }))}
+          >
+            <option value="">Todos os usuarios</option>
+            {usuarios.map((item) => (
+              <option key={item.id} value={item.email}>
+                {item.nome ? `${item.nome} - ${item.email}` : item.email}
+              </option>
+            ))}
+          </select>
           <input
             className="rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             placeholder="Acao: criar, editar, excluir..."
             value={filters.acao}
             onChange={(event) => setFilters((current) => ({ ...current, acao: event.target.value }))}
+          />
+        </div>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-[160px_1fr_140px_auto]">
+          <select
+            className="rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+            value={filters.periodo}
+            onChange={(event) => {
+              setFilters((current) => ({ ...current, periodo: event.target.value }));
+              setDateRange(emptyDateRange);
+            }}
+          >
+            <option value="">Todo o periodo</option>
+            <option value="hoje">Hoje</option>
+            <option value="semana">Ultimos 7 dias</option>
+            <option value="mes">Mes atual</option>
+          </select>
+          <DateRangePicker
+            value={dateRange}
+            onChange={(range) => {
+              setDateRange(range);
+              setFilters((current) => ({ ...current, periodo: "" }));
+            }}
           />
           <select
             className="rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
