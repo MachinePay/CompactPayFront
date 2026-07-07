@@ -471,6 +471,17 @@ export default function Maquinas() {
       });
       return;
     }
+    if (
+      ["sent", "downloading", "restarting"].includes(
+        machine.firmware_update_status,
+      )
+    ) {
+      setToast({
+        message: "Ja existe uma atualizacao em andamento para esta maquina.",
+        type: "error",
+      });
+      return;
+    }
     setUpdateState({
       open: true,
       machine,
@@ -1072,20 +1083,31 @@ export default function Maquinas() {
                                 disabled={
                                   sendingUpdateId === m.id_hardware ||
                                   !m.status_online ||
-                                  firmwareVersions.length === 0
+                                  firmwareVersions.length === 0 ||
+                                  ["sent", "downloading", "restarting"].includes(
+                                    m.firmware_update_status,
+                                  )
                                 }
                                 title={
                                   !m.status_online
                                     ? "Maquina offline"
                                     : firmwareVersions.length === 0
                                       ? "Cadastre uma versao em Firmwares"
-                                      : "Atualizar firmware"
+                                      : ["sent", "downloading", "restarting"].includes(
+                                            m.firmware_update_status,
+                                          )
+                                        ? "Ja existe uma atualizacao em andamento"
+                                        : "Atualizar firmware"
                                 }
                               >
                                 <UploadCloud size={15} />
                                 {sendingUpdateId === m.id_hardware
                                   ? "Enviando"
-                                  : "Atualizar"}
+                                  : m.firmware_update_status === "downloading"
+                                    ? `Baixando${m.firmware_update_progress != null ? ` ${m.firmware_update_progress}%` : "..."}`
+                                    : ["sent", "restarting"].includes(m.firmware_update_status)
+                                      ? "Em andamento"
+                                      : "Atualizar"}
                               </button>
                               <button
                                 type="button"
@@ -1550,20 +1572,32 @@ function MachineMobileCard({
               className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
               onClick={onSendUpdate}
               disabled={
-                sendingUpdateId === machine.id_hardware || !canUpdateFirmware
+                sendingUpdateId === machine.id_hardware ||
+                !canUpdateFirmware ||
+                ["sent", "downloading", "restarting"].includes(
+                  machine.firmware_update_status,
+                )
               }
               title={
                 !machine.status_online
                   ? "Maquina offline"
                   : !canUpdateFirmware
                     ? "Cadastre uma versao em Firmwares"
-                    : "Atualizar firmware"
+                    : ["sent", "downloading", "restarting"].includes(
+                          machine.firmware_update_status,
+                        )
+                      ? "Ja existe uma atualizacao em andamento"
+                      : "Atualizar firmware"
               }
             >
               <UploadCloud size={15} />
               {sendingUpdateId === machine.id_hardware
                 ? "Enviando"
-                : "Atualizar"}
+                : machine.firmware_update_status === "downloading"
+                  ? `Baixando${machine.firmware_update_progress != null ? ` ${machine.firmware_update_progress}%` : "..."}`
+                  : ["sent", "restarting"].includes(machine.firmware_update_status)
+                    ? "Em andamento"
+                    : "Atualizar"}
             </button>
             <button
               type="button"
@@ -1639,6 +1673,24 @@ function FirmwareBadge({ machine }) {
             title={targetVersion}
           >
             Alvo: {targetVersion}
+          </div>
+        ) : null}
+        {isUpdating && machine.firmware_update_progress != null ? (
+          <div className="mt-1 text-[11px] font-bold">
+            {machine.firmware_update_progress}% concluido
+          </div>
+        ) : null}
+        {isFailed && machine.firmware_update_error ? (
+          <div
+            className="mt-1 max-w-[190px] truncate text-[11px]"
+            title={machine.firmware_update_error}
+          >
+            Erro: {machine.firmware_update_error}
+          </div>
+        ) : null}
+        {isFailed && machine.firmware_last_good_version ? (
+          <div className="mt-1 max-w-[190px] truncate text-[11px] opacity-80">
+            Ultima versao boa: {machine.firmware_last_good_version}
           </div>
         ) : null}
         {machine.firmware_updated_at ? (
