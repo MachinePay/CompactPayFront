@@ -470,10 +470,17 @@ function PaymentInfo({ payment }) {
       <div className="font-extrabold text-[var(--color-text)]">{formatCurrency(payment.valor)}</div>
       <div className="mt-1 text-xs text-[var(--color-text-soft)]">{formatDateTime(payment.data)}</div>
       <div className="mt-1 text-xs font-semibold text-[var(--color-primary)]">
-        {[payment.origem, payment.payment_type].filter(Boolean).join(" - ") || "--"}
+        {formatPaymentOrigin(payment)}
       </div>
     </div>
   );
+}
+
+function formatPaymentOrigin(payment) {
+  if (payment?.origem === "app_agarra" || payment?.payment_type === "pagamento_app_agarra") {
+    return "Aplicativo Agarra";
+  }
+  return [payment?.origem, payment?.payment_type].filter(Boolean).join(" - ") || "--";
 }
 
 function PulseInfo({ pulse, alert }) {

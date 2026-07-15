@@ -707,6 +707,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 ["todos", "Fisico + digital"],
                 ["fisico", "Fisico"],
                 ["digital", "Digital"],
+                ["app_agarra", "Aplicativo Agarra"],
               ]}
             />
             <FilterSelect
@@ -1182,8 +1183,13 @@ function matchesSaleFilters(item, filters) {
   if (filters.registro === "testes" && !item.is_test) return false;
 
   const physical = isPhysicalSale(item);
+  const appAgarra =
+    item.provider === "agarramais_app" ||
+    item.payment_type === "pagamento_app_agarra" ||
+    String(item.descricao || "").toLowerCase().includes("aplicativo agarra");
   if (filters.origem === "fisico" && !physical) return false;
   if (filters.origem === "digital" && (physical || item.is_test)) return false;
+  if (filters.origem === "app_agarra" && !appAgarra) return false;
 
   const methodText = getPaymentMethodText(item);
   if (filters.forma === "pix" && !methodText.includes("pix")) return false;
@@ -1573,6 +1579,7 @@ function StatusBadge({ item }) {
 
 function formatProvider(provider) {
   const labels = {
+    agarramais_app: "Aplicativo Agarra",
     mercado_pago: "Mercado Pago",
     manual: "Lancamento manual",
     fisico: "Pagamento fisico",
@@ -1583,6 +1590,9 @@ function formatProvider(provider) {
 }
 
 function formatPaymentMethod(item) {
+  if (item.payment_type === "pagamento_app_agarra") {
+    return "Pagamento feito pelo aplicativo Agarra";
+  }
   const parts = [item.payment_type, item.card_brand, item.bank_name].filter(Boolean);
   return parts.length ? parts.join(" - ") : "Metodo nao informado";
 }
