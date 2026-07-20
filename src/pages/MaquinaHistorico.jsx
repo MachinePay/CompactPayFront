@@ -1271,7 +1271,7 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                 <th className="px-4 py-4">Maquininha</th>
                 <th className="px-4 py-4">Banco/Metodo</th>
                 <th className="px-4 py-4">Pago/Devolver</th>
-                <th className="px-4 py-4">Machine Pay</th>
+                <th className="px-4 py-4">Tipo de pagamento</th>
                 <th className="px-4 py-4">Situacao</th>
               </tr>
             </thead>
