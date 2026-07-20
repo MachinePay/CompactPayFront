@@ -467,7 +467,14 @@ function PaymentInfo({ payment }) {
   if (!payment) return <span className="text-sm text-[var(--color-text-soft)]">Sem pagamento</span>;
   return (
     <div>
-      <div className="font-extrabold text-[var(--color-text)]">{formatCurrency(payment.valor)}</div>
+      <div className="flex items-center gap-2">
+        <span className="font-extrabold text-[var(--color-text)]">{formatCurrency(payment.valor)}</span>
+        {payment.is_teste ? (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">
+            Teste
+          </span>
+        ) : null}
+      </div>
       <div className="mt-1 text-xs text-[var(--color-text-soft)]">{formatDateTime(payment.data)}</div>
       <div className="mt-1 text-xs font-semibold text-[var(--color-primary)]">
         {[payment.origem, payment.payment_type].filter(Boolean).join(" - ") || "--"}
