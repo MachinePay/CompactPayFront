@@ -1593,6 +1593,9 @@ function formatPaymentMethod(item) {
   if (item.payment_type === "pagamento_app_agarra") {
     return "Pagamento feito pelo aplicativo Agarra";
   }
+  if (isPhysicalSale(item) && Number(item.pulse_count || 0) > 1) {
+    return `FISICO - ${item.pulse_count} pulsos`;
+  }
   const parts = [item.payment_type, item.card_brand, item.bank_name].filter(Boolean);
   return parts.length ? parts.join(" - ") : "Metodo nao informado";
 }
