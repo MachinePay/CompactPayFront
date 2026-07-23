@@ -7,6 +7,7 @@ import {
   Filter,
   LockKeyhole,
   RefreshCcw,
+  RotateCcw,
 } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -28,6 +29,7 @@ export default function Fechamento() {
   const [dateRange, setDateRange] = useState(DEFAULT_RANGE);
   const [loading, setLoading] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [undoing, setUndoing] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "success" });
 
   const buildQuery = useCallback(
@@ -123,6 +125,12 @@ export default function Fechamento() {
   const totalDigital = entradasAbertas
     .filter((item) => item.metodo === "DIGITAL")
     .reduce((sum, item) => sum + Number(item.valor || 0), 0);
+  const fechamentosVisiveis = useMemo(() => {
+    const ids = [...new Set(rows.map((item) => item.fechamentoId).filter(Boolean))];
+    return ids
+      .map((id) => fechamentoPorId.get(id))
+      .filter(Boolean);
+  }, [fechamentoPorId, rows]);
 
   const handleFechar = async () => {
     const machineIds = [
@@ -164,6 +172,45 @@ export default function Fechamento() {
     }
   };
 
+  const handleDesfazerFechamento = async () => {
+    if (fechamentosVisiveis.length === 0) {
+      setToast({
+        message: "Nao ha fechamento para desfazer neste filtro.",
+        type: "error",
+      });
+      return;
+    }
+
+    setUndoing(true);
+    try {
+      const results = await Promise.allSettled(
+        fechamentosVisiveis.map((fechamento) =>
+          api.delete(
+            `/maquinas/${fechamento.maquina_id}/fechamentos/${fechamento.id}`,
+          ),
+        ),
+      );
+      const rejected = results.filter((item) => item.status === "rejected");
+      if (rejected.length) {
+        setToast({
+          message: getApiErrorMessage(
+            rejected[0].reason,
+            "Alguns fechamentos nao puderam ser desfeitos.",
+          ),
+          type: "error",
+        });
+      } else {
+        setToast({
+          message: "Fechamento desfeito. As transacoes voltaram a contabilizar no total aberto.",
+          type: "success",
+        });
+      }
+      await loadData();
+    } finally {
+      setUndoing(false);
+    }
+  };
+
   return (
     <div className="flex min-h-full flex-col gap-4">
       <Toast
@@ -185,15 +232,26 @@ export default function Fechamento() {
               Filtre o periodo, confira as transacoes abertas e salve o fechamento das maquinas selecionadas.
             </p>
           </div>
-          <button
-            className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
-            type="button"
-            onClick={handleFechar}
-            disabled={closing || loading || abertas.length === 0}
-          >
-            <ClipboardCheck size={17} />
-            {closing ? "Fechando..." : "Fazer fechamento"}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              onClick={handleDesfazerFechamento}
+              disabled={undoing || closing || loading || fechamentosVisiveis.length === 0}
+            >
+              <RotateCcw size={17} />
+              {undoing ? "Desfazendo..." : "Desfazer fechamento"}
+            </button>
+            <button
+              className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              onClick={handleFechar}
+              disabled={closing || undoing || loading || abertas.length === 0}
+            >
+              <ClipboardCheck size={17} />
+              {closing ? "Fechando..." : "Fazer fechamento"}
+            </button>
+          </div>
         </div>
       </section>
 
