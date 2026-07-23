@@ -17,6 +17,7 @@ const AlertasMaquinas = lazy(() => import("./pages/AlertasMaquinas"));
 const AuditoriaSistema = lazy(() => import("./pages/AuditoriaSistema"));
 const ComandosMaquinas = lazy(() => import("./pages/ComandosMaquinas"));
 const FirmwareVersions = lazy(() => import("./pages/FirmwareVersions"));
+const Fechamento = lazy(() => import("./pages/Fechamento"));
 const MaquinaHistorico = lazy(() => import("./pages/MaquinaHistorico"));
 const RelatorioDetalhadoMaquina = lazy(
   () => import("./pages/RelatorioDetalhadoMaquina"),
@@ -160,6 +161,14 @@ function RouteContent() {
             element={
               <PrivatePage>
                 <Transacoes />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/fechamento"
+            element={
+              <PrivatePage>
+                <Fechamento />
               </PrivatePage>
             }
           />

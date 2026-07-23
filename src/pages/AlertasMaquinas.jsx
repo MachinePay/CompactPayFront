@@ -51,6 +51,11 @@ function alertIcon(tipo) {
   return icons[tipo] || AlertTriangle;
 }
 
+function renderAlertIcon(tipo) {
+  const Icon = alertIcon(tipo);
+  return <Icon size={22} />;
+}
+
 function severityTone(severidade) {
   return {
     critico: "border-rose-200 bg-rose-50 text-rose-800",
@@ -279,13 +284,12 @@ function SummaryCard({ label, value, icon, tone = "neutral" }) {
 }
 
 function AlertCard({ alert, onOpen }) {
-  const Icon = alertIcon(alert.tipo);
   return (
     <article className={`rounded-[18px] border p-4 ${severityTone(alert.severidade)}`}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/70">
-            <Icon size={22} />
+            {renderAlertIcon(alert.tipo)}
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">

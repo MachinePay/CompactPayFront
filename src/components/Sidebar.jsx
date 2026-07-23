@@ -3,6 +3,7 @@ import {
   Bell,
   BarChart3,
   ClipboardList,
+  ClipboardCheck,
   Cpu,
   CreditCard,
   Home,
@@ -101,6 +102,15 @@ export default function Sidebar() {
                 onClick={closeMobile}
               >
                 <Activity size={16} /> Transacoes
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/fechamento"
+                className={linkClassName}
+                onClick={closeMobile}
+              >
+                <ClipboardCheck size={16} /> Fechamento
               </NavLink>
             </li>
           </ul>
