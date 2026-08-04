@@ -90,6 +90,28 @@ function formatResetReason(reason) {
   return labels[reason] || reason || "--";
 }
 
+function formatWifiDisconnectReason(reason) {
+  if (reason == null) return "--";
+  const code = Number(reason);
+  const labels = {
+    2: "Autenticacao expirou",
+    3: "Desconexao pelo cliente",
+    4: "Associacao expirou",
+    6: "Nao autenticado",
+    8: "Desconectado (AP saiu)",
+    15: "Timeout no handshake (senha errada?)",
+    200: "Sinal perdido (beacon timeout)",
+    201: "Rede nao encontrada",
+    202: "Falha de autenticacao",
+    203: "Falha de associacao",
+    204: "Timeout de handshake",
+    205: "Falha ao conectar",
+    206: "AP reiniciou (TSF reset)",
+    207: "Roaming",
+  };
+  return labels[code] ? `${labels[code]} (${code})` : `Codigo ${code}`;
+}
+
 function formatPulseStatus(status) {
   const labels = {
     pendente: "Aguardando envio",
@@ -518,6 +540,10 @@ function DiagnosticoInfo({ machine }) {
       </div>
       <div>
         <span className="font-semibold text-[var(--color-text)]">Pulsos curtos:</span> {machine.short_pulse_count ?? 0}
+      </div>
+      <div>
+        <span className="font-semibold text-[var(--color-text)]">Ultima queda Wi-Fi:</span> {formatWifiDisconnectReason(machine.wifi_disconnect_reason)}
+        {machine.wifi_disconnect_count ? ` (${machine.wifi_disconnect_count}x)` : ""}
       </div>
     </div>
   );

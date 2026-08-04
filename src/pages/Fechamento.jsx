@@ -4,6 +4,7 @@ import {
   Calculator,
   CheckCircle2,
   ClipboardCheck,
+  FileDown,
   Filter,
   LockKeyhole,
   RefreshCcw,
@@ -113,8 +114,12 @@ export default function Fechamento() {
 
   const abertas = rows.filter((item) => !item.fechamentoId);
   const fechadas = rows.length - abertas.length;
-  const entradasAbertas = abertas.filter((item) => item.tipo === "IN");
+  const entradasAbertas = abertas.filter((item) => isCountableTransaction(item));
   const saidasAbertas = abertas.filter((item) => item.tipo === "OUT");
+  const valorDevolucoes = saidasAbertas.reduce(
+    (sum, item) => sum + Number(item.valor || 0),
+    0,
+  );
   const totalAberto = entradasAbertas.reduce(
     (sum, item) => sum + Number(item.valor || 0),
     0,
@@ -134,7 +139,7 @@ export default function Fechamento() {
 
   const handleFechar = async () => {
     const machineIds = [
-      ...new Set(abertas.filter((item) => item.tipo === "IN").map((item) => item.maquina_id)),
+      ...new Set(rows.filter((item) => isCountableTransaction(item)).map((item) => item.maquina_id)),
     ];
     if (machineIds.length === 0) {
       setToast({
@@ -170,6 +175,101 @@ export default function Fechamento() {
     } finally {
       setClosing(false);
     }
+  };
+
+  const handleGerarPdf = () => {
+    const periodoLabel = formatPeriodoLabel(dateRange);
+    const maquinaLabel = selectedMachineId
+      ? maquinas.find((item) => item.id_hardware === selectedMachineId)?.nome ||
+        selectedMachineId
+      : "Todas as maquinas";
+    const contabilizadas = rows.filter((item) => isCountableTransaction(item));
+    const devolucoes = rows.filter((item) => item.tipo === "OUT");
+    const linhas = rows
+      .map((item) => {
+        const fechamento = fechamentoPorId.get(item.fechamentoId);
+        return `
+          <tr class="${item.fechamentoId ? "closed" : ""}">
+            <td>${brasiliaDate(item.data_hora).format("DD/MM/YYYY HH:mm:ss")}</td>
+            <td>${item.maquina_nome || item.maquina_id}<br><small>${item.maquina_id}</small></td>
+            <td>${item.tipo === "IN" ? "Entrada" : "Devolucao/Saida"}</td>
+            <td>${formatMetodo(item.metodo)}</td>
+            <td>${formatMoney(item.valor)}</td>
+            <td>${isCountableTransaction(item) ? "Conta no fechamento" : "Nao contabiliza"}</td>
+            <td>${fechamento ? `Fechada em ${brasiliaDate(fechamento.created_at).format("DD/MM/YYYY")}` : "Aberta"}</td>
+          </tr>`;
+      })
+      .join("");
+
+    const printWindow = window.open("", "_blank", "width=980,height=720");
+    if (!printWindow) {
+      setToast({
+        message: "O navegador bloqueou a janela do PDF. Libere pop-ups para gerar o arquivo.",
+        type: "error",
+      });
+      return;
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Fechamento CompactPay</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #1e2d20; }
+            h1 { margin: 0 0 8px; font-size: 28px; }
+            .meta { margin-bottom: 18px; color: #526052; font-size: 13px; line-height: 1.6; }
+            .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0 24px; }
+            .card { border: 1px solid #dfe8dd; border-radius: 10px; padding: 12px; background: #f7faf6; }
+            .label { color: #657365; font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: .08em; }
+            .value { margin-top: 6px; font-size: 20px; font-weight: 800; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { border: 1px solid #dfe8dd; padding: 8px; text-align: left; font-size: 12px; vertical-align: top; }
+            th { background: #edf2ea; color: #526052; text-transform: uppercase; font-size: 10px; letter-spacing: .08em; }
+            small { color: #70806f; }
+            .closed { color: #777; background: #f1f1f1; filter: grayscale(1); }
+            .note { margin-top: 14px; font-size: 12px; color: #526052; }
+          </style>
+        </head>
+        <body>
+          <h1>Fechamento CompactPay</h1>
+          <div class="meta">
+            <div><strong>Periodo:</strong> ${periodoLabel}</div>
+            <div><strong>Maquina:</strong> ${maquinaLabel}</div>
+            <div><strong>Gerado em:</strong> ${dayjs().format("DD/MM/YYYY HH:mm:ss")}</div>
+          </div>
+          <div class="grid">
+            <div class="card"><div class="label">Total do fechamento</div><div class="value">${formatMoney(totalAberto)}</div></div>
+            <div class="card"><div class="label">Vendas contabilizadas</div><div class="value">${contabilizadas.length}</div></div>
+            <div class="card"><div class="label">Digital</div><div class="value">${formatMoney(totalDigital)}</div></div>
+            <div class="card"><div class="label">Fisico</div><div class="value">${formatMoney(totalFisico)}</div></div>
+            <div class="card"><div class="label">Devolucoes/Saidas</div><div class="value">${devolucoes.length}</div></div>
+            <div class="card"><div class="label">Valor nao contabilizado</div><div class="value">${formatMoney(valorDevolucoes)}</div></div>
+            <div class="card"><div class="label">Ja fechadas</div><div class="value">${fechadas}</div></div>
+            <div class="card"><div class="label">Registros no PDF</div><div class="value">${rows.length}</div></div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Maquina</th>
+                <th>Tipo</th>
+                <th>Metodo</th>
+                <th>Valor</th>
+                <th>Contagem</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>${linhas || "<tr><td colspan='7'>Nenhuma transacao encontrada.</td></tr>"}</tbody>
+          </table>
+          <div class="note">
+            Testes e devolucoes/saidas aparecem no relatorio quando existirem, mas nao entram no total do fechamento.
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   const handleDesfazerFechamento = async () => {
@@ -233,6 +333,15 @@ export default function Fechamento() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              type="button"
+              onClick={handleGerarPdf}
+              disabled={loading || rows.length === 0}
+            >
+              <FileDown size={17} />
+              Gerar PDF
+            </button>
             <button
               className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
@@ -404,6 +513,23 @@ function findFechamentoId(transacao, fechamentos) {
   return match?.id || null;
 }
 
+function isCountableTransaction(transacao) {
+  return !transacao.fechamentoId && transacao.tipo === "IN" && !isTestTransaction(transacao);
+}
+
+function isTestTransaction(transacao) {
+  const text = [
+    transacao.tipo,
+    transacao.metodo,
+    transacao.descricao,
+    transacao.maquina_nome,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return text.includes("teste");
+}
+
 function TransactionRow({ transacao, fechamento }) {
   const closed = Boolean(fechamento);
   return (
@@ -571,4 +697,15 @@ function formatMetodo(value) {
   if (value === "FISICO") return "Fisico";
   if (value === "DIGITAL") return "Digital";
   return value || "Nao informado";
+}
+
+function formatPeriodoLabel(range) {
+  if (range?.start && range?.end) {
+    const start = dayjs(range.start).format("DD/MM/YYYY");
+    const end = dayjs(range.end).format("DD/MM/YYYY");
+    return range.start === range.end ? start : `${start} ate ${end}`;
+  }
+  if (range?.start) return `A partir de ${dayjs(range.start).format("DD/MM/YYYY")}`;
+  if (range?.end) return `Ate ${dayjs(range.end).format("DD/MM/YYYY")}`;
+  return "Periodo atual";
 }
