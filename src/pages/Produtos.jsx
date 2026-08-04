@@ -8,6 +8,7 @@ import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import { useAuth } from "../context/useAuth";
+import { pollComandoStatus } from "../utils/comandoStatus";
 
 const emptyForm = {
   id: null,
@@ -109,16 +110,32 @@ export default function Produtos() {
   const handleLancarPagamento = async (produto) => {
     setSendingProductId(produto.id);
     try {
-      await api.post("/pagamentos/lancar", {
+      const { data } = await api.post("/pagamentos/lancar", {
         maquina_id: produto.maquina_id,
         valor: produto.valor,
         produto_id: produto.id,
         descricao: produto.nome,
       });
       setToast({
-        message: `Pagamento lancado e credito enviado para ${produto.maquina_nome || produto.maquina_id}.`,
+        message:
+          data.command_status === "na_fila"
+            ? `Pagamento entrou na fila - ${produto.maquina_nome || produto.maquina_id} esta processando outro pagamento.`
+            : `Pagamento lancado, aguardando confirmacao de ${produto.maquina_nome || produto.maquina_id}...`,
         type: "success",
       });
+
+      const resultado = await pollComandoStatus(data.command_id);
+      if (resultado?.status === "executado") {
+        setToast({
+          message: `Credito confirmado em ${produto.maquina_nome || produto.maquina_id}.`,
+          type: "success",
+        });
+      } else if (resultado?.status === "falhou") {
+        setToast({
+          message: `A maquina nao confirmou o pulso (${resultado.detalhe_status || "sem detalhe"}).`,
+          type: "error",
+        });
+      }
     } catch (error) {
       setToast({ message: getApiErrorMessage(error, "Nao foi possivel lancar o pagamento."), type: "error" });
     } finally {

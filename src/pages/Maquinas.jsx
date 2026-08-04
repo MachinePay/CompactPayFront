@@ -25,6 +25,7 @@ import Button from "../components/Button";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import { brasiliaDate } from "../utils/dateTime";
+import { pollComandoStatus } from "../utils/comandoStatus";
 
 const emptyForm = {
   id_hardware: "",
@@ -445,14 +446,30 @@ export default function Maquinas() {
 
     setSendingCreditId(machine.id_hardware);
     try {
-      await api.post(`/maquinas/${machine.id_hardware}/credito-teste`, {
+      const { data } = await api.post(`/maquinas/${machine.id_hardware}/credito-teste`, {
         valor: value,
       });
       setCreditState(emptyCreditState);
       setToast({
-        message: `Pagamento de teste de ${formatCurrency(value)} enviado para ${machine.id_hardware}.`,
+        message:
+          data.command_status === "na_fila"
+            ? `Pagamento de teste de ${formatCurrency(value)} entrou na fila - a maquina esta processando outro pagamento.`
+            : `Pagamento de teste de ${formatCurrency(value)} enviado para ${machine.id_hardware}, aguardando confirmacao...`,
         type: "success",
       });
+
+      const resultado = await pollComandoStatus(data.command_id);
+      if (resultado?.status === "executado") {
+        setToast({
+          message: `Pagamento de teste de ${formatCurrency(value)} confirmado em ${machine.id_hardware}.`,
+          type: "success",
+        });
+      } else if (resultado?.status === "falhou") {
+        setToast({
+          message: `A maquina nao confirmou o pulso (${resultado.detalhe_status || "sem detalhe"}).`,
+          type: "error",
+        });
+      }
       await loadMaquinas();
     } catch (error) {
       setToast({
