@@ -112,6 +112,15 @@ function formatWifiDisconnectReason(reason) {
   return labels[code] ? `${labels[code]} (${code})` : `Codigo ${code}`;
 }
 
+function formatForcedRestartReason(reason) {
+  if (!reason) return null;
+  const labels = {
+    wifi_offline_5min: "Wi-Fi preso (radio nao voltava mesmo reciclando)",
+    mqtt_offline_5min: "MQTT preso (Wi-Fi conectado mas sem falar com o broker)",
+  };
+  return labels[reason] || reason;
+}
+
 function formatPulseStatus(status) {
   const labels = {
     pendente: "Aguardando envio",
@@ -545,6 +554,12 @@ function DiagnosticoInfo({ machine }) {
         <span className="font-semibold text-[var(--color-text)]">Ultima queda Wi-Fi:</span> {formatWifiDisconnectReason(machine.wifi_disconnect_reason)}
         {machine.wifi_disconnect_count ? ` (${machine.wifi_disconnect_count}x)` : ""}
       </div>
+      {formatForcedRestartReason(machine.last_forced_restart_reason) && (
+        <div className="text-red-600 dark:text-red-400">
+          <span className="font-semibold">Reboot forcado:</span> {formatForcedRestartReason(machine.last_forced_restart_reason)}
+          {machine.last_forced_restart_at ? ` em ${formatDateTime(machine.last_forced_restart_at)}` : ""}
+        </div>
+      )}
     </div>
   );
 }
