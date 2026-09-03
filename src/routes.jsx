@@ -15,16 +15,13 @@ import RouteErrorBoundary from "./components/RouteErrorBoundary";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const AlertasMaquinas = lazy(() => import("./pages/AlertasMaquinas"));
 const AuditoriaSistema = lazy(() => import("./pages/AuditoriaSistema"));
-const ComandosMaquinas = lazy(() => import("./pages/ComandosMaquinas"));
 const FirmwareVersions = lazy(() => import("./pages/FirmwareVersions"));
-const Fechamento = lazy(() => import("./pages/Fechamento"));
 const MaquinaHistorico = lazy(() => import("./pages/MaquinaHistorico"));
 const RelatorioDetalhadoMaquina = lazy(
   () => import("./pages/RelatorioDetalhadoMaquina"),
 );
 const Maquinas = lazy(() => import("./pages/Maquinas"));
 const SaudeMaquinas = lazy(() => import("./pages/SaudeMaquinas"));
-const Transacoes = lazy(() => import("./pages/Transacoes"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Login = lazy(() => import("./pages/Login"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -129,14 +126,6 @@ function RouteContent() {
             }
           />
           <Route
-            path="/comandos-maquinas"
-            element={
-              <PrivatePage>
-                <ComandosMaquinas />
-              </PrivatePage>
-            }
-          />
-          <Route
             path="/maquinas/:machineId"
             element={
               <PrivatePage>
@@ -155,22 +144,6 @@ function RouteContent() {
           <Route
             path="/teste-pagamento"
             element={<Navigate to="/maquinas" replace />}
-          />
-          <Route
-            path="/transacoes"
-            element={
-              <PrivatePage>
-                <Transacoes />
-              </PrivatePage>
-            }
-          />
-          <Route
-            path="/fechamento"
-            element={
-              <PrivatePage>
-                <Fechamento />
-              </PrivatePage>
-            }
           />
           <Route
             path="/usuarios"

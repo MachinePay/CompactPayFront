@@ -3,11 +3,9 @@ import {
   Bell,
   BarChart3,
   ClipboardList,
-  ClipboardCheck,
   Cpu,
   CreditCard,
   Home,
-  ListRestart,
   LogOut,
   Menu,
   Server,
@@ -55,12 +53,6 @@ export default function Sidebar() {
       </li>
 
       <li>
-        <NavLink to="/comandos-maquinas" className={linkClassName} onClick={closeMobile}>
-          <ListRestart size={20} /> Comandos
-        </NavLink>
-      </li>
-
-      <li>
         <NavLink
           to="/dashboard"
           end
@@ -93,24 +85,6 @@ export default function Sidebar() {
                 onClick={closeMobile}
               >
                 <BarChart3 size={16} /> Relatorio Maquina
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/transacoes"
-                className={linkClassName}
-                onClick={closeMobile}
-              >
-                <Activity size={16} /> Transacoes
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/fechamento"
-                className={linkClassName}
-                onClick={closeMobile}
-              >
-                <ClipboardCheck size={16} /> Fechamento
               </NavLink>
             </li>
           </ul>
