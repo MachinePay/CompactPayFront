@@ -914,7 +914,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </label>
-          {detailed ? (
           <button
             type="button"
             className="pill-button pill-button--primary inline-flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold sm:w-auto"
@@ -924,7 +923,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <ShieldCheck size={16} />
             Fazer fechamento do periodo
           </button>
-          ) : null}
         </div>
 
         {loading ? (
