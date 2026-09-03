@@ -76,6 +76,12 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   });
   const [refundState, setRefundState] = useState({ open: false, venda: null, confirmationText: "" });
   const [refundingId, setRefundingId] = useState("");
+  const [fecharPeriodoState, setFecharPeriodoState] = useState({
+    open: false,
+    periodo: "",
+    dateRange: null,
+  });
+  const [fechandoPeriodo, setFechandoPeriodo] = useState(false);
 
   const buildQuery = useCallback((
     selectedPeriodo = appliedPeriodo,
@@ -517,6 +523,37 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     }
   };
 
+  const handleFecharPeriodoSelecionado = async () => {
+    const selectedPeriodo = periodo;
+    const selectedRange = dateRange;
+    setAppliedPeriodo(selectedPeriodo);
+    setAppliedDateRange(selectedRange);
+    try {
+      const data = await loadHistorico({ periodo: selectedPeriodo, dateRange: selectedRange });
+      if (!data) return;
+      setHistorico(data);
+      handleExportPdf(data, selectedPeriodo, selectedRange);
+      setFecharPeriodoState({ open: true, periodo: selectedPeriodo, dateRange: selectedRange });
+    } catch (error) {
+      setToast({
+        message: getApiErrorMessage(error, "Nao foi possivel gerar o fechamento do periodo selecionado."),
+        type: "error",
+      });
+    }
+  };
+
+  const handleConfirmFecharPeriodo = async () => {
+    setFechandoPeriodo(true);
+    try {
+      await handleSalvarFechamento(fecharPeriodoState.periodo, fecharPeriodoState.dateRange);
+      setFecharPeriodoState({ open: false, periodo: "", dateRange: null });
+    } catch {
+      // toast ja exibido por handleSalvarFechamento
+    } finally {
+      setFechandoPeriodo(false);
+    }
+  };
+
   const handlePeriodoChange = (value) => {
     setPeriodo(value);
     const hoje = dayjs();
@@ -596,6 +633,16 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         }
         onCancel={() => setRefundState({ open: false, venda: null, confirmationText: "" })}
         onConfirm={handleRefund}
+      />
+      <ConfirmModal
+        open={fecharPeriodoState.open}
+        tone="primary"
+        title="Confirmar fechamento"
+        description={`O PDF do periodo ${formatPeriodoLabel(fecharPeriodoState.periodo, fecharPeriodoState.dateRange || dateRange)} ja foi gerado. Confirme para salvar o fechamento desse periodo.`}
+        confirmLabel="Confirmar fechamento"
+        loading={fechandoPeriodo}
+        onCancel={() => setFecharPeriodoState({ open: false, periodo: "", dateRange: null })}
+        onConfirm={handleConfirmFecharPeriodo}
       />
 
       <section className="app-panel min-w-0 rounded-[22px] p-3 sm:rounded-[30px] sm:p-6 md:p-7">
@@ -867,6 +914,17 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </label>
+          {detailed ? (
+          <button
+            type="button"
+            className="pill-button pill-button--primary inline-flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold sm:w-auto"
+            onClick={handleFecharPeriodoSelecionado}
+            disabled={loading || !machineId}
+          >
+            <ShieldCheck size={16} />
+            Fazer fechamento do periodo
+          </button>
+          ) : null}
         </div>
 
         {loading ? (
