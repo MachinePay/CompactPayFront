@@ -655,36 +655,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 </select>
               </label>
             ) : null}
-            <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] sm:w-auto sm:rounded-full">
-              Periodo
-              <select
-                className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none sm:flex-none"
-                value={periodo}
-                onChange={(e) => handlePeriodoChange(e.target.value)}
-              >
-                <option value="">Ultimos 30 dias</option>
-                <option value="dia">Hoje</option>
-                <option value="mes">Mes atual</option>
-              </select>
-            </label>
-            <div className="w-full min-w-0 sm:w-auto">
-              <DateRangePicker
-                value={dateRange}
-                onChange={(range) => {
-                  setDateRange(range);
-                  setPeriodo("");
-                }}
-              />
-            </div>
-            <label className="flex w-full min-w-0 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)] sm:min-w-[240px] sm:w-auto sm:rounded-full">
-              <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
-              <input
-                className="min-w-0 w-full bg-transparent outline-none"
-                placeholder="Pesquisar venda"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-              />
-            </label>
             <FilterSelect
               label="Registro"
               value={saleFilters.registro}
@@ -864,6 +834,39 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             </button>
             ) : null}
           </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] sm:w-auto sm:rounded-full">
+            Periodo
+            <select
+              className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none sm:flex-none"
+              value={periodo}
+              onChange={(e) => handlePeriodoChange(e.target.value)}
+            >
+              <option value="">Ultimos 30 dias</option>
+              <option value="dia">Hoje</option>
+              <option value="mes">Mes atual</option>
+            </select>
+          </label>
+          <div className="w-full min-w-0 sm:w-auto">
+            <DateRangePicker
+              value={dateRange}
+              onChange={(range) => {
+                setDateRange(range);
+                setPeriodo("");
+              }}
+            />
+          </div>
+          <label className="flex w-full min-w-0 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)] sm:min-w-[240px] sm:w-auto sm:rounded-full">
+            <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
+            <input
+              className="min-w-0 w-full bg-transparent outline-none"
+              placeholder="Pesquisar venda"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+          </label>
         </div>
 
         {loading ? (
