@@ -910,254 +910,6 @@ export default function Dashboard() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <div className="text-xl font-bold text-[var(--color-text)]">
-                  Maquinas e status
-                </div>
-                <div className="mt-1 text-sm text-[var(--color-text-soft)]">
-                  Semaforo operacional e ultima atividade do recorte atual.
-                </div>
-              </div>
-              <span className="w-fit rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-soft)]">
-                {machineStatusRows.length} itens
-              </span>
-            </div>
-            <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
-              {machineStatusRows.length === 0 ? (
-                <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">
-                  Nenhuma maquina encontrada para esse recorte.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-[520px] bg-white text-sm">
-                    <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
-                      <tr>
-                        <th className="px-5 py-4">Maquina</th>
-                        <th className="px-5 py-4">Status</th>
-                        <th className="px-5 py-4">Ultima atividade</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {machineStatusRows.map((maquina) => (
-                        <tr
-                          key={maquina.id_hardware}
-                          className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
-                        >
-                          <td className="px-5 py-4">
-                            <div className="font-semibold">
-                              {maquina.nome || maquina.id_hardware}
-                            </div>
-                            <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                              {maquina.localizacao || maquina.id_hardware}
-                            </div>
-                          </td>
-                          <td className="px-5 py-4">
-                            <span
-                              className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold"
-                              style={{
-                                backgroundColor:
-                                  maquina.status_operacional === "operando"
-                                    ? "var(--color-primary-soft)"
-                                    : maquina.status_operacional === "atencao"
-                                      ? "#fff2d8"
-                                      : "#fee2e2",
-                                color:
-                                  maquina.status_operacional === "operando"
-                                    ? "var(--color-success)"
-                                    : maquina.status_operacional === "atencao"
-                                      ? "var(--color-warning)"
-                                      : "var(--color-error)",
-                              }}
-                            >
-                              {maquina.status_online ? "Online" : "Offline"}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 text-[var(--color-text-soft)]">
-                            {maquina.ultima_atividade_em
-                              ? new Date(
-                                  maquina.ultima_atividade_em,
-                                ).toLocaleString("pt-BR")
-                              : "Sem atividade no periodo"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {isAdmin ? (
-            <Card className="rounded-[22px] sm:rounded-[30px]">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <div className="text-xl font-bold text-[var(--color-text)]">
-                    Resumo por cliente
-                  </div>
-                  <div className="mt-1 text-sm text-[var(--color-text-soft)]">
-                    Consolidado financeiro e operacional por cliente.
-                  </div>
-                </div>
-                <div className="flex w-full gap-2 sm:w-auto">
-                  <button
-                    type="button"
-                    className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:w-auto"
-                    onClick={exportCsv}
-                  >
-                    <Download size={16} />
-                    Exportar CSV
-                  </button>
-                  <button
-                    type="button"
-                    className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:w-auto"
-                    onClick={exportPdf}
-                  >
-                    <FileDown size={16} />
-                    Exportar PDF
-                  </button>
-                </div>
-              </div>
-              <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
-                {clientesResumo.length === 0 ? (
-                  <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">
-                    Nenhum cliente encontrado para esse recorte.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-[960px] bg-white text-sm">
-                      <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
-                        <tr>
-                          <th className="px-5 py-4">Cliente</th>
-                          <th className="px-5 py-4">Maquinas</th>
-                          <th className="px-5 py-4">Online</th>
-                          <th className="px-5 py-4">Faturamento</th>
-                          <th className="px-5 py-4">Fisico</th>
-                          <th className="px-5 py-4">Digital</th>
-                          <th className="px-5 py-4">Testes</th>
-                          <th className="px-5 py-4">Estornos</th>
-                          <th className="px-5 py-4">Pulsos ausentes</th>
-                          <th className="px-5 py-4">Ultima atividade</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {clientesResumo.map((item) => (
-                          <tr
-                            key={item.cliente_id || item.cliente_nome}
-                            className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
-                          >
-                            <td className="px-5 py-4 font-semibold">
-                              {item.cliente_nome}
-                            </td>
-                            <td className="px-5 py-4">{item.maquinas}</td>
-                            <td className="px-5 py-4">
-                              {item.maquinas_online}
-                            </td>
-                            <td className="px-5 py-4 font-semibold">
-                              R$ {Number(item.total_faturado || 0).toFixed(2)}
-                            </td>
-                            <td className="px-5 py-4 text-[var(--color-text-soft)]">
-                              R$ {Number(item.faturamento_fisico || 0).toFixed(2)}
-                            </td>
-                            <td className="px-5 py-4 text-[var(--color-text-soft)]">
-                              R$ {Number(item.faturamento_digital || 0).toFixed(2)}
-                            </td>
-                            <td className="px-5 py-4">{item.testes_count || 0}</td>
-                            <td className="px-5 py-4">{item.estornos_count || 0}</td>
-                            <td className="px-5 py-4">{item.pulsos_ausentes || 0}</td>
-                            <td className="px-5 py-4 text-[var(--color-text-soft)]">
-                              {item.ultima_atividade_em
-                                ? new Date(
-                                    item.ultima_atividade_em,
-                                  ).toLocaleString("pt-BR")
-                                : "Sem atividade"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </Card>
-          ) : null}
-
-          <Card className="rounded-[22px] sm:rounded-[30px]">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <div className="text-xl font-bold text-[var(--color-text)]">
-                  Resumo por maquina
-                </div>
-                <div className="mt-1 text-sm text-[var(--color-text-soft)]">
-                  Faturamento, testes, estornos e pulsos ausentes por maquina no periodo selecionado.
-                </div>
-              </div>
-            </div>
-            <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
-              {maquinasResumo.length === 0 ? (
-                <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">
-                  Nenhuma maquina encontrada para esse recorte.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-[900px] bg-white text-sm">
-                    <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
-                      <tr>
-                        <th className="px-5 py-4">Maquina</th>
-                        {isAdmin ? <th className="px-5 py-4">Cliente</th> : null}
-                        <th className="px-5 py-4">Status</th>
-                        <th className="px-5 py-4">Faturamento</th>
-                        <th className="px-5 py-4">Fisico</th>
-                        <th className="px-5 py-4">Digital</th>
-                        <th className="px-5 py-4">Testes</th>
-                        <th className="px-5 py-4">Estornos</th>
-                        <th className="px-5 py-4">Pulsos ausentes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {maquinasResumo.map((item) => (
-                        <tr
-                          key={item.id_hardware}
-                          className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
-                        >
-                          <td className="px-5 py-4 font-semibold">
-                            {item.nome || item.id_hardware}
-                          </td>
-                          {isAdmin ? (
-                            <td className="px-5 py-4 text-[var(--color-text-soft)]">
-                              {item.cliente_nome}
-                            </td>
-                          ) : null}
-                          <td className="px-5 py-4">
-                            <span
-                              className={`text-sm font-semibold ${item.status_online ? "text-[var(--color-success)]" : "text-[var(--color-error)]"}`}
-                            >
-                              {item.status_online ? "Online" : "Offline"}
-                            </span>
-                          </td>
-                          <td className="px-5 py-4 font-semibold">
-                            R$ {Number(item.total_faturado || 0).toFixed(2)}
-                          </td>
-                          <td className="px-5 py-4 text-[var(--color-text-soft)]">
-                            R$ {Number(item.faturamento_fisico || 0).toFixed(2)}
-                          </td>
-                          <td className="px-5 py-4 text-[var(--color-text-soft)]">
-                            R$ {Number(item.faturamento_digital || 0).toFixed(2)}
-                          </td>
-                          <td className="px-5 py-4">{item.testes_count || 0}</td>
-                          <td className="px-5 py-4">{item.estornos_count || 0}</td>
-                          <td className="px-5 py-4">{item.pulsos_ausentes || 0}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          <Card className="rounded-[22px] sm:rounded-[30px]">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <div className="text-xl font-bold text-[var(--color-text)]">
                   Fila operacional
                 </div>
                 <div className="mt-1 text-sm text-[var(--color-text-soft)]">
@@ -1194,6 +946,253 @@ export default function Dashboard() {
           </Card>
         </section>
       </div>
+      <Card className="rounded-[22px] sm:rounded-[30px]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="text-xl font-bold text-[var(--color-text)]">
+              Maquinas e status
+            </div>
+            <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+              Semaforo operacional e ultima atividade do recorte atual.
+            </div>
+          </div>
+          <span className="w-fit rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-soft)]">
+            {machineStatusRows.length} itens
+          </span>
+        </div>
+        <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
+          {machineStatusRows.length === 0 ? (
+            <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">
+              Nenhuma maquina encontrada para esse recorte.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-[520px] bg-white text-sm">
+                <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+                  <tr>
+                    <th className="px-5 py-4">Maquina</th>
+                    <th className="px-5 py-4">Status</th>
+                    <th className="px-5 py-4">Ultima atividade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {machineStatusRows.map((maquina) => (
+                    <tr
+                      key={maquina.id_hardware}
+                      className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="font-semibold">
+                          {maquina.nome || maquina.id_hardware}
+                        </div>
+                        <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+                          {maquina.localizacao || maquina.id_hardware}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span
+                          className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold"
+                          style={{
+                            backgroundColor:
+                              maquina.status_operacional === "operando"
+                                ? "var(--color-primary-soft)"
+                                : maquina.status_operacional === "atencao"
+                                  ? "#fff2d8"
+                                  : "#fee2e2",
+                            color:
+                              maquina.status_operacional === "operando"
+                                ? "var(--color-success)"
+                                : maquina.status_operacional === "atencao"
+                                  ? "var(--color-warning)"
+                                  : "var(--color-error)",
+                          }}
+                        >
+                          {maquina.status_online ? "Online" : "Offline"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                        {maquina.ultima_atividade_em
+                          ? new Date(
+                              maquina.ultima_atividade_em,
+                            ).toLocaleString("pt-BR")
+                          : "Sem atividade no periodo"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {isAdmin ? (
+        <Card className="rounded-[22px] sm:rounded-[30px]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="text-xl font-bold text-[var(--color-text)]">
+                Resumo por cliente
+              </div>
+              <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+                Consolidado financeiro e operacional por cliente.
+              </div>
+            </div>
+            <div className="flex w-full gap-2 sm:w-auto">
+              <button
+                type="button"
+                className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:w-auto"
+                onClick={exportCsv}
+              >
+                <Download size={16} />
+                Exportar CSV
+              </button>
+              <button
+                type="button"
+                className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold sm:w-auto"
+                onClick={exportPdf}
+              >
+                <FileDown size={16} />
+                Exportar PDF
+              </button>
+            </div>
+          </div>
+          <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
+            {clientesResumo.length === 0 ? (
+              <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">
+                Nenhum cliente encontrado para esse recorte.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-[960px] bg-white text-sm">
+                  <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+                    <tr>
+                      <th className="px-5 py-4">Cliente</th>
+                      <th className="px-5 py-4">Maquinas</th>
+                      <th className="px-5 py-4">Online</th>
+                      <th className="px-5 py-4">Faturamento</th>
+                      <th className="px-5 py-4">Fisico</th>
+                      <th className="px-5 py-4">Digital</th>
+                      <th className="px-5 py-4">Testes</th>
+                      <th className="px-5 py-4">Estornos</th>
+                      <th className="px-5 py-4">Pulsos ausentes</th>
+                      <th className="px-5 py-4">Ultima atividade</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientesResumo.map((item) => (
+                      <tr
+                        key={item.cliente_id || item.cliente_nome}
+                        className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                      >
+                        <td className="px-5 py-4 font-semibold">
+                          {item.cliente_nome}
+                        </td>
+                        <td className="px-5 py-4">{item.maquinas}</td>
+                        <td className="px-5 py-4">
+                          {item.maquinas_online}
+                        </td>
+                        <td className="px-5 py-4 font-semibold">
+                          R$ {Number(item.total_faturado || 0).toFixed(2)}
+                        </td>
+                        <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                          R$ {Number(item.faturamento_fisico || 0).toFixed(2)}
+                        </td>
+                        <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                          R$ {Number(item.faturamento_digital || 0).toFixed(2)}
+                        </td>
+                        <td className="px-5 py-4">{item.testes_count || 0}</td>
+                        <td className="px-5 py-4">{item.estornos_count || 0}</td>
+                        <td className="px-5 py-4">{item.pulsos_ausentes || 0}</td>
+                        <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                          {item.ultima_atividade_em
+                            ? new Date(
+                                item.ultima_atividade_em,
+                              ).toLocaleString("pt-BR")
+                            : "Sem atividade"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </Card>
+      ) : null}
+
+      <Card className="rounded-[22px] sm:rounded-[30px]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className="text-xl font-bold text-[var(--color-text)]">
+              Resumo por maquina
+            </div>
+            <div className="mt-1 text-sm text-[var(--color-text-soft)]">
+              Faturamento, testes, estornos e pulsos ausentes por maquina no periodo selecionado.
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
+          {maquinasResumo.length === 0 ? (
+            <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">
+              Nenhuma maquina encontrada para esse recorte.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-[900px] bg-white text-sm">
+                <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+                  <tr>
+                    <th className="px-5 py-4">Maquina</th>
+                    {isAdmin ? <th className="px-5 py-4">Cliente</th> : null}
+                    <th className="px-5 py-4">Status</th>
+                    <th className="px-5 py-4">Faturamento</th>
+                    <th className="px-5 py-4">Fisico</th>
+                    <th className="px-5 py-4">Digital</th>
+                    <th className="px-5 py-4">Testes</th>
+                    <th className="px-5 py-4">Estornos</th>
+                    <th className="px-5 py-4">Pulsos ausentes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {maquinasResumo.map((item) => (
+                    <tr
+                      key={item.id_hardware}
+                      className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                    >
+                      <td className="px-5 py-4 font-semibold">
+                        {item.nome || item.id_hardware}
+                      </td>
+                      {isAdmin ? (
+                        <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                          {item.cliente_nome}
+                        </td>
+                      ) : null}
+                      <td className="px-5 py-4">
+                        <span
+                          className={`text-sm font-semibold ${item.status_online ? "text-[var(--color-success)]" : "text-[var(--color-error)]"}`}
+                        >
+                          {item.status_online ? "Online" : "Offline"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 font-semibold">
+                        R$ {Number(item.total_faturado || 0).toFixed(2)}
+                      </td>
+                      <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                        R$ {Number(item.faturamento_fisico || 0).toFixed(2)}
+                      </td>
+                      <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                        R$ {Number(item.faturamento_digital || 0).toFixed(2)}
+                      </td>
+                      <td className="px-5 py-4">{item.testes_count || 0}</td>
+                      <td className="px-5 py-4">{item.estornos_count || 0}</td>
+                      <td className="px-5 py-4">{item.pulsos_ausentes || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
