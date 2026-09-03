@@ -687,7 +687,7 @@ export default function Dashboard() {
             </div>
           </Card>
 
-          <div className="grid min-w-0 gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3">
+          <div className="grid min-w-0 gap-4 grid-cols-1 md:grid-cols-2">
             {statCards.map((item, index) => {
               const Icon = item.icon;
               const featured = item.featured;
@@ -707,7 +707,7 @@ export default function Dashboard() {
                       >
                         {item.label}
                       </div>
-                      <div className="mt-4 break-words text-[clamp(1.7rem,8vw,2.25rem)] font-extrabold leading-tight sm:mt-5">
+                      <div className="mt-4 break-words text-2xl font-extrabold leading-tight sm:mt-5 sm:text-3xl">
                         {item.value}
                       </div>
                     </div>
@@ -824,7 +824,7 @@ export default function Dashboard() {
                   <div className="text-sm font-semibold text-[var(--color-text-soft)]">
                     Receita consolidada
                   </div>
-                  <div className="mt-3 break-words text-[clamp(1.7rem,8vw,1.875rem)] font-extrabold leading-tight text-[var(--color-text)]">
+                  <div className="mt-3 break-words text-2xl font-extrabold leading-tight text-[var(--color-text)] sm:text-3xl">
                     R$ {stats.faturamento_total.toFixed(2)}
                   </div>
                 </div>
