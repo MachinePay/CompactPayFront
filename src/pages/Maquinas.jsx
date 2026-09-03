@@ -958,20 +958,13 @@ export default function Maquinas() {
                     {maquinas.map((m) => (
                       <tr
                         key={m.id_hardware}
-                        className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                        className="cursor-pointer border-t border-[var(--color-border)] text-sm text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]"
+                        onClick={() => navigate(`/maquinas/${m.id_hardware}`)}
                       >
                         <td className="px-5 py-4 min-w-[220px]">
-                          <button
-                            type="button"
-                            className="text-left"
-                            onClick={() =>
-                              navigate(`/maquinas/${m.id_hardware}`)
-                            }
-                          >
-                            <div className="font-semibold text-[var(--color-primary-strong)] hover:underline">
-                              {m.id_hardware}
-                            </div>
-                          </button>
+                          <div className="font-semibold text-[var(--color-primary-strong)]">
+                            {m.id_hardware}
+                          </div>
                           <div className="mt-1 text-xs text-[var(--color-text-soft)]">
                             Clique para abrir pagamentos e testes da maquina
                           </div>
@@ -1011,7 +1004,10 @@ export default function Maquinas() {
                           <button
                             type="button"
                             className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)] disabled:cursor-wait disabled:opacity-60"
-                            onClick={() => verifyMachineOnline(m)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              verifyMachineOnline(m);
+                            }}
                             disabled={verifyingMachineId === m.id_hardware}
                           >
                             <RefreshCcw
@@ -1085,7 +1081,10 @@ export default function Maquinas() {
                           <button
                             type="button"
                             className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold"
-                            onClick={() => openCreditModal(m)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openCreditModal(m);
+                            }}
                             disabled={Boolean(sendingCreditId)}
                           >
                             <Rocket size={15} />
@@ -1100,7 +1099,10 @@ export default function Maquinas() {
                               <button
                                 type="button"
                                 className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                                onClick={() => requestFirmwareUpdate(m)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  requestFirmwareUpdate(m);
+                                }}
                                 disabled={
                                   sendingUpdateId === m.id_hardware ||
                                   !m.status_online ||
@@ -1133,7 +1135,10 @@ export default function Maquinas() {
                               <button
                                 type="button"
                                 className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                                onClick={() => handleEditMachine(m)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditMachine(m);
+                                }}
                               >
                                 <Pencil size={15} />
                                 Editar
@@ -1141,9 +1146,10 @@ export default function Maquinas() {
                               <button
                                 type="button"
                                 className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-                                onClick={() =>
-                                  requestDeleteMachine(m.id_hardware)
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  requestDeleteMachine(m.id_hardware);
+                                }}
                               >
                                 <Trash2 size={15} />
                                 Excluir
