@@ -727,7 +727,7 @@ export default function Dashboard() {
                   >
                     <div
                       className={`h-1 rounded-full ${featured ? "bg-white" : "bg-[var(--color-primary)]"}`}
-                      style={{ width: `${58 + index * 9}%` }}
+                      style={{ width: `${Math.min(58 + index * 9, 100)}%` }}
                     />
                   </div>
                 </Card>
@@ -925,7 +925,7 @@ export default function Dashboard() {
               {alerts.map((task) => (
                 <div
                   key={task.title}
-                  className="flex flex-col gap-3 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:rounded-[22px]"
+                  className="flex flex-col gap-3 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4"
                 >
                   <div className="min-w-0">
                     <div className="font-semibold text-[var(--color-text)]">
