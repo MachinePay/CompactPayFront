@@ -815,7 +815,7 @@ export default function Maquinas() {
         }
       />
 
-      <div className="hidden md:grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         <SummaryCard
           icon={<Server size={18} />}
           label="Maquinas cadastradas"
