@@ -198,9 +198,17 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     loadMachineOptions();
   }, [selectable, user, selectedClienteId, selectedMachineId]);
 
-  const handleExportPdf = (snapshot = historico, snapshotPeriodo = periodo, snapshotRange = dateRange) => {
+  const handleExportPdf = (
+    snapshot = historico,
+    snapshotPeriodo = periodo,
+    snapshotRange = dateRange,
+    existingWindow = null,
+  ) => {
     const maquina = snapshot.maquina;
-    if (!maquina) return;
+    if (!maquina) {
+      existingWindow?.close();
+      return;
+    }
     const periodoLabel = formatPeriodoLabel(snapshotPeriodo, snapshotRange);
 
     const rowsVendas = (snapshot.vendas || [])
@@ -227,8 +235,14 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       )
       .join("");
 
-    const printWindow = window.open("", "_blank", "width=960,height=720");
-    if (!printWindow) return;
+    const printWindow = existingWindow || window.open("", "_blank", "width=960,height=720");
+    if (!printWindow) {
+      setToast({
+        message: "O navegador bloqueou a janela do PDF. Permita pop-ups para este site e tente novamente.",
+        type: "error",
+      });
+      return;
+    }
 
     printWindow.document.write(`
       <html>
@@ -503,9 +517,15 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     setDateRange(nextRange);
     setAppliedPeriodo("dia");
     setAppliedDateRange(nextRange);
+    // Abrir a janela aqui, ainda dentro do clique do usuario - depois de um
+    // await o navegador (principalmente no celular) trata como pop-up e bloqueia.
+    const printWindow = window.open("", "_blank", "width=960,height=720");
     try {
       const data = await loadHistorico({ periodo: "dia", dateRange: nextRange });
-      if (!data) return;
+      if (!data) {
+        printWindow?.close();
+        return;
+      }
       setHistorico(data);
       try {
         await handleSalvarFechamento("dia", nextRange, { silentSuccess: true, silentError: true });
@@ -514,8 +534,9 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         if (error?.response?.status !== 409) throw error;
         setToast({ message: "O fechamento de hoje ja estava salvo. PDF gerado com o mesmo recorte.", type: "success" });
       }
-      handleExportPdf(data, "dia", nextRange);
+      handleExportPdf(data, "dia", nextRange, printWindow);
     } catch (error) {
+      printWindow?.close();
       setToast({
         message: getApiErrorMessage(error, "Nao foi possivel gerar o fechamento do dia."),
         type: "error",
@@ -528,13 +549,20 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     const selectedRange = dateRange;
     setAppliedPeriodo(selectedPeriodo);
     setAppliedDateRange(selectedRange);
+    // Abrir a janela aqui, ainda dentro do clique do usuario - depois de um
+    // await o navegador (principalmente no celular) trata como pop-up e bloqueia.
+    const printWindow = window.open("", "_blank", "width=960,height=720");
     try {
       const data = await loadHistorico({ periodo: selectedPeriodo, dateRange: selectedRange });
-      if (!data) return;
+      if (!data) {
+        printWindow?.close();
+        return;
+      }
       setHistorico(data);
-      handleExportPdf(data, selectedPeriodo, selectedRange);
+      handleExportPdf(data, selectedPeriodo, selectedRange, printWindow);
       setFecharPeriodoState({ open: true, periodo: selectedPeriodo, dateRange: selectedRange });
     } catch (error) {
+      printWindow?.close();
       setToast({
         message: getApiErrorMessage(error, "Nao foi possivel gerar o fechamento do periodo selecionado."),
         type: "error",
