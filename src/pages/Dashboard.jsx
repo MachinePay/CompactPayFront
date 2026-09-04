@@ -472,9 +472,15 @@ export default function Dashboard() {
             table { width: 100%; border-collapse: collapse; margin-top: 12px; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
             th { background: #f4f4f4; }
+            .close-bar { position: sticky; top: 0; z-index: 10; display: flex; justify-content: flex-end; padding-bottom: 16px; background: #fff; }
+            .close-button { border: none; border-radius: 999px; background: #1f7a4c; color: #fff; font-size: 15px; font-weight: 700; padding: 12px 22px; }
+            @media print { .close-bar { display: none; } }
           </style>
         </head>
         <body>
+          <div class="close-bar">
+            <button type="button" class="close-button" onclick="window.close()">Fechar e voltar ao painel</button>
+          </div>
           <h1>Dashboard financeiro</h1>
           <div class="meta">
             <div><strong>Cliente:</strong> ${selectedClient?.nome_empresa || "Todos"}</div>
