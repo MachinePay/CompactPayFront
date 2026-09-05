@@ -472,8 +472,11 @@ export default function Dashboard() {
             table { width: 100%; border-collapse: collapse; margin-top: 12px; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
             th { background: #f4f4f4; }
-            .close-bar { position: sticky; top: 0; z-index: 10; display: flex; justify-content: flex-end; padding-bottom: 16px; background: #fff; }
+            .close-bar { display: none; position: sticky; top: 0; z-index: 10; justify-content: flex-end; padding-bottom: 16px; background: #fff; }
             .close-button { border: none; border-radius: 999px; background: #1f7a4c; color: #fff; font-size: 15px; font-weight: 700; padding: 12px 22px; }
+            /* So mostra o botao quando o app roda instalado (tela de inicio no iPhone),
+               onde nao existe barra de endereco nem botao de voltar do navegador. */
+            @media (display-mode: standalone) { .close-bar { display: flex; } }
             @media print { .close-bar { display: none; } }
           </style>
         </head>
