@@ -47,6 +47,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     vendas: [],
   });
   const [periodo, setPeriodo] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
   const [dateRange, setDateRange] = useState({
     start: dayjs().subtract(30, "day").format("YYYY-MM-DD"),
     end: dayjs().format("YYYY-MM-DD"),
@@ -609,9 +610,26 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       });
       return;
     }
+    if (value === "mes_escolhido") {
+      const referencia = dayjs(`${selectedMonth}-01`);
+      setDateRange({
+        start: referencia.startOf("month").format("YYYY-MM-DD"),
+        end: referencia.endOf("month").format("YYYY-MM-DD"),
+      });
+      return;
+    }
     setDateRange({
       start: hoje.subtract(30, "day").format("YYYY-MM-DD"),
       end: hoje.format("YYYY-MM-DD"),
+    });
+  };
+
+  const handleSelectedMonthChange = (value) => {
+    setSelectedMonth(value);
+    const referencia = dayjs(`${value}-01`);
+    setDateRange({
+      start: referencia.startOf("month").format("YYYY-MM-DD"),
+      end: referencia.endOf("month").format("YYYY-MM-DD"),
     });
   };
 
@@ -934,17 +952,27 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               <option value="">Ultimos 30 dias</option>
               <option value="dia">Hoje</option>
               <option value="mes">Mes atual</option>
+              <option value="mes_escolhido">Escolher mes</option>
             </select>
           </label>
-          <div className="w-full min-w-0 sm:w-auto">
-            <DateRangePicker
-              value={dateRange}
-              onChange={(range) => {
-                setDateRange(range);
-                setPeriodo("");
-              }}
+          {periodo === "mes_escolhido" ? (
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(event) => handleSelectedMonthChange(event.target.value)}
+              className="w-full min-w-0 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] sm:w-auto sm:rounded-full"
             />
-          </div>
+          ) : (
+            <div className="w-full min-w-0 sm:w-auto">
+              <DateRangePicker
+                value={dateRange}
+                onChange={(range) => {
+                  setDateRange(range);
+                  setPeriodo("");
+                }}
+              />
+            </div>
+          )}
           <label className="flex w-full min-w-0 items-center gap-2 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)] sm:min-w-[240px] sm:w-auto sm:rounded-full">
             <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
             <input
