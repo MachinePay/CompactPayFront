@@ -210,6 +210,12 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       return;
     }
     const periodoLabel = formatPeriodoLabel(snapshotPeriodo, snapshotRange);
+    // A janela do PDF abre em branco, sem vinculo com o app instalado, entao
+    // ela nao "sabe" que veio de um app standalone - detectamos aqui, no app
+    // principal, e mandamos pronto pra dentro do HTML gerado.
+    const isStandaloneApp =
+      window.matchMedia?.("(display-mode: standalone)")?.matches ||
+      window.navigator?.standalone === true;
 
     const rowsVendas = (snapshot.vendas || [])
       .map(
@@ -257,16 +263,13 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             table { width: 100%; border-collapse: collapse; margin-top: 12px; }
             th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
             th { background: #f4f4f4; }
-            .close-bar { display: none; position: sticky; top: 0; z-index: 10; justify-content: flex-end; padding-bottom: 16px; background: #fff; }
+            .close-bar { position: sticky; top: 0; z-index: 10; justify-content: flex-end; padding-bottom: 16px; background: #fff; }
             .close-button { border: none; border-radius: 999px; background: #1f7a4c; color: #fff; font-size: 15px; font-weight: 700; padding: 12px 22px; }
-            /* So mostra o botao quando o app roda instalado (tela de inicio no iPhone),
-               onde nao existe barra de endereco nem botao de voltar do navegador. */
-            @media (display-mode: standalone) { .close-bar { display: flex; } }
-            @media print { .close-bar { display: none; } }
+            @media print { .close-bar { display: none !important; } }
           </style>
         </head>
         <body>
-          <div class="close-bar">
+          <div class="close-bar" style="display: ${isStandaloneApp ? "flex" : "none"};">
             <button type="button" class="close-button" onclick="window.close()">Fechar e voltar ao painel</button>
           </div>
           <h1>Fechamento da maquina</h1>
