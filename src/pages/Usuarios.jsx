@@ -72,6 +72,7 @@ export default function Usuarios() {
     cliente_mercado_pago: false,
     cliente_pagbank: false,
     cliente_s6pay: false,
+    cliente_token_play: false,
     mp_public_key: "",
     mp_access_token: "",
     mp_client_id: "",
@@ -116,6 +117,7 @@ export default function Usuarios() {
       cliente_mercado_pago: false,
       cliente_pagbank: false,
       cliente_s6pay: false,
+      cliente_token_play: false,
       mp_public_key: "",
       mp_access_token: "",
       mp_client_id: "",
@@ -151,6 +153,7 @@ export default function Usuarios() {
       ),
       cliente_pagbank: Boolean(currentUser.cliente_pagbank),
       cliente_s6pay: Boolean(currentUser.cliente_s6pay),
+      cliente_token_play: Boolean(currentUser.cliente_token_play),
       mp_public_key: currentUser.mp_public_key || "",
       mp_access_token: currentUser.mp_access_token || "",
       mp_client_id: currentUser.mp_client_id || "",
@@ -696,7 +699,7 @@ export default function Usuarios() {
                   </select>
                 </Field>
 
-                <div className="grid gap-3 md:col-span-2 md:grid-cols-3">
+                <div className="grid gap-3 md:col-span-2 md:grid-cols-4">
                   <ProviderCheckbox
                     label="Cliente Mercado Pago"
                     checked={form.cliente_mercado_pago}
@@ -716,6 +719,13 @@ export default function Usuarios() {
                     checked={form.cliente_s6pay}
                     onChange={(checked) =>
                       setForm((current) => ({ ...current, cliente_s6pay: checked }))
+                    }
+                  />
+                  <ProviderCheckbox
+                    label="Cliente Token Play"
+                    checked={form.cliente_token_play}
+                    onChange={(checked) =>
+                      setForm((current) => ({ ...current, cliente_token_play: checked }))
                     }
                   />
                 </div>

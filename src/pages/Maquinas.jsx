@@ -39,6 +39,7 @@ const paymentProviderLabels = {
   mercado_pago: "Mercado Pago",
   pagbank: "PagBank",
   s6pay: "S6Pay",
+  token_play: "Token Play",
 };
 
 function getPaymentProviders(cliente) {
@@ -49,6 +50,7 @@ function getPaymentProviders(cliente) {
       : null,
     cliente.cliente_pagbank ? "pagbank" : null,
     cliente.cliente_s6pay ? "s6pay" : null,
+    cliente.cliente_token_play ? "token_play" : null,
   ].filter(Boolean);
 }
 
@@ -1313,10 +1315,12 @@ export default function Maquinas() {
                       <option
                         key={provider}
                         value={provider}
-                        disabled={provider !== "mercado_pago"}
+                        disabled={provider !== "mercado_pago" && provider !== "token_play"}
                       >
                         {paymentProviderLabels[provider]}
-                        {provider !== "mercado_pago" ? " - em breve" : ""}
+                        {provider !== "mercado_pago" && provider !== "token_play"
+                          ? " - em breve"
+                          : ""}
                       </option>
                     ))}
                   </select>
