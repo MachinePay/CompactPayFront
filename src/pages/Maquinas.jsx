@@ -9,6 +9,7 @@ import {
   RefreshCcw,
   Rocket,
   Server,
+  ShieldAlert,
   Trash2,
   UploadCloud,
   Wifi,
@@ -113,6 +114,7 @@ export default function Maquinas() {
   const [copyFeedback, setCopyFeedback] = useState("");
   const [sendingCreditId, setSendingCreditId] = useState("");
   const [sendingUpdateId, setSendingUpdateId] = useState("");
+  const [togglingFiltroSaidaId, setTogglingFiltroSaidaId] = useState("");
   const [verifyingMachineId, setVerifyingMachineId] = useState("");
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [deleteState, setDeleteState] = useState(emptyDeleteState);
@@ -399,6 +401,34 @@ export default function Maquinas() {
     });
     setCopyFeedback("");
     setShowModal(true);
+  };
+
+  const handleToggleFiltroSaidaPosCredito = async (machine) => {
+    const proximoValor = !machine.ignorar_saida_pos_credito;
+    setTogglingFiltroSaidaId(machine.id_hardware);
+    try {
+      await api.post(
+        `/maquinas/${machine.id_hardware}/filtro-saida-pos-credito`,
+        { ativo: proximoValor },
+      );
+      setToast({
+        message: proximoValor
+          ? "Filtro anti falso-positivo de saida ativado para esta maquina."
+          : "Filtro anti falso-positivo de saida desativado para esta maquina.",
+        type: "success",
+      });
+      await loadMaquinas({ silent: true });
+    } catch (error) {
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel alterar o filtro desta maquina.",
+        ),
+        type: "error",
+      });
+    } finally {
+      setTogglingFiltroSaidaId("");
+    }
   };
 
   const requestDeleteMachine = (machineId) => {
@@ -1144,6 +1174,27 @@ export default function Maquinas() {
                               >
                                 <Pencil size={15} />
                                 Editar
+                              </button>
+                              <button
+                                type="button"
+                                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                                  m.ignorar_saida_pos_credito
+                                    ? "border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                    : "pill-button"
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleFiltroSaidaPosCredito(m);
+                                }}
+                                disabled={togglingFiltroSaidaId === m.id_hardware}
+                                title="Ignora uma saida (OUT) fisica que chegue poucos segundos depois de um credito liberado, para maquinas com interferencia eletrica entre o driver de credito e o sensor de saida"
+                              >
+                                <ShieldAlert size={15} />
+                                {togglingFiltroSaidaId === m.id_hardware
+                                  ? "Alterando..."
+                                  : m.ignorar_saida_pos_credito
+                                    ? "Filtro saida: ATIVO"
+                                    : "Filtro saida: inativo"}
                               </button>
                               <button
                                 type="button"
