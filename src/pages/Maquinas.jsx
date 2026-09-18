@@ -955,58 +955,38 @@ export default function Maquinas() {
                   />
                 ))}
               </div>
-              <div className="hidden overflow-x-auto md:block">
-                <table className="min-w-full">
-                  <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+              <div className="hidden md:block">
+                <table className="w-full table-fixed text-sm">
+                  <thead className="bg-[var(--color-bg-muted)] text-left text-[11px] uppercase tracking-[0.14em] text-[var(--color-text-soft)]">
                     <tr>
-                      <th className="px-5 py-4 whitespace-nowrap">
-                        ID da maquina
-                      </th>
-                      <th className="px-5 py-4 whitespace-nowrap">Nome</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Status</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Wi-Fi</th>
-                      <th className="px-5 py-4 whitespace-nowrap">
-                        Ultima atividade
-                      </th>
-                      <th className="px-5 py-4 whitespace-nowrap">
-                        Localizacao
-                      </th>
-                      <th className="px-5 py-4 whitespace-nowrap">Banco</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Caixa MP</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Firmware</th>
-                      <th className="px-5 py-4 whitespace-nowrap">
-                        Faturamento
-                      </th>
-                      <th className="px-5 py-4 whitespace-nowrap">Pelucias</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Teste</th>
-                      {user?.role === "admin" ? (
-                        <th className="px-5 py-4 whitespace-nowrap">
-                          Gerenciar
-                        </th>
-                      ) : null}
+                      <th className="px-3 py-3 w-[15%]">Maquina</th>
+                      <th className="px-3 py-3 w-[11%]">Status</th>
+                      <th className="px-3 py-3 w-[10%]">Sinal</th>
+                      <th className="px-3 py-3 w-[13%]">Atividade</th>
+                      <th className="px-3 py-3 w-[13%]">Local / Banco</th>
+                      <th className="px-3 py-3 w-[14%]">Caixa / Firmware</th>
+                      <th className="px-3 py-3 w-[10%]">Resultados</th>
+                      <th className="px-3 py-3 w-[14%]">Acoes</th>
                     </tr>
                   </thead>
                   <tbody>
                     {maquinas.map((m) => (
                       <tr
                         key={m.id_hardware}
-                        className="cursor-pointer border-t border-[var(--color-border)] text-sm text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]"
+                        className="cursor-pointer border-t border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]"
                         onClick={() => navigate(`/maquinas/${m.id_hardware}`)}
                       >
-                        <td className="px-5 py-4 min-w-[220px]">
-                          <div className="font-semibold text-[var(--color-primary-strong)]">
+                        <td className="px-3 py-3 align-top">
+                          <div className="truncate font-semibold text-[var(--color-primary-strong)]">
                             {m.id_hardware}
                           </div>
-                          <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                            Clique para abrir pagamentos e testes da maquina
+                          <div className="truncate text-xs text-[var(--color-text-soft)]">
+                            {m.nome || "--"}
                           </div>
                         </td>
-                        <td className="px-5 py-4 min-w-[180px] font-medium">
-                          {m.nome || "--"}
-                        </td>
-                        <td className="px-5 py-4 min-w-[140px]">
+                        <td className="px-3 py-3 align-top">
                           <span
-                            className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold"
+                            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
                             style={{
                               backgroundColor:
                                 m.status_operacional === "operando"
@@ -1023,9 +1003,9 @@ export default function Maquinas() {
                             }}
                           >
                             {m.status_online ? (
-                              <CheckCircle2 size={15} />
+                              <CheckCircle2 size={13} />
                             ) : (
-                              <XCircle size={15} />
+                              <XCircle size={13} />
                             )}
                             {m.status_online
                               ? "Online"
@@ -1035,7 +1015,7 @@ export default function Maquinas() {
                           </span>
                           <button
                             type="button"
-                            className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)] disabled:cursor-wait disabled:opacity-60"
+                            className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-[var(--color-text-soft)] transition hover:text-[var(--color-primary)] disabled:cursor-wait disabled:opacity-60"
                             onClick={(e) => {
                               e.stopPropagation();
                               verifyMachineOnline(m);
@@ -1043,7 +1023,7 @@ export default function Maquinas() {
                             disabled={verifyingMachineId === m.id_hardware}
                           >
                             <RefreshCcw
-                              size={13}
+                              size={11}
                               className={
                                 verifyingMachineId === m.id_hardware
                                   ? "animate-spin"
@@ -1055,161 +1035,150 @@ export default function Maquinas() {
                               : "Verificar placa"}
                           </button>
                         </td>
-                        <td className="px-5 py-4 min-w-[150px]">
+                        <td className="px-3 py-3 align-top">
                           <WifiSignal
                             online={m.status_online}
                             quality={m.wifi_quality}
                             rssi={m.wifi_rssi}
+                            compact
                           />
                         </td>
-                        <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
-                          {m.ultima_atividade_em
-                            ? brasiliaDate(m.ultima_atividade_em).format(
-                                "DD/MM/YYYY HH:mm:ss",
-                              )
-                            : "Sem atividade"}
-                          <div className="mt-1 text-xs">
+                        <td className="px-3 py-3 align-top text-xs text-[var(--color-text-soft)]">
+                          <div className="truncate">
+                            {m.ultima_atividade_em
+                              ? brasiliaDate(m.ultima_atividade_em).format(
+                                  "DD/MM HH:mm",
+                                )
+                              : "Sem atividade"}
+                          </div>
+                          <div className="mt-1 truncate">
                             {m.ultimo_pagamento_em
                               ? `Pag.: ${brasiliaDate(m.ultimo_pagamento_em).format("DD/MM HH:mm")}`
                               : m.ultimo_teste_em
                                 ? `Teste: ${brasiliaDate(m.ultimo_teste_em).format("DD/MM HH:mm")}`
                                 : m.ultima_saida_em
                                   ? `Saida: ${brasiliaDate(m.ultima_saida_em).format("DD/MM HH:mm")}`
-                                  : "Sem eventos recentes"}
+                                  : "Sem eventos"}
                           </div>
                         </td>
-                        <td className="px-5 py-4 min-w-[180px] text-[var(--color-text-soft)]">
-                          {m.localizacao || "--"}
+                        <td className="px-3 py-3 align-top text-xs">
+                          <div className="truncate text-[var(--color-text-soft)]">
+                            {m.localizacao || "--"}
+                          </div>
+                          <div className="mt-1 truncate font-semibold text-[var(--color-text)]">
+                            {paymentProviderLabels[
+                              m.banco_pagamento || "mercado_pago"
+                            ] ||
+                              m.banco_pagamento ||
+                              "--"}
+                          </div>
                         </td>
-                        <td className="px-5 py-4 min-w-[150px] font-semibold text-[var(--color-text)]">
-                          {paymentProviderLabels[
-                            m.banco_pagamento || "mercado_pago"
-                          ] ||
-                            m.banco_pagamento ||
-                            "--"}
-                        </td>
-                        <td className="px-5 py-4 min-w-[170px]">
-                          <div className="font-semibold text-[var(--color-text)]">
+                        <td className="px-3 py-3 align-top text-xs">
+                          <div className="truncate font-semibold text-[var(--color-text)]">
                             {m.mp_pos_external_id || "--"}
                           </div>
-                          <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                            {m.mp_pos_id
-                              ? `POS ${m.mp_pos_id}`
-                              : "Ainda nao criado"}
+                          <div className="mt-1 truncate text-[var(--color-text-soft)]">
+                            {m.mp_pos_id ? `POS ${m.mp_pos_id}` : "Sem caixa"}
+                          </div>
+                          <div className="mt-1.5">
+                            <FirmwareBadge machine={m} compact />
                           </div>
                         </td>
-                        <td className="px-5 py-4 min-w-[230px]">
-                          <FirmwareBadge machine={m} />
-                        </td>
-                        <td className="px-5 py-4 min-w-[140px] font-semibold">
-                          {m.faturamento?.toFixed
-                            ? `R$ ${m.faturamento.toFixed(2)}`
-                            : "--"}
-                        </td>
-                        <td className="px-5 py-4 min-w-[120px] font-semibold text-[var(--color-text)]">
-                          {m.quantidade_saidas ?? 0}
-                        </td>
-                        <td className="px-5 py-4 min-w-[170px]">
-                          <button
-                            type="button"
-                            className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openCreditModal(m);
-                            }}
-                            disabled={Boolean(sendingCreditId)}
-                          >
-                            <Rocket size={15} />
-                            {sendingCreditId === m.id_hardware
-                              ? "Enviando..."
-                              : "Enviar credito"}
-                          </button>
-                        </td>
-                        {user?.role === "admin" ? (
-                          <td className="px-5 py-4 min-w-[220px]">
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  requestFirmwareUpdate(m);
-                                }}
-                                disabled={
-                                  sendingUpdateId === m.id_hardware ||
-                                  !m.status_online ||
-                                  firmwareVersions.length === 0 ||
-                                  ["sent", "downloading", "restarting"].includes(
-                                    m.firmware_update_status,
-                                  )
-                                }
-                                title={
-                                  !m.status_online
-                                    ? "Maquina offline"
-                                    : firmwareVersions.length === 0
-                                      ? "Cadastre uma versao em Firmwares"
-                                      : ["sent", "downloading", "restarting"].includes(
-                                            m.firmware_update_status,
-                                          )
-                                        ? "Ja existe uma atualizacao em andamento"
-                                        : "Atualizar firmware"
-                                }
-                              >
-                                <UploadCloud size={15} />
-                                {sendingUpdateId === m.id_hardware
-                                  ? "Enviando"
-                                  : m.firmware_update_status === "downloading"
-                                    ? `Baixando${m.firmware_update_progress != null ? ` ${m.firmware_update_progress}%` : "..."}`
-                                    : ["sent", "restarting"].includes(m.firmware_update_status)
-                                      ? "Em andamento"
-                                      : "Atualizar"}
-                              </button>
-                              <button
-                                type="button"
-                                className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditMachine(m);
-                                }}
-                              >
-                                <Pencil size={15} />
-                                Editar
-                              </button>
-                              <button
-                                type="button"
-                                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                                  m.ignorar_saida_pos_credito
-                                    ? "border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200"
-                                    : "pill-button"
-                                }`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleFiltroSaidaPosCredito(m);
-                                }}
-                                disabled={togglingFiltroSaidaId === m.id_hardware}
-                                title="Ignora uma saida (OUT) fisica que chegue poucos segundos depois de um credito liberado, para maquinas com interferencia eletrica entre o driver de credito e o sensor de saida"
-                              >
-                                <ShieldAlert size={15} />
-                                {togglingFiltroSaidaId === m.id_hardware
-                                  ? "Alterando..."
-                                  : m.ignorar_saida_pos_credito
-                                    ? "Filtro saida: ATIVO"
-                                    : "Filtro saida: inativo"}
-                              </button>
-                              <button
-                                type="button"
-                                className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  requestDeleteMachine(m.id_hardware);
-                                }}
-                              >
-                                <Trash2 size={15} />
-                                Excluir
-                              </button>
+                        <td className="px-3 py-3 align-top">
+                          <div className="text-xs">
+                            <div className="font-semibold text-[var(--color-text)]">
+                              {m.faturamento?.toFixed
+                                ? `R$ ${m.faturamento.toFixed(2)}`
+                                : "--"}
                             </div>
-                          </td>
-                        ) : null}
+                            <div className="mt-1 text-[var(--color-text-soft)]">
+                              {m.quantidade_saidas ?? 0} pelucias
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 align-top">
+                          <div className="flex flex-wrap gap-1.5">
+                            <IconActionButton
+                              icon={Rocket}
+                              label="Enviar credito"
+                              tone="primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openCreditModal(m);
+                              }}
+                              disabled={Boolean(sendingCreditId)}
+                              busy={sendingCreditId === m.id_hardware}
+                            />
+                            {user?.role === "admin" ? (
+                              <>
+                                <IconActionButton
+                                  icon={UploadCloud}
+                                  label={
+                                    !m.status_online
+                                      ? "Maquina offline"
+                                      : firmwareVersions.length === 0
+                                        ? "Cadastre uma versao em Firmwares"
+                                        : ["sent", "downloading", "restarting"].includes(
+                                              m.firmware_update_status,
+                                            )
+                                          ? "Ja existe uma atualizacao em andamento"
+                                          : "Atualizar firmware"
+                                  }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    requestFirmwareUpdate(m);
+                                  }}
+                                  disabled={
+                                    sendingUpdateId === m.id_hardware ||
+                                    !m.status_online ||
+                                    firmwareVersions.length === 0 ||
+                                    ["sent", "downloading", "restarting"].includes(
+                                      m.firmware_update_status,
+                                    )
+                                  }
+                                  busy={sendingUpdateId === m.id_hardware}
+                                />
+                                <IconActionButton
+                                  icon={Pencil}
+                                  label="Editar maquina"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditMachine(m);
+                                  }}
+                                />
+                                <IconActionButton
+                                  icon={ShieldAlert}
+                                  label={
+                                    "Filtro saida pos-credito: " +
+                                    (m.ignorar_saida_pos_credito
+                                      ? "ativo (clique para desativar)"
+                                      : "inativo (clique para ativar)")
+                                  }
+                                  tone={
+                                    m.ignorar_saida_pos_credito
+                                      ? "warning"
+                                      : undefined
+                                  }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleFiltroSaidaPosCredito(m);
+                                  }}
+                                  disabled={togglingFiltroSaidaId === m.id_hardware}
+                                  busy={togglingFiltroSaidaId === m.id_hardware}
+                                />
+                                <IconActionButton
+                                  icon={Trash2}
+                                  label="Excluir maquina"
+                                  tone="danger"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    requestDeleteMachine(m.id_hardware);
+                                  }}
+                                />
+                              </>
+                            ) : null}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1704,7 +1673,7 @@ function MachineMobileCard({
   );
 }
 
-function FirmwareBadge({ machine }) {
+function FirmwareBadge({ machine, compact = false }) {
   const currentVersion = machine.firmware_version || "";
   const targetVersion = machine.firmware_target_version || "";
   const updateStatus = machine.firmware_update_status || "";
@@ -1718,6 +1687,15 @@ function FirmwareBadge({ machine }) {
     updateStatus,
   );
   const isFailed = updateStatus === "failed";
+  const statusLabel =
+    updateLabel ||
+    (!hasCurrent
+      ? "Sem versao"
+      : isUpdated
+        ? "Atualizado"
+        : needsUpdate
+          ? "Atualizacao pendente"
+          : "Instalado");
 
   const tone = !hasCurrent
     ? "border-slate-200 bg-slate-50 text-slate-600"
@@ -1727,22 +1705,34 @@ function FirmwareBadge({ machine }) {
         ? "border-amber-200 bg-amber-50 text-amber-800"
         : "border-emerald-200 bg-emerald-50 text-emerald-800";
 
+  if (compact) {
+    const title = [
+      statusLabel,
+      currentVersion || "Aguardando sinal da placa",
+      isFailed && machine.firmware_update_error
+        ? `Erro: ${machine.firmware_update_error}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" - ");
+    return (
+      <div
+        className={`inline-flex max-w-full items-center gap-1.5 rounded-lg border px-2 py-1 text-[11px] ${tone}`}
+        title={title}
+      >
+        <Cpu size={12} className="shrink-0" />
+        <span className="truncate font-bold">{statusLabel}</span>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`inline-flex max-w-full items-start gap-2 rounded-xl border px-3 py-2 text-xs ${tone}`}
     >
       <Cpu size={15} className="mt-0.5 shrink-0" />
       <div className="min-w-0">
-        <div className="font-bold">
-          {updateLabel ||
-            (!hasCurrent
-              ? "Sem versao"
-              : isUpdated
-                ? "Atualizado"
-                : needsUpdate
-                  ? "Atualizacao pendente"
-                  : "Instalado")}
-        </div>
+        <div className="font-bold">{statusLabel}</div>
         <div
           className="mt-1 max-w-[190px] truncate font-semibold"
           title={currentVersion || "Aguardando sinal da placa"}
@@ -1782,6 +1772,37 @@ function FirmwareBadge({ machine }) {
         ) : null}
       </div>
     </div>
+  );
+}
+
+function IconActionButton({
+  icon,
+  label,
+  onClick,
+  disabled = false,
+  busy = false,
+  tone,
+}) {
+  const Icon = icon;
+  const toneClass =
+    tone === "primary"
+      ? "border-transparent bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-strong)]"
+      : tone === "danger"
+        ? "border-rose-200 bg-rose-50 text-[var(--color-error)] hover:bg-rose-100"
+        : tone === "warning"
+          ? "border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200"
+          : "border-[var(--color-border)] bg-white text-[var(--color-text)] hover:border-[var(--color-primary)]";
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition disabled:cursor-not-allowed disabled:opacity-50 ${toneClass}`}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <Icon size={15} className={busy ? "animate-spin" : ""} />
+    </button>
   );
 }
 
