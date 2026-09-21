@@ -57,7 +57,7 @@ function getPaymentProviders(cliente) {
 
 const emptyDeleteState = {
   open: false,
-  machineId: "",
+  machine: null,
   confirmationText: "",
 };
 
@@ -431,17 +431,17 @@ export default function Maquinas() {
     }
   };
 
-  const requestDeleteMachine = (machineId) => {
+  const requestDeleteMachine = (machine) => {
     setDeleteState({
       open: true,
-      machineId,
+      machine,
       confirmationText: "",
     });
   };
 
   const handleDeleteMachine = async () => {
     try {
-      await api.delete(`/maquinas/${deleteState.machineId}`);
+      await api.delete(`/maquinas/${deleteState.machine?.id_hardware}`);
       setToast({ message: "Maquina excluida com sucesso.", type: "success" });
       setDeleteState(emptyDeleteState);
       await loadMaquinas();
@@ -951,7 +951,7 @@ export default function Maquinas() {
                     onVerify={() => verifyMachineOnline(m)}
                     onSendUpdate={() => requestFirmwareUpdate(m)}
                     onEdit={() => handleEditMachine(m)}
-                    onDelete={() => requestDeleteMachine(m.id_hardware)}
+                    onDelete={() => requestDeleteMachine(m)}
                   />
                 ))}
               </div>
@@ -1172,7 +1172,7 @@ export default function Maquinas() {
                                   tone="danger"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    requestDeleteMachine(m.id_hardware);
+                                    requestDeleteMachine(m);
                                   }}
                                 />
                               </>
@@ -1429,8 +1429,33 @@ export default function Maquinas() {
       <ConfirmModal
         open={deleteState.open}
         title="Excluir maquina"
-        description={`Esta acao remove a maquina ${deleteState.machineId} e seus vinculos operacionais. Digite confirmar para continuar.`}
-        confirmLabel="Excluir maquina"
+        description={
+          <>
+            Voce esta prestes a excluir permanentemente a maquina{" "}
+            <strong>
+              {deleteState.machine?.nome || deleteState.machine?.id_hardware}
+            </strong>{" "}
+            (ID {deleteState.machine?.id_hardware}).
+            <br />
+            <br />
+            <strong>
+              TODOS os dados dessa maquina serao apagados para sempre e NAO
+              podem ser recuperados:
+            </strong>{" "}
+            pagamentos, vendas, testes, historico de operacoes, fechamentos
+            salvos, comandos enviados e alertas. Faturamento ja registrado
+            (
+            {deleteState.machine?.faturamento?.toFixed
+              ? `R$ ${deleteState.machine.faturamento.toFixed(2)}`
+              : "R$ 0,00"}{" "}
+            no periodo filtrado) tambem sera perdido.
+            <br />
+            <br />
+            Se a maquina so precisa sair de operacao, considere apenas
+            desvincular do cliente em vez de excluir.
+          </>
+        }
+        confirmLabel="Excluir maquina e apagar tudo"
         requireText="confirmar"
         inputValue={deleteState.confirmationText}
         inputPlaceholder='Digite "confirmar"'
