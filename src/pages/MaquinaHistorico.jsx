@@ -12,6 +12,8 @@ import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import { brasiliaDate, nowInBrasilia } from "../utils/dateTime";
 
+const ALL_MACHINES_VALUE = "__todas__";
+
 export default function MaquinaHistorico({ detailed = false, selectable = false }) {
   const { machineId: routeMachineId } = useParams();
   const navigate = useNavigate();
@@ -21,6 +23,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   const [machineOptions, setMachineOptions] = useState([]);
   const [selectedMachineId, setSelectedMachineId] = useState(routeMachineId || "");
   const machineId = selectable ? selectedMachineId : routeMachineId;
+  const isAggregate = selectable && machineId === ALL_MACHINES_VALUE;
   const [loading, setLoading] = useState(false);
   const [historico, setHistorico] = useState({
     maquina: null,
@@ -117,9 +120,16 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     const currentSaleFilters = options.saleFilters ?? appliedSaleFilters;
     const currentSearchTerm = options.searchTerm ?? appliedSearchTerm;
     const query = buildQuery(currentPeriodo, currentRange, currentSaleFilters, currentSearchTerm);
+    if (machineId === ALL_MACHINES_VALUE) {
+      const separator = query ? "&" : "?";
+      const clientePart =
+        user?.role === "admin" ? `${separator}cliente_id=${encodeURIComponent(selectedClienteId)}` : "";
+      const { data } = await api.get(`/maquinas/historico${query}${clientePart}`);
+      return data;
+    }
     const { data } = await api.get(`/maquinas/${machineId}/historico${query}`);
     return data;
-  }, [appliedDateRange, appliedPeriodo, appliedSaleFilters, appliedSearchTerm, buildQuery, machineId]);
+  }, [appliedDateRange, appliedPeriodo, appliedSaleFilters, appliedSearchTerm, buildQuery, machineId, selectedClienteId, user?.role]);
 
   const loadHistorico = useCallback(async (options = {}) => {
     if (!machineId) return null;
@@ -191,7 +201,10 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       try {
         const { data } = await api.get(`/maquinas?${params.join("&")}`);
         setMachineOptions(data);
-        if (!data.some((item) => item.id_hardware === selectedMachineId)) {
+        if (
+          selectedMachineId !== ALL_MACHINES_VALUE &&
+          !data.some((item) => item.id_hardware === selectedMachineId)
+        ) {
           setSelectedMachineId("");
         }
         if (!selectedMachineId && data.length) {
@@ -751,15 +764,19 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               {detailed ? "Relatorio detalhado" : "Relatorio de vendas"}
             </div>
             <h1 className="mt-3 break-words text-3xl font-extrabold text-[var(--color-text)] sm:text-4xl md:text-5xl">
-              {maquina?.nome || machineId}
+              {isAggregate ? "Todas as maquinas" : maquina?.nome || machineId}
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
-              {detailed
-                ? "Escolha a maquina e consulte vendas, historico, observacoes, fechamentos e auditoria."
-                : "Pagamentos e testes dos ultimos 30 dias. Selecione uma data para consultar outro periodo."}
+              {isAggregate
+                ? "Somando vendas, testes e saidas de todas as maquinas do cliente selecionado no periodo."
+                : detailed
+                  ? "Escolha a maquina e consulte vendas, historico, observacoes, fechamentos e auditoria."
+                  : "Pagamentos e testes dos ultimos 30 dias. Selecione uma data para consultar outro periodo."}
             </p>
             <div className="mt-3 text-sm text-[var(--color-text-soft)]">
-              {maquina?.id_hardware || machineId} {maquina?.localizacao ? ` - ${maquina.localizacao}` : ""}
+              {isAggregate
+                ? `${historico.quantidade_maquinas ?? machineOptions.length} maquina(s) somada(s)`
+                : `${maquina?.id_hardware || machineId} ${maquina?.localizacao ? ` - ${maquina.localizacao}` : ""}`}
             </div>
           </div>
 
@@ -793,6 +810,9 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                   <option value="">
                     {user?.role === "admin" && !selectedClienteId ? "Selecione um cliente primeiro" : "Selecione uma maquina"}
                   </option>
+                  {machineOptions.length > 0 ? (
+                    <option value={ALL_MACHINES_VALUE}>Todas as maquinas</option>
+                  ) : null}
                   {machineOptions.map((item) => (
                     <option key={item.id_hardware} value={item.id_hardware}>
                       {(item.nome || item.id_hardware) + ` - ${item.id_hardware}`}
@@ -904,11 +924,13 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
           helper={formatResumoData(historico.resumo.ultima_saida_em, "Ultima saida")}
           icon={<Sparkles size={18} />}
         />
-        <StatusCard
-          maquina={maquina}
-          eventos={historico.eventos_dispositivo || []}
-          showFirmware={user?.role === "admin"}
-        />
+        {isAggregate ? null : (
+          <StatusCard
+            maquina={maquina}
+            eventos={historico.eventos_dispositivo || []}
+            showFirmware={user?.role === "admin"}
+          />
+        )}
       </div>
       ) : null}
 
@@ -918,7 +940,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <Button type="button" className="justify-center" onClick={() => navigate("/maquinas")}>
               Voltar para maquinas
             </Button>
-            {detailed ? (
+            {detailed && !isAggregate ? (
             <button
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
@@ -928,7 +950,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               Salvar fechamento
             </button>
             ) : null}
-            {detailed ? (
+            {detailed && !isAggregate ? (
             <button
               type="button"
               className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
@@ -959,7 +981,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               Exportar CSV
             </button>
             ) : null}
-            {detailed ? (
+            {detailed && !isAggregate ? (
             <button
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
@@ -969,7 +991,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               Fechamento PDF
             </button>
             ) : null}
-            {detailed ? (
+            {detailed && !isAggregate ? (
             <button
               type="button"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
@@ -1023,15 +1045,17 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </label>
-          <button
-            type="button"
-            className="pill-button pill-button--primary inline-flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold sm:w-auto"
-            onClick={handleFecharPeriodoSelecionado}
-            disabled={loading || !machineId}
-          >
-            <ShieldCheck size={16} />
-            Fazer fechamento do periodo
-          </button>
+          {isAggregate ? null : (
+            <button
+              type="button"
+              className="pill-button pill-button--primary inline-flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold sm:w-auto"
+              onClick={handleFecharPeriodoSelecionado}
+              disabled={loading || !machineId}
+            >
+              <ShieldCheck size={16} />
+              Fazer fechamento do periodo
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -1059,6 +1083,8 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               ])}
             />
 
+            {isAggregate ? null : (
+            <>
             <div className="grid gap-4 xl:grid-cols-2">
               <HistoryTable
                 title="Linha do tempo"
@@ -1164,14 +1190,17 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 ])}
               />
             </div>
+            </>
+            )}
 
             <div className="grid gap-4 xl:grid-cols-2">
               <HistoryTable
                 title="Pagamentos"
                 empty="Nenhum pagamento encontrado no periodo."
-                columns={["Data", "Metodo", "Valor"]}
+                columns={isAggregate ? ["Data", "Maquina", "Metodo", "Valor"] : ["Data", "Metodo", "Valor"]}
                 rows={historico.pagamentos.map((item) => [
                   brasiliaDate(item.data_hora).format("DD/MM/YYYY HH:mm:ss"),
+                  ...(isAggregate ? [item.maquina_nome || item.maquina_id] : []),
                   item.metodo,
                   `R$ ${Number(item.valor).toFixed(2)}`,
                 ])}
@@ -1179,9 +1208,10 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               <HistoryTable
                 title="Saidas"
                 empty="Nenhuma saida encontrada no periodo."
-                columns={["Data", "Metodo", "Valor"]}
+                columns={isAggregate ? ["Data", "Maquina", "Metodo", "Valor"] : ["Data", "Metodo", "Valor"]}
                 rows={historico.saidas.map((item) => [
                   brasiliaDate(item.data_hora).format("DD/MM/YYYY HH:mm:ss"),
+                  ...(isAggregate ? [item.maquina_nome || item.maquina_id] : []),
                   item.metodo,
                   `R$ ${Number(item.valor).toFixed(2)}`,
                 ])}
@@ -1498,12 +1528,14 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                     <div className="rounded-[14px] bg-[var(--color-primary-soft)] px-3 py-2 font-semibold text-[var(--color-primary)]">
                       {item.ponto || maquina?.nome || maquina?.id_hardware}
                     </div>
-                    <div className="mt-2 rounded-[10px] bg-black px-3 py-1 text-xs font-semibold text-yellow-300">
-                      Caixa: {maquina?.mp_pos_external_id || maquina?.id_hardware}
-                    </div>
+                    {maquina ? (
+                      <div className="mt-2 rounded-[10px] bg-black px-3 py-1 text-xs font-semibold text-yellow-300">
+                        Caixa: {maquina?.mp_pos_external_id || maquina?.id_hardware}
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-4 py-4 min-w-[165px]">
-                    <TerminalBadge maquina={maquina} />
+                    {maquina ? <TerminalBadge maquina={maquina} /> : null}
                   </td>
                   <td className="px-4 py-4 min-w-[220px]">
                     {item.is_test ? (
@@ -1597,12 +1629,14 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
             {item.ponto || maquina?.nome || maquina?.id_hardware}
           </div>
         </div>
-        <div className="col-span-2 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3">
-          <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
-            Maquininha
+        {maquina ? (
+          <div className="col-span-2 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3">
+            <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
+              Maquininha
+            </div>
+            <TerminalBadge maquina={maquina} compact />
           </div>
-          <TerminalBadge maquina={maquina} compact />
-        </div>
+        ) : null}
         <div className="col-span-2">
           <PulseBadge status={item.pulse_status} />
         </div>
