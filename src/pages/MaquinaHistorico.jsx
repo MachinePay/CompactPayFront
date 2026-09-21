@@ -1495,11 +1495,17 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
               </tr>
             </thead>
             <tbody>
-              {filtered.map((item) => (
+              {filtered.map((item) => {
+                const pulseFailed = String(item.pulse_status || "").toLowerCase().startsWith("falha");
+                return (
                 <tr
                   key={`${item.kind}-${item.id}`}
-                  className={`border-t border-[var(--color-border)] align-top text-sm text-[var(--color-text)] ${
-                    item.is_test ? "bg-amber-50/80" : "bg-white"
+                  className={`border-t align-top text-sm text-[var(--color-text)] ${
+                    pulseFailed
+                      ? "border-rose-200 bg-rose-100"
+                      : item.is_test
+                        ? "border-[var(--color-border)] bg-amber-50/80"
+                        : "border-[var(--color-border)] bg-white"
                   }`}
                 >
                   <td className="px-4 py-4">
@@ -1576,7 +1582,8 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                     ) : null}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -1600,8 +1607,17 @@ function MoneyBadge({ value, tone }) {
 }
 
 function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
+  const pulseFailed = String(item.pulse_status || "").toLowerCase().startsWith("falha");
   return (
-    <article className={`rounded-[18px] border border-[var(--color-border)] p-4 ${item.is_test ? "bg-amber-50" : "bg-white"}`}>
+    <article
+      className={`rounded-[18px] border p-4 ${
+        pulseFailed
+          ? "border-rose-200 bg-rose-100"
+          : item.is_test
+            ? "border-[var(--color-border)] bg-amber-50"
+            : "border-[var(--color-border)] bg-white"
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-xs font-semibold text-[var(--color-text-soft)]">
