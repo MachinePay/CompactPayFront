@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { CreditCard, Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Wallet, Wifi, WifiOff, Wrench } from "lucide-react";
+import { CreditCard, Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wifi, WifiOff, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -83,6 +83,11 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     dateRange: null,
   });
   const [fechandoPeriodo, setFechandoPeriodo] = useState(false);
+  const [desfazerFechamentoState, setDesfazerFechamentoState] = useState({
+    open: false,
+    fechamento: null,
+  });
+  const [desfazendoFechamentoId, setDesfazendoFechamentoId] = useState("");
 
   const buildQuery = useCallback((
     selectedPeriodo = appliedPeriodo,
@@ -360,6 +365,29 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       });
     } finally {
       setRefundingId("");
+    }
+  };
+
+  const requestDesfazerFechamento = (fechamento) => {
+    setDesfazerFechamentoState({ open: true, fechamento });
+  };
+
+  const handleDesfazerFechamento = async () => {
+    const fechamento = desfazerFechamentoState.fechamento;
+    if (!fechamento) return;
+    setDesfazendoFechamentoId(String(fechamento.id));
+    try {
+      await api.delete(`/maquinas/${machineId}/fechamentos/${fechamento.id}`);
+      setToast({ message: "Fechamento desfeito com sucesso.", type: "success" });
+      setDesfazerFechamentoState({ open: false, fechamento: null });
+      await loadHistorico();
+    } catch (error) {
+      setToast({
+        message: getApiErrorMessage(error, "Nao foi possivel desfazer o fechamento."),
+        type: "error",
+      });
+    } finally {
+      setDesfazendoFechamentoId("");
     }
   };
 
@@ -701,6 +729,19 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         loading={fechandoPeriodo}
         onCancel={() => setFecharPeriodoState({ open: false, periodo: "", dateRange: null })}
         onConfirm={handleConfirmFecharPeriodo}
+      />
+      <ConfirmModal
+        open={desfazerFechamentoState.open}
+        title="Desfazer fechamento"
+        description={
+          desfazerFechamentoState.fechamento
+            ? `Isso remove o fechamento salvo de ${dayjs(desfazerFechamentoState.fechamento.periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${dayjs(desfazerFechamentoState.fechamento.periodo_fim).format("DD/MM/YYYY HH:mm")} (total R$ ${Number(desfazerFechamentoState.fechamento.total_pagamentos).toFixed(2)}). Os pagamentos e vendas desse periodo continuam no historico normalmente - so o registro do fechamento e' apagado.`
+            : ""
+        }
+        confirmLabel="Desfazer fechamento"
+        loading={Boolean(desfazendoFechamentoId)}
+        onCancel={() => setDesfazerFechamentoState({ open: false, fechamento: null })}
+        onConfirm={handleDesfazerFechamento}
       />
 
       <section className="app-panel min-w-0 rounded-[22px] p-3 sm:rounded-[30px] sm:p-6 md:p-7">
@@ -1082,13 +1123,34 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               <HistoryTable
                 title="Fechamentos salvos"
                 empty="Nenhum fechamento salvo para esta maquina ainda."
-                columns={["Criado em", "Periodo", "Total", "Por"]}
-                rows={historico.fechamentos.map((item) => [
-                  brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
-                  `${dayjs(item.periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${dayjs(item.periodo_fim).format("DD/MM/YYYY HH:mm")}`,
-                  `R$ ${Number(item.total_pagamentos).toFixed(2)}`,
-                  item.criado_por_email,
-                ])}
+                columns={
+                  user?.role === "admin"
+                    ? ["Criado em", "Periodo", "Total", "Por", "Acoes"]
+                    : ["Criado em", "Periodo", "Total", "Por"]
+                }
+                rows={historico.fechamentos.map((item) => {
+                  const row = [
+                    brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                    `${dayjs(item.periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${dayjs(item.periodo_fim).format("DD/MM/YYYY HH:mm")}`,
+                    `R$ ${Number(item.total_pagamentos).toFixed(2)}`,
+                    item.criado_por_email,
+                  ];
+                  if (user?.role === "admin") {
+                    row.push(
+                      <button
+                        key={`desfazer-${item.id}`}
+                        type="button"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        onClick={() => requestDesfazerFechamento(item)}
+                        disabled={desfazendoFechamentoId === String(item.id)}
+                      >
+                        <Undo2 size={13} />
+                        {desfazendoFechamentoId === String(item.id) ? "Desfazendo" : "Desfazer"}
+                      </button>,
+                    );
+                  }
+                  return row;
+                })}
               />
               <HistoryTable
                 title="Auditoria"
