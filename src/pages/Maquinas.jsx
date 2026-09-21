@@ -4,8 +4,11 @@ import {
   CheckCircle2,
   Copy,
   Cpu,
+  Download,
+  FileText,
   Pencil,
   Plus,
+  QrCode,
   RefreshCcw,
   Rocket,
   Server,
@@ -73,6 +76,14 @@ const emptyCreditState = {
   value: "",
 };
 
+const emptyCaixaState = {
+  open: false,
+  machine: null,
+  loading: false,
+  data: null,
+  error: "",
+};
+
 const quickCreditValues = [2, 5, 10, 20, 50, 100];
 
 function formatCurrency(value) {
@@ -120,6 +131,7 @@ export default function Maquinas() {
   const [deleteState, setDeleteState] = useState(emptyDeleteState);
   const [updateState, setUpdateState] = useState(emptyUpdateState);
   const [creditState, setCreditState] = useState(emptyCreditState);
+  const [caixaState, setCaixaState] = useState(emptyCaixaState);
   const selectedCliente = usuarios.find(
     (item) => String(item.cliente_id) === String(form.cliente_id),
   );
@@ -462,6 +474,33 @@ export default function Maquinas() {
       machine,
       value: "",
     });
+  };
+
+  const handleConsultarCaixa = async (machine) => {
+    setCaixaState({ open: true, machine, loading: true, data: null, error: "" });
+    try {
+      const { data } = await api.get(`/maquinas/${machine.id_hardware}/caixa`);
+      setCaixaState({ open: true, machine, loading: false, data, error: "" });
+    } catch (error) {
+      setCaixaState({
+        open: true,
+        machine,
+        loading: false,
+        data: null,
+        error: getApiErrorMessage(error, "Nao foi possivel consultar o caixa no Mercado Pago."),
+      });
+    }
+  };
+
+  const handleCopiarPix = async () => {
+    const codigo = caixaState.data?.qr?.qr_code;
+    if (!codigo) return;
+    try {
+      await navigator.clipboard.writeText(codigo);
+      setToast({ message: "Codigo Pix copiado.", type: "success" });
+    } catch {
+      setToast({ message: "Nao foi possivel copiar o codigo.", type: "error" });
+    }
   };
 
   const sendTestCredit = async () => {
@@ -834,6 +873,104 @@ export default function Maquinas() {
         </div>
       </Modal>
 
+      <Modal
+        open={caixaState.open}
+        onClose={() => setCaixaState(emptyCaixaState)}
+      >
+        <div className="space-y-5">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
+              Caixa Mercado Pago
+            </div>
+            <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
+              {caixaState.machine?.nome || caixaState.machine?.id_hardware}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+              QR code fixo de Pix desse caixa - dá para copiar o código,
+              baixar a imagem ou o PDF pronto para imprimir e colar na
+              máquina.
+            </p>
+          </div>
+
+          {caixaState.loading ? (
+            <LoadingSpinner className="h-40" />
+          ) : caixaState.error ? (
+            <div className="rounded-[18px] border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-[var(--color-error)]">
+              {caixaState.error}
+            </div>
+          ) : caixaState.data ? (
+            <div className="space-y-4">
+              <div className="rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">
+                <InfoLine label="Caixa (POS)" value={caixaState.data.name || caixaState.data.pos_id} />
+                <InfoLine label="ID do caixa" value={caixaState.data.pos_id} />
+                <InfoLine
+                  label="Status do QR"
+                  value={caixaState.data.qr?.status || "--"}
+                />
+              </div>
+
+              {caixaState.data.qr?.image ? (
+                <div className="flex justify-center rounded-[22px] border border-[var(--color-border)] bg-white p-4">
+                  <img
+                    src={caixaState.data.qr.image}
+                    alt="QR code Pix do caixa"
+                    className="h-64 w-64 object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-[18px] border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+                  Este caixa ainda não tem QR code gerado pelo Mercado Pago.
+                </div>
+              )}
+
+              {caixaState.data.qr?.qr_code ? (
+                <div className="rounded-[18px] border border-[var(--color-border)] bg-white p-4">
+                  <div className="text-sm font-semibold text-[var(--color-text)]">
+                    Código Pix (copia e cola)
+                  </div>
+                  <div className="mt-2 max-h-24 overflow-y-auto break-all rounded-[12px] bg-[var(--color-bg-muted)] p-3 text-xs text-[var(--color-text-soft)]">
+                    {caixaState.data.qr.qr_code}
+                  </div>
+                  <button
+                    type="button"
+                    className="pill-button mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                    onClick={handleCopiarPix}
+                  >
+                    <Copy size={15} />
+                    Copiar código Pix
+                  </button>
+                </div>
+              ) : null}
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <a
+                  href={caixaState.data.qr?.template_document || undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`pill-button inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold ${
+                    caixaState.data.qr?.template_document ? "" : "pointer-events-none opacity-50"
+                  }`}
+                >
+                  <FileText size={16} />
+                  Abrir PDF para imprimir
+                </a>
+                <a
+                  href={caixaState.data.qr?.template_image || undefined}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`pill-button inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold ${
+                    caixaState.data.qr?.template_image ? "" : "pointer-events-none opacity-50"
+                  }`}
+                >
+                  <Download size={16} />
+                  Baixar imagem (PNG)
+                </a>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </Modal>
+
       <CardSectionHeader
         title="Maquinas"
         description="Cadastre novas unidades, gere IDs para o ESP e crie automaticamente o caixa no Mercado Pago do cliente."
@@ -948,6 +1085,7 @@ export default function Maquinas() {
                     )}
                     onOpen={() => navigate(`/maquinas/${m.id_hardware}`)}
                     onSendCredit={() => openCreditModal(m)}
+                    onConsultarCaixa={() => handleConsultarCaixa(m)}
                     onVerify={() => verifyMachineOnline(m)}
                     onSendUpdate={() => requestFirmwareUpdate(m)}
                     onEdit={() => handleEditMachine(m)}
@@ -1108,6 +1246,14 @@ export default function Maquinas() {
                               }}
                               disabled={Boolean(sendingCreditId)}
                               busy={sendingCreditId === m.id_hardware}
+                            />
+                            <IconActionButton
+                              icon={QrCode}
+                              label="Consultar caixa (QR code Pix)"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleConsultarCaixa(m);
+                              }}
                             />
                             {user?.role === "admin" ? (
                               <>
@@ -1540,6 +1686,7 @@ function MachineMobileCard({
   canUpdateFirmware,
   onOpen,
   onSendCredit,
+  onConsultarCaixa,
   onVerify,
   onSendUpdate,
   onEdit,
@@ -1632,6 +1779,14 @@ function MachineMobileCard({
         >
           <Rocket size={15} />
           {sendingCreditId === machine.id_hardware ? "Enviando" : "Credito"}
+        </button>
+        <button
+          type="button"
+          className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+          onClick={onConsultarCaixa}
+        >
+          <QrCode size={15} />
+          Caixa
         </button>
         <button
           type="button"
