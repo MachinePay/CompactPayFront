@@ -903,10 +903,6 @@ export default function Maquinas() {
               <div className="rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">
                 <InfoLine label="Caixa (POS)" value={caixaState.data.name || caixaState.data.pos_id} />
                 <InfoLine label="ID do caixa" value={caixaState.data.pos_id} />
-                <InfoLine
-                  label="Status do QR"
-                  value={caixaState.data.qr?.status || "--"}
-                />
               </div>
 
               {caixaState.data.qr?.image ? (
