@@ -8,7 +8,7 @@ import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import { useAuth } from "../context/useAuth";
-import { pollComandoStatus } from "../utils/comandoStatus";
+import { describePulseResultToast, pollComandoStatus } from "../utils/comandoStatus";
 
 const emptyForm = {
   id: null,
@@ -116,26 +116,13 @@ export default function Produtos() {
         produto_id: produto.id,
         descricao: produto.nome,
       });
-      setToast({
-        message:
-          data.command_status === "na_fila"
-            ? `Pagamento entrou na fila - ${produto.maquina_nome || produto.maquina_id} esta processando outro pagamento.`
-            : `Pagamento lancado, aguardando confirmacao de ${produto.maquina_nome || produto.maquina_id}...`,
-        type: "success",
-      });
 
+      // Nao mostra nada so por ter enviado - so avisa quando a placa
+      // responder de verdade (ou quando o backend desistir de esperar).
       const resultado = await pollComandoStatus(data.command_id);
-      if (resultado?.status === "executado") {
-        setToast({
-          message: `Credito confirmado em ${produto.maquina_nome || produto.maquina_id}.`,
-          type: "success",
-        });
-      } else if (resultado?.status === "falhou") {
-        setToast({
-          message: `A maquina nao confirmou o pulso (${resultado.detalhe_status || "sem detalhe"}).`,
-          type: "error",
-        });
-      }
+      setToast(
+        describePulseResultToast(resultado, produto.valor, produto.maquina_nome || produto.maquina_id),
+      );
     } catch (error) {
       setToast({ message: getApiErrorMessage(error, "Nao foi possivel lancar o pagamento."), type: "error" });
     } finally {

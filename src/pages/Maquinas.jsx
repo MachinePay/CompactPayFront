@@ -29,7 +29,7 @@ import Button from "../components/Button";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import { brasiliaDate } from "../utils/dateTime";
-import { pollComandoStatus } from "../utils/comandoStatus";
+import { describePulseResultToast, pollComandoStatus } from "../utils/comandoStatus";
 
 const emptyForm = {
   id_hardware: "",
@@ -521,26 +521,14 @@ export default function Maquinas() {
         valor: value,
       });
       setCreditState(emptyCreditState);
-      setToast({
-        message:
-          data.command_status === "na_fila"
-            ? `Pagamento de teste de ${formatCurrency(value)} entrou na fila - a maquina esta processando outro pagamento.`
-            : `Pagamento de teste de ${formatCurrency(value)} enviado para ${machine.id_hardware}, aguardando confirmacao...`,
-        type: "success",
-      });
 
+      // Nao mostra nada ainda so por ter enviado - o botao ja fica em
+      // "Enviando..." enquanto isso. So avisa quando a placa responder de
+      // verdade (ou quando o backend desistir de esperar por ela), com o
+      // resultado real: falha, pulso enviado (sem confirmacao final) ou
+      // confirmado.
       const resultado = await pollComandoStatus(data.command_id);
-      if (resultado?.status === "executado") {
-        setToast({
-          message: `Pagamento de teste de ${formatCurrency(value)} confirmado em ${machine.id_hardware}.`,
-          type: "success",
-        });
-      } else if (resultado?.status === "falhou") {
-        setToast({
-          message: `A maquina nao confirmou o pulso (${resultado.detalhe_status || "sem detalhe"}).`,
-          type: "error",
-        });
-      }
+      setToast(describePulseResultToast(resultado, value, machine.id_hardware));
       await loadMaquinas();
     } catch (error) {
       setToast({
