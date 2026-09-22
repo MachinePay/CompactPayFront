@@ -229,6 +229,11 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       return;
     }
     const periodoLabel = formatPeriodoLabel(snapshotPeriodo, snapshotRange);
+    // Nome do arquivo/aba do PDF: alguns navegadores (Safari em especial)
+    // ignoram a tag <title> escrita via document.write e sugerem "Safari"
+    // como nome do arquivo ao salvar/imprimir - por isso o titulo tambem e'
+    // setado explicitamente em document.title mais abaixo, depois do write.
+    const pdfTitle = `Fechamento ${maquina.nome || maquina.id_hardware} - ${dayjs().format("DD-MM-YYYY_HH-mm")}`;
     // A janela do PDF abre em branco, sem vinculo com o app instalado, entao
     // ela nao "sabe" que veio de um app standalone - detectamos aqui, no app
     // principal, e mandamos pronto pra dentro do HTML gerado.
@@ -272,7 +277,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     printWindow.document.write(`
       <html>
         <head>
-          <title>Fechamento ${maquina.nome || maquina.id_hardware}</title>
+          <title>${pdfTitle}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 24px; color: #222; }
             h1, h2 { margin-bottom: 8px; }
@@ -338,6 +343,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       </html>
     `);
     printWindow.document.close();
+    printWindow.document.title = pdfTitle;
     printWindow.focus();
     printWindow.print();
   };
