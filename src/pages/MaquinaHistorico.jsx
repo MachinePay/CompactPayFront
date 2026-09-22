@@ -1811,6 +1811,7 @@ function formatPulseStatus(status) {
     falha_publicacao: "Falha ao publicar",
     falha_cmd_ignorado: "Comando ignorado",
     falha_bloqueado: "Pulso bloqueado",
+    falha_dispositivo_offline: "Placa nao respondeu (estornado)",
     update_enviado: "Atualizacao enviada",
     update_iniciado: "Baixando firmware",
     update_ok: "Reiniciando",
