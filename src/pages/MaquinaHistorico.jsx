@@ -306,9 +306,10 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <div><strong>Periodo:</strong> ${periodoLabel}</div>
           </div>
           <div class="grid">
-            <div class="card"><strong>Total pagamentos</strong><br />R$ ${Number(snapshot.resumo.total_pagamentos).toFixed(2)}</div>
+            <div class="card"><strong>Total pagamentos</strong><br />R$ ${Number(snapshot.resumo.total_pagamentos).toFixed(2)}<br /><small>Ja descontando devolucoes</small></div>
             <div class="card"><strong>Total digital</strong><br />R$ ${Number(snapshot.resumo.total_digital).toFixed(2)}</div>
             <div class="card"><strong>Total fisico</strong><br />R$ ${Number(snapshot.resumo.total_fisico).toFixed(2)}</div>
+            <div class="card"><strong>Valor devolvido</strong><br />R$ ${Number(snapshot.resumo.total_devolvido || 0).toFixed(2)}</div>
             <div class="card"><strong>Qtde pagamentos</strong><br />${snapshot.resumo.quantidade_pagamentos}</div>
             <div class="card"><strong>Qtde testes</strong><br />${snapshot.resumo.quantidade_testes}</div>
             <div class="card"><strong>Qtde de pelucias entregues</strong><br />${snapshot.resumo.quantidade_saidas}</div>
@@ -891,11 +892,11 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         </div>
       </section>
 
-      {detailed ? (
       <div className="grid gap-4 md:grid-cols-3">
         <SummaryCard
           label="Total pagamentos"
           value={`R$ ${Number(historico.resumo.total_pagamentos).toFixed(2)}`}
+          helper="Ja descontando devolucoes"
           icon={<Wallet size={18} />}
         />
         <SummaryCard
@@ -910,9 +911,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
           featured
         />
       </div>
-      ) : null}
 
-      {detailed ? (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
           label="Total digital"
@@ -925,19 +924,27 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
           helper="Entradas fisicas detectadas no periodo"
         />
         <SummaryCard
+          label="Valor devolvido"
+          value={`R$ ${Number(historico.resumo.total_devolvido || 0).toFixed(2)}`}
+          helper="Pagamentos estornados no periodo"
+          icon={<Undo2 size={18} />}
+        />
+        <SummaryCard
           label="Premios entregues"
           value={String(historico.resumo.quantidade_saidas)}
           helper={formatResumoData(historico.resumo.ultima_saida_em, "Ultima saida")}
           icon={<Sparkles size={18} />}
         />
-        {isAggregate ? null : (
+      </div>
+
+      {detailed && !isAggregate ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatusCard
             maquina={maquina}
             eventos={historico.eventos_dispositivo || []}
             showFirmware={user?.role === "admin"}
           />
-        )}
-      </div>
+        </div>
       ) : null}
 
       <section className="app-panel rounded-[30px] p-5 md:p-6">
