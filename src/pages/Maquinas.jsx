@@ -823,7 +823,7 @@ export default function Maquinas() {
                     className={`rounded-[14px] border px-3 py-3 text-sm font-extrabold transition ${
                       selected
                         ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                        : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                        : "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
                     }`}
                     onClick={() =>
                       setCreditState((current) => ({

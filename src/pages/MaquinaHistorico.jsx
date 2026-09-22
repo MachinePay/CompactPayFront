@@ -1561,7 +1561,7 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                     ) : null}
                   </td>
                   <td className="px-4 py-4">
-                    <MoneyBadge value={item.valor} tone="blue" />
+                    <MoneyBadge value={item.valor} />
                     <div className="mt-1 text-xs text-[var(--color-primary)]">Cliente pagou</div>
                   </td>
                   <td className="px-4 py-4 min-w-[190px]">
@@ -1569,7 +1569,7 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                       {item.ponto || maquina?.nome || maquina?.id_hardware}
                     </div>
                     {maquina ? (
-                      <div className="mt-2 rounded-[10px] bg-black px-3 py-1 text-xs font-semibold text-yellow-300">
+                      <div className="mt-2 rounded-[10px] bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                         Caixa: {maquina?.mp_pos_external_id || maquina?.id_hardware}
                       </div>
                     ) : null}
@@ -1592,12 +1592,14 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                     )}
                   </td>
                   <td className="px-4 py-4 min-w-[135px]">
-                    <div className="rounded-[12px] bg-sky-50 px-3 py-2 text-center text-xs font-bold text-sky-700">
+                    <div className={`rounded-[12px] px-3 py-2 text-center text-xs font-bold ${
+                      item.is_test ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600"
+                    }`}>
                       {item.provider_payment_id ? "PGTO REAL" : item.is_test ? "TESTE" : "PGTO"}
                     </div>
                     <button
                       type="button"
-                      className="mt-3 inline-flex w-full items-center justify-center rounded-[10px] bg-sky-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      className="mt-3 inline-flex w-full items-center justify-center rounded-[10px] bg-amber-500 px-3 py-2 text-xs font-bold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:bg-slate-300"
                       disabled={!item.can_refund || refundingId === String(item.id)}
                       onClick={() => onRefund(item)}
                     >
@@ -1627,14 +1629,9 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
   );
 }
 
-function MoneyBadge({ value, tone }) {
-  const toneClass = {
-    blue: "bg-blue-500 text-white",
-    orange: "bg-orange-400 text-white",
-    green: "bg-emerald-600 text-white",
-  }[tone];
+function MoneyBadge({ value }) {
   return (
-    <span className={`inline-flex rounded-[8px] px-3 py-1 text-base font-extrabold ${toneClass}`}>
+    <span className="inline-flex rounded-[8px] bg-[var(--color-primary)] px-3 py-1 text-base font-extrabold text-white">
       R$ {Number(value || 0).toFixed(2)}
     </span>
   );
@@ -1691,14 +1688,14 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
       </div>
 
       {item.provider_payment_id ? (
-        <div className="mt-3 rounded-[12px] bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700">
+        <div className="mt-3 rounded-[12px] bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
           {item.provider_payment_id}
         </div>
       ) : null}
 
       <button
         type="button"
-        className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-sky-500 px-4 py-2 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300"
+        className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-amber-500 px-4 py-2 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300"
         disabled={!item.can_refund || refundingId === String(item.id)}
         onClick={() => onRefund(item)}
       >
@@ -1726,25 +1723,17 @@ function TerminalBadge({ maquina, compact = false }) {
         : "Offline";
   const statusClass = online
     ? "bg-emerald-100 text-emerald-700"
-    : linked
-      ? "bg-sky-100 text-sky-700"
-    : unavailable || notLinked
+    : linked || unavailable || notLinked
       ? "bg-slate-100 text-slate-600"
       : "bg-rose-100 text-rose-700";
 
   return (
     <div className={compact ? "flex items-center justify-between gap-3" : "text-center"}>
       <div className={`flex items-center gap-2 ${compact ? "" : "justify-center"}`}>
-        <CreditCard size={compact ? 20 : 23} className="text-sky-600" />
+        <CreditCard size={compact ? 20 : 23} className="text-[var(--color-text-soft)]" />
         <Icon
           size={18}
-          className={
-            online
-              ? "text-emerald-600"
-              : linked
-                ? "text-sky-600"
-                : "text-slate-500"
-          }
+          className={online ? "text-emerald-600" : "text-slate-500"}
         />
         <span className={`rounded-full px-2 py-1 text-xs font-bold ${statusClass}`}>
           {label}
