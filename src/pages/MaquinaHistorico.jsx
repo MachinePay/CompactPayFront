@@ -248,7 +248,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <td>${brasiliaDate(item.data).format("DD/MM/YYYY HH:mm")}</td>
             <td>${item.is_test ? "Teste" : formatProvider(item.provider)}</td>
             <td>${formatPaymentMethod(item)}</td>
-            <td>${formatPulseStatus(item.pulse_status)}</td>
+            <td>${formatPulseStatus(item.pulse_status, item.is_test)}</td>
             <td>R$ ${Number(item.valor).toFixed(2)}</td>
             <td>R$ ${Number(item.total).toFixed(2)}</td>
             <td>${item.provider_payment_id || "--"}</td>
@@ -521,7 +521,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         brasiliaDate(item.data).format("YYYY-MM-DD HH:mm:ss"),
         item.is_test ? "teste" : formatProvider(item.provider),
         formatPaymentMethod(item),
-        formatPulseStatus(item.pulse_status),
+        formatPulseStatus(item.pulse_status, item.is_test),
         Number(item.valor || 0).toFixed(2),
         Number(item.total || 0).toFixed(2),
         item.provider_payment_id || "",
@@ -1585,7 +1585,7 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                   <td className="px-4 py-4 min-w-[220px]">
                     {item.is_test ? (
                       <div className="rounded-[16px] bg-amber-200 px-4 py-3 text-center text-lg font-extrabold uppercase text-amber-950">
-                        Pagamento de teste
+                        Pulso teste
                       </div>
                     ) : (
                       <div className="rounded-[16px] bg-[var(--color-primary-soft)] px-4 py-3">
@@ -1610,7 +1610,7 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                     </button>
                   </td>
                   <td className="px-4 py-4 min-w-[150px]">
-                    <PulseBadge status={item.pulse_status} />
+                    <PulseBadge status={item.pulse_status} isTest={item.is_test} />
                   </td>
                   <td className="px-4 py-4 min-w-[170px]">
                     <StatusBadge item={item} />
@@ -1665,7 +1665,7 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
             {brasiliaDate(item.data).format("DD/MM/YYYY HH:mm:ss")}
           </div>
           <div className="mt-1 text-base font-extrabold text-[var(--color-text)]">
-            {item.is_test ? "Pagamento de teste" : formatProvider(item.provider)}
+            {item.is_test ? "Pulso teste" : formatProvider(item.provider)}
           </div>
         </div>
         <StatusBadge item={item} />
@@ -1695,7 +1695,7 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
           </div>
         ) : null}
         <div className="col-span-2">
-          <PulseBadge status={item.pulse_status} />
+          <PulseBadge status={item.pulse_status} isTest={item.is_test} />
         </div>
       </div>
 
@@ -1772,27 +1772,27 @@ function TerminalBadge({ maquina, compact = false }) {
   );
 }
 
-function PulseBadge({ status }) {
+function PulseBadge({ status, isTest }) {
   const normalized = String(status || "").toLowerCase();
   const isFail = normalized.startsWith("falha");
   const isPending = ["pendente", "comando_enviado", "cmd_recebido", "cmd_duplicado", "pulso_iniciado", "pulso_enviado", "pulso_unitario", "pulso_sem_retorno"].includes(normalized);
-  const isTest = normalized === "teste";
+  const isTestStatus = normalized === "teste";
   return (
     <div className={`rounded-[14px] px-3 py-2 text-center text-xs font-bold ${
       isFail
         ? "bg-rose-50 text-[var(--color-error)]"
         : isPending
           ? "bg-sky-50 text-sky-700"
-          : isTest
+          : isTestStatus
             ? "bg-amber-100 text-amber-800"
             : "bg-emerald-50 text-[var(--color-success)]"
     }`}>
-      {formatPulseStatus(status)}
+      {formatPulseStatus(status, isTest)}
     </div>
   );
 }
 
-function formatPulseStatus(status) {
+function formatPulseStatus(status, isTest) {
   const normalized = String(status || "").toLowerCase();
   const labels = {
     pendente: "Aguardando envio",
@@ -1811,7 +1811,12 @@ function formatPulseStatus(status) {
     falha_publicacao: "Falha ao publicar",
     falha_cmd_ignorado: "Comando ignorado",
     falha_bloqueado: "Pulso bloqueado",
-    falha_dispositivo_offline: "Placa nao respondeu (estornado)",
+    // Pulso de teste nao envolve dinheiro de verdade - nao tem o que
+    // "estornar", so a placa simplesmente nao respondeu e o pulso nao foi
+    // enviado. So em pagamento real (nao teste) e' que isso vira estorno.
+    falha_dispositivo_offline: isTest
+      ? "Placa nao respondeu (pulso nao enviado)"
+      : "Placa nao respondeu (estornado)",
     update_enviado: "Atualizacao enviada",
     update_iniciado: "Baixando firmware",
     update_ok: "Reiniciando",
