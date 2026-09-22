@@ -1522,7 +1522,6 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                 <th className="px-4 py-4">Opcoes</th>
                 <th className="px-4 py-4">Data</th>
                 <th className="px-4 py-4">Valor</th>
-                <th className="px-4 py-4">Total</th>
                 <th className="px-4 py-4">Ponto</th>
                 <th className="px-4 py-4">Maquininha</th>
                 <th className="px-4 py-4">Banco/Metodo</th>
@@ -1564,10 +1563,6 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                   <td className="px-4 py-4">
                     <MoneyBadge value={item.valor} tone="blue" />
                     <div className="mt-1 text-xs text-[var(--color-primary)]">Cliente pagou</div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <MoneyBadge value={item.total} tone="green" />
-                    <div className="mt-1 text-xs text-[var(--color-success)]">Voce recebeu</div>
                   </td>
                   <td className="px-4 py-4 min-w-[190px]">
                     <div className="rounded-[14px] bg-[var(--color-primary-soft)] px-3 py-2 font-semibold text-[var(--color-primary)]">
@@ -1672,13 +1667,9 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
+        <div className="col-span-2 rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
           <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">Valor</div>
           <div className="mt-1 font-extrabold text-[var(--color-text)]">R$ {Number(item.valor || 0).toFixed(2)}</div>
-        </div>
-        <div className="rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
-          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">Total</div>
-          <div className="mt-1 font-extrabold text-[var(--color-success)]">R$ {Number(item.total || 0).toFixed(2)}</div>
         </div>
         <div className="col-span-2 rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
           <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">Ponto</div>
