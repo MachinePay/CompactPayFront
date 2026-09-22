@@ -1069,6 +1069,18 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               Fazer fechamento do periodo
             </button>
           )}
+          {!isAggregate && user?.role === "admin" && historico.fechamentos?.length > 0 ? (
+            <button
+              type="button"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100 sm:w-auto disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => requestDesfazerFechamento(historico.fechamentos[0])}
+              disabled={desfazendoFechamentoId === String(historico.fechamentos[0]?.id)}
+              title={`Desfaz o fechamento de ${dayjs(historico.fechamentos[0].periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${dayjs(historico.fechamentos[0].periodo_fim).format("DD/MM/YYYY HH:mm")}`}
+            >
+              <Undo2 size={16} />
+              Desfazer ultimo fechamento
+            </button>
+          ) : null}
         </div>
 
         {loading ? (
@@ -1160,38 +1172,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
 
             <div className="grid gap-4 xl:grid-cols-2">
               <HistoryTable
-                title="Fechamentos salvos"
-                empty="Nenhum fechamento salvo para esta maquina ainda."
-                columns={
-                  user?.role === "admin"
-                    ? ["Criado em", "Periodo", "Total", "Por", "Acoes"]
-                    : ["Criado em", "Periodo", "Total", "Por"]
-                }
-                rows={historico.fechamentos.map((item) => {
-                  const row = [
-                    brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
-                    `${dayjs(item.periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${dayjs(item.periodo_fim).format("DD/MM/YYYY HH:mm")}`,
-                    `R$ ${Number(item.total_pagamentos).toFixed(2)}`,
-                    item.criado_por_email,
-                  ];
-                  if (user?.role === "admin") {
-                    row.push(
-                      <button
-                        key={`desfazer-${item.id}`}
-                        type="button"
-                        className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                        onClick={() => requestDesfazerFechamento(item)}
-                        disabled={desfazendoFechamentoId === String(item.id)}
-                      >
-                        <Undo2 size={13} />
-                        {desfazendoFechamentoId === String(item.id) ? "Desfazendo" : "Desfazer"}
-                      </button>,
-                    );
-                  }
-                  return row;
-                })}
-              />
-              <HistoryTable
                 title="Auditoria"
                 empty="Nenhum evento de auditoria encontrado."
                 columns={["Data", "Acao", "Usuario", "Descricao"]}
@@ -1204,6 +1184,41 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               />
             </div>
             </>
+            )}
+
+            {isAggregate ? null : (
+            <HistoryTable
+              title="Fechamentos salvos"
+              empty="Nenhum fechamento salvo para esta maquina ainda."
+              columns={
+                user?.role === "admin"
+                  ? ["Criado em", "Periodo", "Total", "Por", "Acoes"]
+                  : ["Criado em", "Periodo", "Total", "Por"]
+              }
+              rows={historico.fechamentos.map((item) => {
+                const row = [
+                  brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
+                  `${dayjs(item.periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${dayjs(item.periodo_fim).format("DD/MM/YYYY HH:mm")}`,
+                  `R$ ${Number(item.total_pagamentos).toFixed(2)}`,
+                  item.criado_por_email,
+                ];
+                if (user?.role === "admin") {
+                  row.push(
+                    <button
+                      key={`desfazer-${item.id}`}
+                      type="button"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => requestDesfazerFechamento(item)}
+                      disabled={desfazendoFechamentoId === String(item.id)}
+                    >
+                      <Undo2 size={13} />
+                      {desfazendoFechamentoId === String(item.id) ? "Desfazendo" : "Desfazer"}
+                    </button>,
+                  );
+                }
+                return row;
+              })}
+            />
             )}
 
             <div className="grid gap-4 xl:grid-cols-2">
