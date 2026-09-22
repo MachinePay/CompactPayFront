@@ -306,7 +306,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <div class="card"><strong>Total fisico</strong><br />R$ ${Number(snapshot.resumo.total_fisico).toFixed(2)}</div>
             <div class="card"><strong>Qtde pagamentos</strong><br />${snapshot.resumo.quantidade_pagamentos}</div>
             <div class="card"><strong>Qtde testes</strong><br />${snapshot.resumo.quantidade_testes}</div>
-            <div class="card"><strong>Qtde saidas</strong><br />${snapshot.resumo.quantidade_saidas}</div>
+            <div class="card"><strong>Qtde de pelucias entregues</strong><br />${snapshot.resumo.quantidade_saidas}</div>
           </div>
           <h2>Resumo diario</h2>
           <table>
@@ -1204,6 +1204,9 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                   item.metodo,
                   `R$ ${Number(item.valor).toFixed(2)}`,
                 ])}
+                rowClassNames={historico.pagamentos.map((item) =>
+                  item.fechado ? "bg-slate-50 text-slate-400" : "",
+                )}
               />
               <HistoryTable
                 title="Saidas"
@@ -1215,6 +1218,9 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                   item.metodo,
                   `R$ ${Number(item.valor).toFixed(2)}`,
                 ])}
+                rowClassNames={historico.saidas.map((item) =>
+                  item.fechado ? "bg-slate-50 text-slate-400" : "",
+                )}
               />
               <HistoryTable
                 title="Testes"
@@ -1224,6 +1230,9 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                   brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
                   item.descricao,
                 ])}
+                rowClassNames={historico.testes.map((item) =>
+                  item.fechado ? "bg-slate-50 text-slate-400" : "",
+                )}
               />
             </div>
             </>
@@ -1503,9 +1512,11 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                   className={`border-t align-top text-sm text-[var(--color-text)] ${
                     pulseFailed
                       ? "border-rose-200 bg-rose-100"
-                      : item.is_test
-                        ? "border-[var(--color-border)] bg-amber-50/80"
-                        : "border-[var(--color-border)] bg-white"
+                      : item.fechado
+                        ? "border-[var(--color-border)] bg-slate-100 grayscale opacity-60"
+                        : item.is_test
+                          ? "border-[var(--color-border)] bg-amber-50/80"
+                          : "border-[var(--color-border)] bg-white"
                   }`}
                 >
                   <td className="px-4 py-4">
@@ -1613,9 +1624,11 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
       className={`rounded-[18px] border p-4 ${
         pulseFailed
           ? "border-rose-200 bg-rose-100"
-          : item.is_test
-            ? "border-[var(--color-border)] bg-amber-50"
-            : "border-[var(--color-border)] bg-white"
+          : item.fechado
+            ? "border-[var(--color-border)] bg-slate-100 grayscale opacity-60"
+            : item.is_test
+              ? "border-[var(--color-border)] bg-amber-50"
+              : "border-[var(--color-border)] bg-white"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -1855,7 +1868,7 @@ function formatPeriodoLabel(periodo, range) {
   return periodo === "dia" ? dayjs().format("DD/MM/YYYY") : "Mes atual";
 }
 
-function HistoryTable({ title, columns, rows, empty }) {
+function HistoryTable({ title, columns, rows, empty, rowClassNames }) {
   return (
     <div className="overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-white">
       <div className="border-b border-[var(--color-border)] bg-[var(--color-bg-muted)] px-5 py-4 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
@@ -1879,7 +1892,10 @@ function HistoryTable({ title, columns, rows, empty }) {
             </thead>
             <tbody>
               {rows.map((row, index) => (
-                <tr key={index} className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]">
+                <tr
+                  key={index}
+                  className={`border-t border-[var(--color-border)] text-sm text-[var(--color-text)] ${rowClassNames?.[index] || ""}`}
+                >
                   {row.map((cell, cellIndex) => (
                     <td key={cellIndex} className="px-5 py-4">
                       {cell}
