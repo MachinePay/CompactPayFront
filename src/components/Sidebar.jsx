@@ -231,19 +231,23 @@ export default function Sidebar() {
           </nav>
 
           <div className="hidden rounded-[28px] bg-[radial-gradient(circle_at_top,_rgba(52,148,92,0.35),transparent_35%),linear-gradient(145deg,#07160d_0%,#10331f_55%,#15512f_100%)] p-5 text-white shadow-[0_18px_48px_rgba(19,51,31,0.34)] lg:block">
-            <div className="text-xs uppercase tracking-[0.28em] text-white/55">
-              Conta
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/12 text-base font-bold uppercase">
+                {(user?.email || "Operador").charAt(0)}
+              </div>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold">
+                  {user?.email || "Operador"}
+                </div>
+                <div className="mt-0.5 inline-flex items-center rounded-full bg-white/12 px-2.5 py-0.5 text-[11px] font-medium text-white/80">
+                  {user?.role === "admin" ? "Administrador" : "Cliente"}
+                </div>
+              </div>
             </div>
-            <div className="mt-3 text-lg font-semibold">
-              {user?.email || "Operador"}
-            </div>
-            <div className="mt-1 text-sm text-white/70">
-              {user?.role === "admin" ? "Administrador" : "Cliente"}
-            </div>
-            <div className="mt-6 rounded-full border border-white/15 bg-white/10 px-4 py-3 text-sm text-white/85">
+            <p className="mt-4 text-sm leading-relaxed text-white/70">
               Gestao de maquinas, usuarios e desempenho financeiro em um unico
               painel.
-            </div>
+            </p>
           </div>
         </div>
 
