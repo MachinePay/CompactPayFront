@@ -259,12 +259,6 @@ export default function Dashboard() {
   const selectedMachine = maquinas.find(
     (maquina) => maquina.id_hardware === selectedMachineId,
   );
-  const machineStatusRows = (selectedMachine ? [selectedMachine] : maquinas)
-    .slice()
-    .sort(
-      (left, right) => Number(right.status_online) - Number(left.status_online),
-    )
-    .slice(0, 6);
 
   const statCards = [
     {
@@ -281,7 +275,7 @@ export default function Dashboard() {
       icon: Wallet,
     },
     {
-      label: "Faturamento (filtro)",
+      label: "Faturamento (periodo filtro)",
       value: `R$ ${stats.faturamento_total.toFixed(2)}`,
       caption: "Entrada consolidada do periodo selecionado",
       icon: ArrowUpRight,
@@ -911,86 +905,6 @@ export default function Dashboard() {
           </Card>
         </section>
       </div>
-      <Card className="rounded-[22px] sm:rounded-[30px]">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <div className="text-xl font-bold text-[var(--color-text)]">
-              Maquinas e status
-            </div>
-            <div className="mt-1 text-sm text-[var(--color-text-soft)]">
-              Semaforo operacional e ultima atividade do recorte atual.
-            </div>
-          </div>
-          <span className="w-fit rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-soft)]">
-            {machineStatusRows.length} itens
-          </span>
-        </div>
-        <div className="mt-5 overflow-hidden rounded-[24px] border border-[var(--color-border)]">
-          {machineStatusRows.length === 0 ? (
-            <div className="px-5 py-8 text-sm text-[var(--color-text-soft)]">
-              Nenhuma maquina encontrada para esse recorte.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-[520px] bg-white text-sm">
-                <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
-                  <tr>
-                    <th className="px-5 py-4">Maquina</th>
-                    <th className="px-5 py-4">Status</th>
-                    <th className="px-5 py-4">Ultima atividade</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {machineStatusRows.map((maquina) => (
-                    <tr
-                      key={maquina.id_hardware}
-                      className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
-                    >
-                      <td className="px-5 py-4">
-                        <div className="font-semibold">
-                          {maquina.nome || maquina.id_hardware}
-                        </div>
-                        <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                          {maquina.localizacao || maquina.id_hardware}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span
-                          className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold"
-                          style={{
-                            backgroundColor:
-                              maquina.status_operacional === "operando"
-                                ? "var(--color-primary-soft)"
-                                : maquina.status_operacional === "atencao"
-                                  ? "#fff2d8"
-                                  : "#fee2e2",
-                            color:
-                              maquina.status_operacional === "operando"
-                                ? "var(--color-success)"
-                                : maquina.status_operacional === "atencao"
-                                  ? "var(--color-warning)"
-                                  : "var(--color-error)",
-                          }}
-                        >
-                          {maquina.status_online ? "Online" : "Offline"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-[var(--color-text-soft)]">
-                        {maquina.ultima_atividade_em
-                          ? new Date(
-                              maquina.ultima_atividade_em,
-                            ).toLocaleString("pt-BR")
-                          : "Sem atividade no periodo"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </Card>
-
       {isAdmin ? (
         <Card className="rounded-[22px] sm:rounded-[30px]">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
