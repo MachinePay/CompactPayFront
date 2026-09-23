@@ -1934,7 +1934,12 @@ function getBankLogo(bankName) {
 const PAYMENT_METHOD_LOGOS = {
   master: { src: "/formasDePagamento/MaterCard.png", label: "Mastercard" },
   mastercard: { src: "/formasDePagamento/MaterCard.png", label: "Mastercard" },
+  // O Mercado Pago usa payment_method_id proprio pra variante de DEBITO de
+  // cada bandeira (ex.: "debmaster" = Mastercard debito, nao "master") -
+  // sem isso aqui esses pagamentos caiam em "Outra" a toa.
+  debmaster: { src: "/formasDePagamento/MaterCard.png", label: "Mastercard" },
   visa: { src: "/formasDePagamento/visa.png", label: "Visa" },
+  debvisa: { src: "/formasDePagamento/visa.png", label: "Visa" },
   pix: { src: "/formasDePagamento/pix.png", label: "Pix" },
   account_money: { src: "/formasDePagamento/mercadoCredito.png", label: "Mercado Credito" },
 };
