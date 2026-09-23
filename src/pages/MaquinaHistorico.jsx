@@ -1582,13 +1582,15 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                       <div className="rounded-[16px] bg-amber-200 px-4 py-3 text-center text-lg font-extrabold uppercase text-amber-950">
                         Pulso teste
                       </div>
-                    ) : (
+                    ) : item.payment_type === "pagamento_app_agarra" || isPhysicalSale(item) ? (
                       <div className="rounded-[16px] bg-[var(--color-primary-soft)] px-4 py-3">
                         <div className="font-semibold text-[var(--color-primary)]">{formatProvider(item.provider)}</div>
                         <div className="mt-1 text-xs text-[var(--color-text-soft)]">
                           {formatPaymentMethod(item)}
                         </div>
                       </div>
+                    ) : (
+                      <PaymentMethodBadge item={item} />
                     )}
                   </td>
                   <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[135px]">
@@ -1680,6 +1682,11 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
               Maquininha
             </div>
             <TerminalBadge maquina={maquina} compact />
+          </div>
+        ) : null}
+        {!item.is_test && item.payment_type !== "pagamento_app_agarra" && !isPhysicalSale(item) ? (
+          <div className="col-span-2">
+            <PaymentMethodBadge item={item} />
           </div>
         ) : null}
         <div className="col-span-2">
@@ -1882,7 +1889,77 @@ function formatPaymentMethod(item) {
     return `FISICO - ${item.pulse_count} pulsos`;
   }
   const parts = [item.payment_type, item.card_brand, item.bank_name].filter(Boolean);
-  return parts.length ? parts.join(" - ") : "Metodo nao informado";
+  const base = parts.length ? parts.join(" - ") : "Metodo nao informado";
+  return item.card_last_four ? `${base} (**** ${item.card_last_four})` : base;
+}
+
+// Cores por bandeira - so pra diferenciar de relance no relatorio, nao sao
+// os logos oficiais das bandeiras (evita usar marca registrada sem licenca).
+const CARD_BRAND_STYLES = {
+  master: { label: "Mastercard", className: "bg-orange-100 text-orange-700" },
+  mastercard: { label: "Mastercard", className: "bg-orange-100 text-orange-700" },
+  visa: { label: "Visa", className: "bg-blue-100 text-blue-700" },
+  elo: { label: "Elo", className: "bg-amber-100 text-amber-800" },
+  amex: { label: "Amex", className: "bg-sky-100 text-sky-700" },
+  hipercard: { label: "Hipercard", className: "bg-rose-100 text-rose-700" },
+  pix: { label: "Pix", className: "bg-teal-100 text-teal-700" },
+  account_money: { label: "Saldo Mercado Pago", className: "bg-sky-100 text-sky-700" },
+};
+
+const PAYMENT_TYPE_LETTERS = {
+  credit_card: "C",
+  debit_card: "D",
+  bank_transfer: "P",
+  digital_currency: "P",
+  ticket: "B",
+  atm: "B",
+};
+
+function capitalizeWord(value) {
+  const text = String(value || "");
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
+function cardBrandInfo(cardBrand) {
+  const key = String(cardBrand || "").toLowerCase();
+  return (
+    CARD_BRAND_STYLES[key] || {
+      label: cardBrand ? capitalizeWord(cardBrand) : "Metodo nao informado",
+      className: "bg-slate-100 text-slate-600",
+    }
+  );
+}
+
+function PaymentMethodBadge({ item }) {
+  const brand = cardBrandInfo(item.card_brand);
+  const isPix = String(item.payment_type).toLowerCase() === "bank_transfer" || String(item.card_brand).toLowerCase() === "pix";
+  const letter = isPix ? "P" : PAYMENT_TYPE_LETTERS[item.payment_type] || "$";
+  return (
+    <div className="rounded-[16px] bg-[var(--color-primary-soft)] px-3 py-2.5">
+      <div className="mb-1.5 truncate text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-primary)]">
+        {formatProvider(item.provider)}
+      </div>
+      <div className="flex items-center gap-2">
+        <div
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold text-white ${
+            isPix ? "bg-teal-600" : "bg-slate-700"
+          }`}
+        >
+          {letter}
+        </div>
+        <div className="min-w-0">
+          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold ${brand.className}`}>
+            {brand.label}
+          </span>
+          {item.card_last_four ? (
+            <div className="mt-1 text-xs font-semibold tracking-wide text-[var(--color-text-soft)]">
+              •••• {item.card_last_four}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function formatResumoData(value, label) {
