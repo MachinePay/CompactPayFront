@@ -4,6 +4,7 @@ import {
   Bell,
   Cpu,
   Info,
+  PowerOff,
   Radio,
   RefreshCcw,
   Search,
@@ -195,13 +196,15 @@ export default function AlertasMaquinas() {
         </div>
       </section>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard label="Total" value={payload.resumo.total} icon={<Bell size={18} />} />
         <SummaryCard label="Criticos" value={payload.resumo.criticos} icon={<XCircle size={18} />} tone="danger" />
+        <SummaryCard label="Offline" value={payload.resumo.offline} icon={<PowerOff size={18} />} tone="danger" />
+        <SummaryCard label="Pulso ausente" value={payload.resumo.pulso_ausente} icon={<Zap size={18} />} tone="danger" />
         <SummaryCard label="Avisos" value={payload.resumo.avisos} icon={<AlertTriangle size={18} />} tone="warning" />
         <SummaryCard label="Wi-Fi ruim" value={payload.resumo.wifi_ruim} icon={<Wifi size={18} />} tone="warning" />
-        <SummaryCard label="Pulso ausente" value={payload.resumo.pulso_ausente} icon={<Zap size={18} />} tone="danger" />
         <SummaryCard label="Ruido" value={payload.resumo.ruido_contador} icon={<Radio size={18} />} tone="warning" />
+        <SummaryCard label="Firmware" value={payload.resumo.firmware} icon={<Cpu size={18} />} tone="warning" />
       </div>
 
       <section className="overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-white">
