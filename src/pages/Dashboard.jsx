@@ -849,9 +849,9 @@ export default function Dashboard() {
 
             <div className="mt-6 grid gap-3 text-sm sm:mt-8 sm:grid-cols-3">
               {[
-                ["Faturamento", `R$ ${stats.faturamento_total.toFixed(0)}`],
-                ["Ativas", stats.maquinas_ativas],
-                ["Alertas", stats.alertas],
+                ["Total de maquinas", stats.total_maquinas],
+                ["Online", stats.maquinas_ativas],
+                ["Offline", Math.max(0, stats.total_maquinas - stats.maquinas_ativas)],
               ].map(([label, value]) => (
                 <div
                   key={label}
