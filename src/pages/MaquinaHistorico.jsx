@@ -1964,6 +1964,10 @@ const PAYMENT_METHOD_LOGOS = {
   debmaster: { src: "/formasDePagamento/MaterCard.png", label: "Mastercard" },
   visa: { src: "/formasDePagamento/visa.png", label: "Visa" },
   debvisa: { src: "/formasDePagamento/visa.png", label: "Visa" },
+  // So temos a arte da Elo Debito - credito Elo ("elo" sozinho) continua
+  // caindo em "Outra" ate ter uma imagem propria (a de debito ficaria
+  // enganosa numa venda de credito).
+  debelo: { src: "/formasDePagamento/elo.png", label: "Elo" },
   pix: { src: "/formasDePagamento/pix.png", label: "Pix" },
   account_money: { src: "/formasDePagamento/mercadoCredito.png", label: "Mercado Credito" },
 };
