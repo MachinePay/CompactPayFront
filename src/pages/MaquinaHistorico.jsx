@@ -1786,7 +1786,7 @@ function TerminalBadge({ maquina, compact = false }) {
         {maquina?.terminal_id || "ID nao identificado"}
       </div>
       {online && maquina?.terminal_last_payment_at ? (
-        <div className={`${compact ? "hidden" : "mt-1"} text-[10px] font-medium text-[var(--color-text-soft)]`}>
+        <div className="mt-1 break-words text-[10px] font-medium text-[var(--color-text-soft)]">
           Pagamento confirmado às{" "}
           {brasiliaDate(maquina.terminal_last_payment_at).format("HH:mm:ss")}
         </div>

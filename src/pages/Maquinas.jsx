@@ -1883,7 +1883,7 @@ function MachineMobileCard({
           <>
             <button
               type="button"
-              className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+              className="col-span-2 pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
               onClick={onSendUpdate}
               disabled={
                 sendingUpdateId === machine.id_hardware ||
@@ -1923,7 +1923,13 @@ function MachineMobileCard({
             </button>
             <button
               type="button"
-              className={`col-span-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition ${
+              title={
+                "Filtro saida pos-credito: " +
+                (machine.ignorar_saida_pos_credito
+                  ? "ativo (clique para desativar)"
+                  : "inativo (clique para ativar)")
+              }
+              className={`inline-flex min-h-[42px] items-center justify-center gap-1.5 rounded-full border px-2 py-2 text-xs font-semibold transition ${
                 machine.ignorar_saida_pos_credito
                   ? "border-amber-300 bg-amber-100 text-amber-700"
                   : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
@@ -1931,10 +1937,10 @@ function MachineMobileCard({
               onClick={onToggleFiltroSaida}
               disabled={togglingFiltroSaida}
             >
-              <ShieldAlert size={15} className={togglingFiltroSaida ? "animate-spin" : ""} />
-              {machine.ignorar_saida_pos_credito
-                ? "Filtro saida pos-credito: ativo"
-                : "Filtro saida pos-credito: inativo"}
+              <ShieldAlert size={14} className={togglingFiltroSaida ? "shrink-0 animate-spin" : "shrink-0"} />
+              <span className="truncate">
+                {machine.ignorar_saida_pos_credito ? "Filtro: ativo" : "Filtro: inativo"}
+              </span>
             </button>
             <button
               type="button"
