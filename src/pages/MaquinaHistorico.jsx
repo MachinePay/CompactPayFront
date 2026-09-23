@@ -1708,7 +1708,10 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
 // Foto da maquininha por modelo, pelo prefixo do terminal_id que o Mercado
 // Pago manda (ex.: "GERTEC_MP35P__8701372444576171" -> Gertec). Sem match
 // conhecido, cai no icone generico de cartao.
-const TERMINAL_DEVICE_IMAGES = [{ prefix: "gertec", src: "/maquininhas/gertec.png" }];
+const TERMINAL_DEVICE_IMAGES = [
+  { prefix: "gertec", src: "/maquininhas/gertec.png" },
+  { prefix: "pax_q92", src: "/maquininhas/pontiPro3Anarela.png" },
+];
 
 function getTerminalDeviceImage(terminalId) {
   const normalized = String(terminalId || "").toLowerCase();
