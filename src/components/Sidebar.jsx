@@ -35,6 +35,17 @@ export default function Sidebar() {
   const navItems = (
     <ul className="space-y-2">
       <li>
+        <NavLink
+          to="/dashboard"
+          end
+          className={linkClassName}
+          onClick={closeMobile}
+        >
+          <Home size={20} /> Dashboard
+        </NavLink>
+      </li>
+
+      <li>
         <NavLink to="/maquinas" className={linkClassName} onClick={closeMobile}>
           <Server size={20} /> Maquinas
         </NavLink>
@@ -49,17 +60,6 @@ export default function Sidebar() {
       <li>
         <NavLink to="/alertas-maquinas" className={linkClassName} onClick={closeMobile}>
           <Bell size={20} /> Alertas
-        </NavLink>
-      </li>
-
-      <li>
-        <NavLink
-          to="/dashboard"
-          end
-          className={linkClassName}
-          onClick={closeMobile}
-        >
-          <Home size={20} /> Dashboard
         </NavLink>
       </li>
 
@@ -146,7 +146,7 @@ export default function Sidebar() {
       <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--color-border)] bg-white/95 px-3 py-2 shadow-[0_8px_24px_rgba(34,61,43,0.08)] backdrop-blur lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <Link
-            to="/maquinas"
+            to="/dashboard"
             className="flex min-w-0 items-center gap-2"
             onClick={closeMobile}
           >
@@ -203,7 +203,7 @@ export default function Sidebar() {
       <aside className="app-panel hidden w-[260px] flex-col justify-between gap-3 p-4 lg:sticky lg:top-5 lg:flex lg:h-[calc(100vh-2.5rem)] lg:overflow-y-auto">
         <div className="space-y-3 lg:space-y-8">
           <Link
-            to="/maquinas"
+            to="/dashboard"
             className="block rounded-[18px] bg-[linear-gradient(135deg,#ffffff_0%,#eff5ef_100%)] p-3 soft-ring lg:rounded-[24px] lg:p-5"
           >
             <div className="flex items-center gap-3">

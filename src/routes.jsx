@@ -89,7 +89,7 @@ function RouteContent() {
             path="/"
             element={
               <PrivatePage>
-                <Maquinas />
+                <Dashboard />
               </PrivatePage>
             }
           />
