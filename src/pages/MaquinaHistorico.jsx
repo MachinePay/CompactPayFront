@@ -998,7 +998,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <button
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
-              onClick={handleExportPdf}
+              onClick={() => handleExportPdf()}
             >
               <FileDown size={16} />
               Fechamento PDF
@@ -1069,7 +1069,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               Fazer fechamento do periodo
             </button>
           )}
-          {!isAggregate && user?.role === "admin" && historico.fechamentos?.length > 0 ? (
+          {!isAggregate && historico.fechamentos?.length > 0 ? (
             <button
               type="button"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100 sm:w-auto disabled:cursor-not-allowed disabled:opacity-60"
@@ -1190,11 +1190,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <HistoryTable
               title="Fechamentos salvos"
               empty="Nenhum fechamento salvo para esta maquina ainda."
-              columns={
-                user?.role === "admin"
-                  ? ["Criado em", "Periodo", "Total", "Por", "Acoes"]
-                  : ["Criado em", "Periodo", "Total", "Por"]
-              }
+              columns={["Criado em", "Periodo", "Total", "Por", "Acoes"]}
               rows={historico.fechamentos.map((item) => {
                 const row = [
                   brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
@@ -1202,20 +1198,18 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                   `R$ ${Number(item.total_pagamentos).toFixed(2)}`,
                   item.criado_por_email,
                 ];
-                if (user?.role === "admin") {
-                  row.push(
-                    <button
-                      key={`desfazer-${item.id}`}
-                      type="button"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      onClick={() => requestDesfazerFechamento(item)}
-                      disabled={desfazendoFechamentoId === String(item.id)}
-                    >
-                      <Undo2 size={13} />
-                      {desfazendoFechamentoId === String(item.id) ? "Desfazendo" : "Desfazer"}
-                    </button>,
-                  );
-                }
+                row.push(
+                  <button
+                    key={`desfazer-${item.id}`}
+                    type="button"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-[var(--color-error)] transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={() => requestDesfazerFechamento(item)}
+                    disabled={desfazendoFechamentoId === String(item.id)}
+                  >
+                    <Undo2 size={13} />
+                    {desfazendoFechamentoId === String(item.id) ? "Desfazendo" : "Desfazer"}
+                  </button>,
+                );
                 return row;
               })}
             />
