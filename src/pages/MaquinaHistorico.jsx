@@ -1705,6 +1705,17 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
   );
 }
 
+// Foto da maquininha por modelo, pelo prefixo do terminal_id que o Mercado
+// Pago manda (ex.: "GERTEC_MP35P__8701372444576171" -> Gertec). Sem match
+// conhecido, cai no icone generico de cartao.
+const TERMINAL_DEVICE_IMAGES = [{ prefix: "gertec", src: "/maquininhas/gertec.png" }];
+
+function getTerminalDeviceImage(terminalId) {
+  const normalized = String(terminalId || "").toLowerCase();
+  const match = TERMINAL_DEVICE_IMAGES.find((device) => normalized.startsWith(device.prefix));
+  return match?.src || null;
+}
+
 function TerminalBadge({ maquina, compact = false }) {
   const status = maquina?.terminal_status || "not_linked";
   const online = status === "online";
@@ -1712,6 +1723,7 @@ function TerminalBadge({ maquina, compact = false }) {
   const notLinked = status === "not_linked";
   const linked = status === "linked";
   const Icon = online ? Wifi : linked ? CreditCard : WifiOff;
+  const deviceImage = getTerminalDeviceImage(maquina?.terminal_id);
   const label = online
     ? "Online"
     : linked
@@ -1730,7 +1742,15 @@ function TerminalBadge({ maquina, compact = false }) {
   return (
     <div className={compact ? "flex items-center justify-between gap-3" : "text-center"}>
       <div className={`flex items-center gap-2 ${compact ? "" : "justify-center"}`}>
-        <CreditCard size={compact ? 20 : 23} className="text-[var(--color-text-soft)]" />
+        {deviceImage ? (
+          <img
+            src={deviceImage}
+            alt="Maquininha"
+            className={compact ? "h-8 w-auto shrink-0 object-contain" : "h-11 w-auto shrink-0 object-contain"}
+          />
+        ) : (
+          <CreditCard size={compact ? 20 : 23} className="text-[var(--color-text-soft)]" />
+        )}
         <Icon
           size={18}
           className={online ? "text-emerald-600" : "text-slate-500"}
