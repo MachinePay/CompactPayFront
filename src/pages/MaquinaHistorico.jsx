@@ -1931,6 +1931,19 @@ const BANK_LOGOS = [
   { keyword: "itau", src: "/bancos/itau.png", label: "Itau" },
   { keyword: "mercado pago", src: "/bancos/mercadoPago.png", label: "Mercado Pago" },
   { keyword: "caixa", src: "/bancos/caixa.png", label: "Caixa" },
+  { keyword: "bradesco", src: "/bancos/bradesco.png", label: "Bradesco" },
+  { keyword: "c6", src: "/bancos/C6Bank.png", label: "C6 Bank" },
+  { keyword: "banco pan", src: "/bancos/BancoPan.png", label: "Banco Pan" },
+  { keyword: "will bank", src: "/bancos/WillBank.png", label: "Will Bank" },
+  { keyword: "neon", src: "/bancos/Neon.png", label: "Neon" },
+  { keyword: "next", src: "/bancos/Next.png", label: "Next" },
+  { keyword: "pagbank", src: "/bancos/PagBank.png", label: "PagBank" },
+  { keyword: "pagseguro", src: "/bancos/PagBank.png", label: "PagBank" },
+  { keyword: "banco original", src: "/bancos/BancoOriginal.png", label: "Banco Original" },
+  { keyword: "porto seguro", src: "/bancos/PortoSeguro.png", label: "Porto Seguro" },
+  { keyword: "digio", src: "/bancos/Digio.png", label: "Digio" },
+  { keyword: "votorantim", src: "/bancos/BVBancoVotorantim.png", label: "BV" },
+  { keyword: "banco bv", src: "/bancos/BVBancoVotorantim.png", label: "BV" },
 ];
 
 // "Lancamento manual" (provider=manual) nao vem do Mercado Pago - nao tem
