@@ -200,7 +200,7 @@ export default function Sidebar() {
         </div>
       ) : null}
 
-      <aside className="app-panel hidden w-[260px] flex-col justify-between gap-3 p-4 lg:flex">
+      <aside className="app-panel hidden w-[260px] flex-col justify-between gap-3 p-4 lg:sticky lg:top-5 lg:flex lg:h-[calc(100vh-2.5rem)] lg:overflow-y-auto">
         <div className="space-y-3 lg:space-y-8">
           <Link
             to="/maquinas"
