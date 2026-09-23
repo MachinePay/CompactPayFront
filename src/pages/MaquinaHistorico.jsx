@@ -1913,7 +1913,14 @@ const BANK_LOGOS = [
   { keyword: "inter", src: "/bancos/inter.png", label: "Inter" },
   { keyword: "itau", src: "/bancos/itau.png", label: "Itau" },
   { keyword: "mercado pago", src: "/bancos/mercadoPago.png", label: "Mercado Pago" },
+  { keyword: "caixa", src: "/bancos/caixa.png", label: "Caixa" },
 ];
+
+// "Lancamento manual" (provider=manual) nao vem do Mercado Pago - nao tem
+// bank_name/card_brand pra casar contra as listas acima, entao usa um
+// icone fixo pra esse caso.
+const MANUAL_PAYMENT_ICON = { src: "/bancos/teste.png", label: "Pagamento manual" };
+const MANUAL_PAYMENT_METHOD_ICON = { src: "/formasDePagamento/teste.png", label: "Pagamento manual" };
 
 function getBankLogo(bankName) {
   if (!bankName) return null;
@@ -1949,10 +1956,12 @@ function getPaymentMethodLogo(cardBrand, paymentType) {
 }
 
 function PaymentMethodBadge({ item }) {
-  const bank = getBankLogo(item.bank_name);
-  const method = getPaymentMethodLogo(item.card_brand, item.payment_type);
+  const isManual = item.provider === "manual";
+  const isAccountMoney = String(item.card_brand || "").toLowerCase() === "account_money";
+  const bank = isManual ? MANUAL_PAYMENT_ICON : getBankLogo(item.bank_name);
+  const method = isManual ? MANUAL_PAYMENT_METHOD_ICON : getPaymentMethodLogo(item.card_brand, item.payment_type);
   const isPix = String(item.payment_type).toLowerCase() === "bank_transfer" || String(item.card_brand).toLowerCase() === "pix";
-  const letter = isPix ? "P" : PAYMENT_TYPE_LETTERS[item.payment_type] || "$";
+  const letter = isManual ? "T" : isAccountMoney ? "S" : isPix ? "P" : PAYMENT_TYPE_LETTERS[item.payment_type] || "$";
   return (
     <div className="rounded-[16px] bg-[var(--color-primary-soft)] px-3 py-2.5">
       <div className="mb-1.5 truncate text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-primary)]">
