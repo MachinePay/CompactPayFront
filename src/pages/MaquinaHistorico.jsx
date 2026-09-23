@@ -1058,6 +1058,15 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </label>
+          <button
+            type="button"
+            className="pill-button pill-button--primary inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold sm:w-auto"
+            onClick={handleApplyFilters}
+            disabled={loading || !machineId}
+          >
+            <Search size={16} />
+            {loading ? "Aplicando..." : "Aplicar filtro"}
+          </button>
           {isAggregate ? null : (
             <button
               type="button"
