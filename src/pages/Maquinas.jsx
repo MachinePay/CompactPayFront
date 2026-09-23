@@ -118,10 +118,13 @@ export default function Maquinas() {
   const [usuarios, setUsuarios] = useState([]);
   const [firmwareVersions, setFirmwareVersions] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [periodo, setPeriodo] = useState(persistedFilters.periodo || "mes");
-  const [dateRange, setDateRange] = useState(
-    persistedFilters.dateRange || { start: "", end: "" },
-  );
+  // periodo/dateRange NAO sao persistidos (so cliente_id) - um filtro de
+  // periodo diferente de "mes" ficando preso silenciosamente entre sessoes
+  // (inclusive apos logout/login, ja que localStorage nao depende da sessao)
+  // fazia o faturamento da lista bater diferente do total real do mes, sem
+  // nenhuma pista visual do motivo.
+  const [periodo, setPeriodo] = useState("mes");
+  const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [selectedClienteId, setSelectedClienteId] = useState(
     persistedFilters.cliente_id || "",
   );
@@ -150,9 +153,9 @@ export default function Maquinas() {
   useEffect(() => {
     localStorage.setItem(
       "compactpay.maquinas.filters",
-      JSON.stringify({ periodo, dateRange, cliente_id: selectedClienteId }),
+      JSON.stringify({ cliente_id: selectedClienteId }),
     );
-  }, [dateRange, periodo, selectedClienteId]);
+  }, [selectedClienteId]);
 
   const loadMaquinas = useCallback(async (options = {}) => {
     const silent = Boolean(options?.silent);
