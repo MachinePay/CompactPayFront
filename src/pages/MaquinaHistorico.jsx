@@ -1530,7 +1530,7 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Data</th>
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Valor</th>
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Ponto</th>
-                <th className="px-4 py-4 lg:py-5 xl:py-6">Maquininha/QR Code</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Maquininha</th>
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Banco/Metodo</th>
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Pago/Devolver</th>
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Tipo de pagamento</th>
@@ -1582,7 +1582,12 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                     ) : null}
                   </td>
                   <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[165px]">
-                    {isPixPayment(item) ? <PixQrBadge /> : maquina ? <TerminalBadge maquina={maquina} /> : null}
+                    {maquina ? <TerminalBadge maquina={maquina} /> : null}
+                    {isPixPayment(item) ? (
+                      <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-1 text-xs font-bold text-teal-700">
+                        <QrCode size={12} /> Via Pix (QR Code)
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[220px]">
                     {item.is_test ? (
@@ -1683,19 +1688,17 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
             {item.ponto || maquina?.nome || maquina?.id_hardware}
           </div>
         </div>
-        {isPixPayment(item) ? (
-          <div className="col-span-2 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3">
-            <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
-              QR Code
-            </div>
-            <PixQrBadge compact />
-          </div>
-        ) : maquina ? (
+        {maquina ? (
           <div className="col-span-2 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3">
             <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
               Maquininha
             </div>
             <TerminalBadge maquina={maquina} compact />
+            {isPixPayment(item) ? (
+              <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-1 text-xs font-bold text-teal-700">
+                <QrCode size={12} /> Via Pix (QR Code)
+              </div>
+            ) : null}
           </div>
         ) : null}
         {!item.is_test && item.payment_type !== "pagamento_app_agarra" && !isPhysicalSale(item) ? (
@@ -1738,26 +1741,6 @@ function getTerminalDeviceImage(terminalId) {
   const normalized = String(terminalId || "").toLowerCase();
   const match = TERMINAL_DEVICE_IMAGES.find((device) => normalized.startsWith(device.prefix));
   return match?.src || null;
-}
-
-function PixQrBadge({ compact = false }) {
-  return (
-    <div className={compact ? "flex items-center justify-between gap-3" : "text-center"}>
-      <div className={`flex items-center gap-2 ${compact ? "" : "justify-center"}`}>
-        <div
-          className={`flex shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white ${
-            compact ? "h-8 w-8" : "h-11 w-11"
-          }`}
-        >
-          <QrCode size={compact ? 18 : 22} />
-        </div>
-        <span className="rounded-full bg-teal-100 px-2 py-1 text-xs font-bold text-teal-700">Pix (QR Code)</span>
-      </div>
-      <div className={`${compact ? "" : "mt-2"} text-xs font-semibold text-[var(--color-text-soft)]`}>
-        Sem maquininha fisica envolvida
-      </div>
-    </div>
-  );
 }
 
 function TerminalBadge({ maquina, compact = false }) {
