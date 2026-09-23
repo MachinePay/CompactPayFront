@@ -9,13 +9,10 @@ import {
   Download,
   FileDown,
   Filter,
-  FlaskConical,
   MonitorSmartphone,
-  RotateCcw,
   Search,
   Sparkles,
   Wallet,
-  Zap,
 } from "lucide-react";
 import {
   Bar,
@@ -312,24 +309,6 @@ export default function Dashboard() {
       value: String(stats.premios_entregues),
       caption: "Saidas registradas no recorte atual",
       icon: Sparkles,
-    },
-    {
-      label: "Testes",
-      value: `${stats.testes_count} (R$ ${stats.testes_valor.toFixed(2)})`,
-      caption: "Pagamentos de teste no periodo",
-      icon: FlaskConical,
-    },
-    {
-      label: "Estornos",
-      value: `${stats.estornos_count} (R$ ${stats.estornos_valor.toFixed(2)})`,
-      caption: "Extornos concluidos no periodo",
-      icon: RotateCcw,
-    },
-    {
-      label: "Pulsos Ausentes",
-      value: String(stats.pulsos_ausentes),
-      caption: "Pagamento aprovado sem confirmacao de pulso",
-      icon: Zap,
     },
   ];
 
