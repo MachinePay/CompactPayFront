@@ -312,14 +312,6 @@ export default function Dashboard() {
     },
   ];
 
-  const scopeLabel = selectedMachine
-    ? `${selectedMachine.nome || selectedMachine.id_hardware}`
-    : selectedClient
-      ? selectedClient.nome_empresa
-      : isAdmin
-        ? "Todos os clientes"
-        : "Minhas maquinas";
-
   const periodoLabel = useMemo(() => {
     if (dateRange.start && dateRange.end) {
       const startLabel = dayjs(dateRange.start).format("DD/MM/YYYY");
@@ -646,35 +638,17 @@ export default function Dashboard() {
       <div className="grid min-w-0 gap-4 xl:grid-cols-[1.65fr_0.9fr]">
         <section className="min-w-0 space-y-4">
           <Card className="rounded-[22px] p-4 sm:rounded-[30px] sm:p-6 md:p-7">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
-                  Dashboard
-                </div>
-                <h1 className="mt-3 text-3xl font-extrabold text-[var(--color-text)] sm:text-4xl md:text-5xl">
-                  Operacao em foco.
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
-                  Acompanhe receita, volume de premios e ritmo da operacao em um
-                  painel unico, com leitura mais limpa e decisao mais rapida.
-                </p>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
+                Dashboard
               </div>
-
-              <div className="min-w-0 rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-4 sm:rounded-[26px] sm:px-5">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
-                  Recorte atual
-                </div>
-                <div className="mt-2 break-words text-lg font-bold text-[var(--color-text)]">
-                  {scopeLabel}
-                </div>
-                <div className="mt-1 text-sm text-[var(--color-text-soft)]">
-                  {selectedMachine
-                    ? "Resumo filtrado por maquina especifica."
-                    : selectedClient
-                      ? "Resumo consolidado do cliente selecionado."
-                      : "Resumo consolidado do painel no periodo informado."}
-                </div>
-              </div>
+              <h1 className="mt-3 text-3xl font-extrabold text-[var(--color-text)] sm:text-4xl md:text-5xl">
+                Operacao em foco.
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
+                Acompanhe receita, volume de premios e ritmo da operacao em um
+                painel unico, com leitura mais limpa e decisao mais rapida.
+              </p>
             </div>
           </Card>
 
