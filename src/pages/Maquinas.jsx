@@ -13,6 +13,7 @@ import {
   Rocket,
   Server,
   ShieldAlert,
+  Terminal,
   Trash2,
   UploadCloud,
   Wifi,
@@ -84,6 +85,14 @@ const emptyCaixaState = {
   error: "",
 };
 
+const emptyDiagnosticoState = {
+  open: false,
+  machine: null,
+  loading: false,
+  eventos: [],
+  error: "",
+};
+
 const quickCreditValues = [2, 5, 10, 20, 50, 100];
 
 function formatCurrency(value) {
@@ -132,6 +141,7 @@ export default function Maquinas() {
   const [updateState, setUpdateState] = useState(emptyUpdateState);
   const [creditState, setCreditState] = useState(emptyCreditState);
   const [caixaState, setCaixaState] = useState(emptyCaixaState);
+  const [diagnosticoState, setDiagnosticoState] = useState(emptyDiagnosticoState);
   const selectedCliente = usuarios.find(
     (item) => String(item.cliente_id) === String(form.cliente_id),
   );
@@ -488,6 +498,22 @@ export default function Maquinas() {
         loading: false,
         data: null,
         error: getApiErrorMessage(error, "Nao foi possivel consultar o caixa no Mercado Pago."),
+      });
+    }
+  };
+
+  const handleAbrirDiagnostico = async (machine) => {
+    setDiagnosticoState({ open: true, machine, loading: true, eventos: [], error: "" });
+    try {
+      const { data } = await api.get(`/maquinas/${machine.id_hardware}/eventos-dispositivo`);
+      setDiagnosticoState({ open: true, machine, loading: false, eventos: data.eventos || [], error: "" });
+    } catch (error) {
+      setDiagnosticoState({
+        open: true,
+        machine,
+        loading: false,
+        eventos: [],
+        error: getApiErrorMessage(error, "Nao foi possivel carregar o diagnostico da placa."),
       });
     }
   };
@@ -955,6 +981,65 @@ export default function Maquinas() {
         </div>
       </Modal>
 
+      <Modal
+        open={diagnosticoState.open}
+        onClose={() => setDiagnosticoState(emptyDiagnosticoState)}
+      >
+        <div className="space-y-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
+                Diagnostico da placa
+              </div>
+              <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
+                {diagnosticoState.machine?.nome || diagnosticoState.machine?.id_hardware}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+                Log tecnico bruto que a placa manda por MQTT (config de pulso/moeda, velocidade do noteiro, wifi,
+                reinicios etc.) - util pra configurar uma maquina nova sem precisar abrir o log do servidor.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="pill-button inline-flex shrink-0 items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+              onClick={() => diagnosticoState.machine && handleAbrirDiagnostico(diagnosticoState.machine)}
+              disabled={diagnosticoState.loading}
+            >
+              <RefreshCcw size={15} className={diagnosticoState.loading ? "animate-spin" : ""} />
+              Atualizar
+            </button>
+          </div>
+
+          {diagnosticoState.loading ? (
+            <LoadingSpinner className="h-40" />
+          ) : diagnosticoState.error ? (
+            <div className="rounded-[18px] border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-[var(--color-error)]">
+              {diagnosticoState.error}
+            </div>
+          ) : diagnosticoState.eventos.length === 0 ? (
+            <div className="rounded-[18px] border border-[var(--color-border)] bg-white p-6 text-center text-sm text-[var(--color-text-soft)]">
+              Nenhum evento tecnico recebido da placa ainda.
+            </div>
+          ) : (
+            <div className="max-h-[50vh] space-y-2 overflow-y-auto rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-3">
+              {diagnosticoState.eventos.map((evento) => (
+                <div
+                  key={evento.id}
+                  className="rounded-[12px] border border-[var(--color-border)] bg-white px-3 py-2"
+                >
+                  <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-soft)]">
+                    {brasiliaDate(evento.created_at).format("DD/MM/YYYY HH:mm:ss")}
+                  </div>
+                  <div className="mt-1 break-all font-mono text-xs text-[var(--color-text)]">
+                    {evento.descricao}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Modal>
+
       <CardSectionHeader
         title="Maquinas"
         description="Cadastre novas unidades, gere IDs para o ESP e crie automaticamente o caixa no Mercado Pago do cliente."
@@ -1074,6 +1159,9 @@ export default function Maquinas() {
                     onSendUpdate={() => requestFirmwareUpdate(m)}
                     onEdit={() => handleEditMachine(m)}
                     onDelete={() => requestDeleteMachine(m)}
+                    onToggleFiltroSaida={() => handleToggleFiltroSaidaPosCredito(m)}
+                    togglingFiltroSaida={togglingFiltroSaidaId === m.id_hardware}
+                    onAbrirDiagnostico={() => handleAbrirDiagnostico(m)}
                   />
                 ))}
               </div>
@@ -1295,6 +1383,14 @@ export default function Maquinas() {
                                   }}
                                   disabled={togglingFiltroSaidaId === m.id_hardware}
                                   busy={togglingFiltroSaidaId === m.id_hardware}
+                                />
+                                <IconActionButton
+                                  icon={Terminal}
+                                  label="Diagnostico da placa (log tecnico)"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAbrirDiagnostico(m);
+                                  }}
                                 />
                                 <IconActionButton
                                   icon={Trash2}
@@ -1675,6 +1771,9 @@ function MachineMobileCard({
   onSendUpdate,
   onEdit,
   onDelete,
+  onToggleFiltroSaida,
+  togglingFiltroSaida,
+  onAbrirDiagnostico,
 }) {
   return (
     <article className="min-w-0 rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
@@ -1824,7 +1923,30 @@ function MachineMobileCard({
             </button>
             <button
               type="button"
-              className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)]"
+              className={`col-span-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold transition ${
+                machine.ignorar_saida_pos_credito
+                  ? "border-amber-300 bg-amber-100 text-amber-700"
+                  : "border-[var(--color-border)] bg-white text-[var(--color-text)]"
+              }`}
+              onClick={onToggleFiltroSaida}
+              disabled={togglingFiltroSaida}
+            >
+              <ShieldAlert size={15} className={togglingFiltroSaida ? "animate-spin" : ""} />
+              {machine.ignorar_saida_pos_credito
+                ? "Filtro saida pos-credito: ativo"
+                : "Filtro saida pos-credito: inativo"}
+            </button>
+            <button
+              type="button"
+              className="col-span-2 pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+              onClick={onAbrirDiagnostico}
+            >
+              <Terminal size={15} />
+              Diagnostico da placa
+            </button>
+            <button
+              type="button"
+              className="col-span-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)]"
               onClick={onDelete}
             >
               <Trash2 size={15} />
