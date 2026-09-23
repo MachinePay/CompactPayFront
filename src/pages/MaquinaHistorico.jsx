@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { CreditCard, Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wifi, WifiOff, Wrench } from "lucide-react";
+import { CreditCard, Download, FileDown, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wifi, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -1516,18 +1516,18 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
           ))}
         </div>
         <div className="hidden overflow-x-auto md:block">
-          <table className="min-w-[1180px]">
+          <table className="w-full min-w-[1180px]">
             <thead className="bg-white text-left text-xs uppercase tracking-[0.16em] text-[var(--color-text-soft)]">
               <tr>
-                <th className="px-4 py-4">Opcoes</th>
-                <th className="px-4 py-4">Data</th>
-                <th className="px-4 py-4">Valor</th>
-                <th className="px-4 py-4">Ponto</th>
-                <th className="px-4 py-4">Maquininha</th>
-                <th className="px-4 py-4">Banco/Metodo</th>
-                <th className="px-4 py-4">Pago/Devolver</th>
-                <th className="px-4 py-4">Tipo de pagamento</th>
-                <th className="px-4 py-4">Situacao</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Opcoes</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Data</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Valor</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Ponto</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Maquininha</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Banco/Metodo</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Pago/Devolver</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Tipo de pagamento</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Situacao</th>
               </tr>
             </thead>
             <tbody>
@@ -1546,12 +1546,12 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                           : "border-[var(--color-border)] bg-white"
                   }`}
                 >
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4 lg:py-5 xl:py-6">
                     <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[var(--color-bg-muted)] text-[var(--color-text-soft)]">
                       <Search size={17} />
                     </span>
                   </td>
-                  <td className="px-4 py-4 min-w-[150px]">
+                  <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[150px]">
                     <div className="font-semibold">{brasiliaDate(item.data).format("DD/MM/YYYY")}</div>
                     <div className="text-xs text-[var(--color-text-soft)]">{brasiliaDate(item.data).format("HH:mm:ss")}</div>
                     {item.is_test ? (
@@ -1560,11 +1560,11 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                       </div>
                     ) : null}
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4 lg:py-5 xl:py-6">
                     <MoneyBadge value={item.valor} />
                     <div className="mt-1 text-xs text-[var(--color-primary)]">Cliente pagou</div>
                   </td>
-                  <td className="px-4 py-4 min-w-[190px]">
+                  <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[190px]">
                     <div className="rounded-[14px] bg-[var(--color-primary-soft)] px-3 py-2 font-semibold text-[var(--color-primary)]">
                       {item.ponto || maquina?.nome || maquina?.id_hardware}
                     </div>
@@ -1574,10 +1574,10 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                       </div>
                     ) : null}
                   </td>
-                  <td className="px-4 py-4 min-w-[165px]">
+                  <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[165px]">
                     {maquina ? <TerminalBadge maquina={maquina} /> : null}
                   </td>
-                  <td className="px-4 py-4 min-w-[220px]">
+                  <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[220px]">
                     {item.is_test ? (
                       <div className="rounded-[16px] bg-amber-200 px-4 py-3 text-center text-lg font-extrabold uppercase text-amber-950">
                         Pulso teste
@@ -1591,7 +1591,7 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-4 min-w-[135px]">
+                  <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[135px]">
                     <div className={`rounded-[12px] px-3 py-2 text-center text-xs font-bold ${
                       item.is_test ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-600"
                     }`}>
@@ -1606,10 +1606,10 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                       {refundingId === String(item.id) ? "Devolvendo" : "Devolver"}
                     </button>
                   </td>
-                  <td className="px-4 py-4 min-w-[150px]">
+                  <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[150px]">
                     <PulseBadge status={item.pulse_status} isTest={item.is_test} />
                   </td>
-                  <td className="px-4 py-4 min-w-[170px]">
+                  <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[170px]">
                     <StatusBadge item={item} />
                     {item.provider_payment_id ? (
                       <div className="mt-2 text-xs font-semibold text-[var(--color-primary)]">
@@ -1725,7 +1725,6 @@ function TerminalBadge({ maquina, compact = false }) {
   const unavailable = status === "unavailable";
   const notLinked = status === "not_linked";
   const linked = status === "linked";
-  const Icon = online ? Wifi : linked ? CreditCard : WifiOff;
   const deviceImage = getTerminalDeviceImage(maquina?.terminal_id);
   const label = online
     ? "Online"
@@ -1754,10 +1753,7 @@ function TerminalBadge({ maquina, compact = false }) {
         ) : (
           <CreditCard size={compact ? 20 : 23} className="text-[var(--color-text-soft)]" />
         )}
-        <Icon
-          size={18}
-          className={online ? "text-emerald-600" : "text-slate-500"}
-        />
+        {online ? <Wifi size={18} className="text-emerald-600" /> : null}
         <span className={`rounded-full px-2 py-1 text-xs font-bold ${statusClass}`}>
           {label}
         </span>
