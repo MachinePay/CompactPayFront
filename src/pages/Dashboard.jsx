@@ -856,7 +856,7 @@ export default function Dashboard() {
                   className="text-sm font-semibold uppercase tracking-[0.24em]"
                   style={{ color: "rgba(255,255,255,0.6)" }}
                 >
-                  Painel rapido
+                  Resumo rapido
                 </div>
                 <div className="mt-3 text-3xl font-extrabold tracking-[-0.05em]">
                   {stats.percentual_ativas.toFixed(0)}%
