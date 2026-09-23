@@ -1893,17 +1893,43 @@ function formatPaymentMethod(item) {
   return item.card_last_four ? `${base} (**** ${item.card_last_four})` : base;
 }
 
-// Cores por bandeira - so pra diferenciar de relance no relatorio, nao sao
-// os logos oficiais das bandeiras (evita usar marca registrada sem licenca).
-const CARD_BRAND_STYLES = {
-  master: { label: "Mastercard", className: "bg-orange-100 text-orange-700" },
-  mastercard: { label: "Mastercard", className: "bg-orange-100 text-orange-700" },
-  visa: { label: "Visa", className: "bg-blue-100 text-blue-700" },
-  elo: { label: "Elo", className: "bg-amber-100 text-amber-800" },
-  amex: { label: "Amex", className: "bg-sky-100 text-sky-700" },
-  hipercard: { label: "Hipercard", className: "bg-rose-100 text-rose-700" },
-  pix: { label: "Pix", className: "bg-teal-100 text-teal-700" },
-  account_money: { label: "Saldo Mercado Pago", className: "bg-sky-100 text-sky-700" },
+function normalizeAccents(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
+// Logo do banco emissor (item.bank_name, texto livre que o Mercado Pago
+// manda, ex.: "ITAÚ UNIBANCO S.A.") - casa por palavra-chave porque o texto
+// varia de formatacao. Sem match conhecido mas com algum banco informado,
+// cai no icone generico (na.png). Sem bank_name nenhum, nao mostra nada.
+const BANK_LOGOS = [
+  { keyword: "nubank", src: "/bancos/NUbank.png", label: "Nubank" },
+  { keyword: "banco do brasil", src: "/bancos/BancoDoBrasil.png", label: "Banco do Brasil" },
+  { keyword: "picpay", src: "/bancos/PicPay.png", label: "PicPay" },
+  { keyword: "santander", src: "/bancos/Santander.png", label: "Santander" },
+  { keyword: "sicoob", src: "/bancos/Sicoob.png", label: "Sicoob" },
+  { keyword: "inter", src: "/bancos/inter.png", label: "Inter" },
+  { keyword: "itau", src: "/bancos/itau.png", label: "Itau" },
+  { keyword: "mercado pago", src: "/bancos/mercadoPago.png", label: "Mercado Pago" },
+];
+
+function getBankLogo(bankName) {
+  if (!bankName) return null;
+  const normalized = normalizeAccents(bankName);
+  const match = BANK_LOGOS.find((bank) => normalized.includes(bank.keyword));
+  return match || { src: "/bancos/na.png", label: bankName };
+}
+
+// Forma de pagamento (item.card_brand / item.payment_type). Sem logo
+// cadastrado pra essa bandeira, mostra o texto "Outra" em vez de imagem.
+const PAYMENT_METHOD_LOGOS = {
+  master: { src: "/formasDePagamento/MaterCard.png", label: "Mastercard" },
+  mastercard: { src: "/formasDePagamento/MaterCard.png", label: "Mastercard" },
+  visa: { src: "/formasDePagamento/visa.png", label: "Visa" },
+  pix: { src: "/formasDePagamento/pix.png", label: "Pix" },
+  account_money: { src: "/formasDePagamento/mercadoCredito.png", label: "Mercado Credito" },
 };
 
 const PAYMENT_TYPE_LETTERS = {
@@ -1915,23 +1941,16 @@ const PAYMENT_TYPE_LETTERS = {
   atm: "B",
 };
 
-function capitalizeWord(value) {
-  const text = String(value || "");
-  return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
-}
-
-function cardBrandInfo(cardBrand) {
+function getPaymentMethodLogo(cardBrand, paymentType) {
   const key = String(cardBrand || "").toLowerCase();
-  return (
-    CARD_BRAND_STYLES[key] || {
-      label: cardBrand ? capitalizeWord(cardBrand) : "Metodo nao informado",
-      className: "bg-slate-100 text-slate-600",
-    }
-  );
+  if (PAYMENT_METHOD_LOGOS[key]) return PAYMENT_METHOD_LOGOS[key];
+  if (String(paymentType || "").toLowerCase() === "bank_transfer") return PAYMENT_METHOD_LOGOS.pix;
+  return null;
 }
 
 function PaymentMethodBadge({ item }) {
-  const brand = cardBrandInfo(item.card_brand);
+  const bank = getBankLogo(item.bank_name);
+  const method = getPaymentMethodLogo(item.card_brand, item.payment_type);
   const isPix = String(item.payment_type).toLowerCase() === "bank_transfer" || String(item.card_brand).toLowerCase() === "pix";
   const letter = isPix ? "P" : PAYMENT_TYPE_LETTERS[item.payment_type] || "$";
   return (
@@ -1947,17 +1966,27 @@ function PaymentMethodBadge({ item }) {
         >
           {letter}
         </div>
-        <div className="min-w-0">
-          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold ${brand.className}`}>
-            {brand.label}
-          </span>
-          {item.card_last_four ? (
-            <div className="mt-1 text-xs font-semibold tracking-wide text-[var(--color-text-soft)]">
-              •••• {item.card_last_four}
-            </div>
+        <div className="flex min-w-0 items-center gap-1.5">
+          {bank ? (
+            <img
+              src={bank.src}
+              alt={bank.label}
+              title={bank.label}
+              className="h-7 w-7 shrink-0 rounded-full object-cover"
+            />
           ) : null}
+          {method ? (
+            <img src={method.src} alt={method.label} title={method.label} className="h-5 w-auto max-w-[70px] shrink-0 object-contain" />
+          ) : (
+            <span className="text-xs font-bold text-[var(--color-text-soft)]">Outra</span>
+          )}
         </div>
       </div>
+      {item.card_last_four ? (
+        <div className="mt-1.5 text-xs font-semibold tracking-wide text-[var(--color-text-soft)]">
+          •••• {item.card_last_four}
+        </div>
+      ) : null}
     </div>
   );
 }
