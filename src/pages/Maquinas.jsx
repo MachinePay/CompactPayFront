@@ -119,11 +119,13 @@ export default function Maquinas() {
   const [firmwareVersions, setFirmwareVersions] = useState([]);
   const [loading, setLoading] = useState(false);
   // periodo/dateRange NAO sao persistidos (so cliente_id) - um filtro de
-  // periodo diferente de "mes" ficando preso silenciosamente entre sessoes
-  // (inclusive apos logout/login, ja que localStorage nao depende da sessao)
-  // fazia o faturamento da lista bater diferente do total real do mes, sem
-  // nenhuma pista visual do motivo.
-  const [periodo, setPeriodo] = useState("mes");
+  // periodo ficando preso silenciosamente entre sessoes (inclusive apos
+  // logout/login, ja que localStorage nao depende da sessao) fazia o
+  // faturamento da lista bater diferente do total real, sem nenhuma pista
+  // visual do motivo. Default "fechamento": sem limite de calendario, so o
+  // clamp por ultimo fechamento de cada maquina - maquina sem fechamento
+  // nenhum ainda mostra tudo desde sempre.
+  const [periodo, setPeriodo] = useState("fechamento");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [selectedClienteId, setSelectedClienteId] = useState(
     persistedFilters.cliente_id || "",
@@ -1106,6 +1108,7 @@ export default function Maquinas() {
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value)}
               >
+                <option value="fechamento">Desde o fechamento</option>
                 <option value="dia">Dia</option>
                 <option value="mes">Mes</option>
               </select>
