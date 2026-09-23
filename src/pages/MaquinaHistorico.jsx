@@ -1766,8 +1766,8 @@ function TerminalBadge({ maquina, compact = false }) {
       : "bg-rose-100 text-rose-700";
 
   return (
-    <div className={compact ? "flex items-center justify-between gap-3" : "text-center"}>
-      <div className={`flex items-center gap-2 ${compact ? "" : "justify-center"}`}>
+    <div className={compact ? "" : "text-center"}>
+      <div className={`flex flex-wrap items-center gap-2 ${compact ? "" : "justify-center"}`}>
         {deviceImage ? (
           <img
             src={deviceImage}
@@ -1782,7 +1782,7 @@ function TerminalBadge({ maquina, compact = false }) {
           {label}
         </span>
       </div>
-      <div className={`${compact ? "" : "mt-2"} break-all text-xs font-semibold text-[var(--color-text)]`}>
+      <div className="mt-2 break-all text-xs font-semibold text-[var(--color-text)]">
         {maquina?.terminal_id || "ID nao identificado"}
       </div>
       {online && maquina?.terminal_last_payment_at ? (
