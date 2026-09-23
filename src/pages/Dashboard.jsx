@@ -762,50 +762,6 @@ export default function Dashboard() {
                 )}
               </div>
             </Card>
-
-            <Card className="rounded-[22px] bg-[linear-gradient(180deg,#ffffff_0%,#f6faf6_100%)] sm:rounded-[30px]">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-xl font-bold text-[var(--color-text)]">
-                    Resumo de hoje
-                  </div>
-                  <div className="mt-1 text-sm text-[var(--color-text-soft)]">
-                    Indicadores sinteticos para a operacao.
-                  </div>
-                </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-                  <Sparkles size={18} />
-                </div>
-              </div>
-
-              <div className="mt-8 grid gap-4">
-                <div className="rounded-[24px] bg-[var(--color-bg-muted)] p-5">
-                  <div className="text-sm font-semibold text-[var(--color-text-soft)]">
-                    Receita consolidada
-                  </div>
-                  <div className="mt-3 break-words text-2xl font-extrabold leading-tight text-[var(--color-text)] sm:text-3xl">
-                    R$ {stats.faturamento_total.toFixed(2)}
-                  </div>
-                </div>
-                <div className="rounded-[24px] border border-[var(--color-border)] p-5">
-                  <div className="text-sm font-semibold text-[var(--color-text-soft)]">
-                    Maquinas online
-                  </div>
-                  <div className="mt-4 h-3 rounded-full bg-[var(--color-bg-muted)]">
-                    <div
-                      className="h-3 rounded-full bg-[linear-gradient(135deg,var(--color-primary),var(--color-primary-strong))]"
-                      style={{
-                        width: `${Math.min(100, Math.max(6, stats.percentual_ativas))}%`,
-                      }}
-                    />
-                  </div>
-                  <div className="mt-4 text-sm text-[var(--color-text-soft)]">
-                    {stats.maquinas_ativas} de {stats.total_maquinas} maquinas
-                    reportando nos ultimos 90 segundos.
-                  </div>
-                </div>
-              </div>
-            </Card>
           </div>
         </section>
 
