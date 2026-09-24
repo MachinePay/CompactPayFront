@@ -22,6 +22,7 @@ const RelatorioDetalhadoMaquina = lazy(
 );
 const Maquinas = lazy(() => import("./pages/Maquinas"));
 const SaudeMaquinas = lazy(() => import("./pages/SaudeMaquinas"));
+const HistoricoQuedas = lazy(() => import("./pages/HistoricoQuedas"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Login = lazy(() => import("./pages/Login"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -122,6 +123,14 @@ function RouteContent() {
             element={
               <PrivatePage>
                 <AlertasMaquinas />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/historico-quedas"
+            element={
+              <PrivatePage>
+                <HistoricoQuedas />
               </PrivatePage>
             }
           />

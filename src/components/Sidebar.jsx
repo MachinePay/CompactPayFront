@@ -5,6 +5,7 @@ import {
   ClipboardList,
   Cpu,
   CreditCard,
+  History,
   Home,
   LogOut,
   Menu,
@@ -60,6 +61,12 @@ export default function Sidebar() {
       <li>
         <NavLink to="/alertas-maquinas" className={linkClassName} onClick={closeMobile}>
           <Bell size={20} /> Alertas
+        </NavLink>
+      </li>
+
+      <li>
+        <NavLink to="/historico-quedas" className={linkClassName} onClick={closeMobile}>
+          <History size={20} /> Historico de quedas
         </NavLink>
       </li>
 
