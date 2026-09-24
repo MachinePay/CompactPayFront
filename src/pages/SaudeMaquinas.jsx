@@ -8,6 +8,7 @@ import {
   RefreshCcw,
   Search,
   Server,
+  Terminal,
   Wifi,
   XCircle,
   Zap,
@@ -17,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import api, { getApiErrorMessage } from "../api/axios";
 import { useAuth } from "../context/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
+import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 import { brasiliaDate } from "../utils/dateTime";
 
@@ -100,6 +102,10 @@ function formatWifiDisconnectReason(reason) {
     6: "Nao autenticado",
     8: "Desconectado (AP saiu)",
     15: "Timeout no handshake (senha errada?)",
+    // STA_LEAVING (802.11/ESP-IDF) - normalmente e' o ROTEADOR encerrando a
+    // conexao (reinicio, gerenciamento de clientes, DHCP) e nao fraqueza de
+    // sinal - repetir muito com sinal bom aponta pro roteador, nao pra placa.
+    36: "Roteador encerrou a conexao (nao e' sinal fraco)",
     200: "Sinal perdido (beacon timeout)",
     201: "Rede nao encontrada",
     202: "Falha de autenticacao",
@@ -159,6 +165,29 @@ export default function SaudeMaquinas() {
     pulso: "todos",
     busca: "",
   });
+  const [diagnosticoState, setDiagnosticoState] = useState({
+    open: false,
+    machine: null,
+    loading: false,
+    eventos: [],
+    error: "",
+  });
+
+  const handleAbrirDiagnostico = async (machine) => {
+    setDiagnosticoState({ open: true, machine, loading: true, eventos: [], error: "" });
+    try {
+      const { data } = await api.get(`/maquinas/${machine.id_hardware}/eventos-dispositivo`);
+      setDiagnosticoState({ open: true, machine, loading: false, eventos: data.eventos || [], error: "" });
+    } catch (error) {
+      setDiagnosticoState({
+        open: true,
+        machine,
+        loading: false,
+        eventos: [],
+        error: getApiErrorMessage(error, "Nao foi possivel carregar o historico de diagnostico."),
+      });
+    }
+  };
 
   const query = useMemo(() => {
     const params = [];
@@ -332,6 +361,7 @@ export default function SaudeMaquinas() {
                   key={machine.id_hardware}
                   machine={machine}
                   onOpen={() => navigate(`/maquinas/${machine.id_hardware}`)}
+                  onAbrirDiagnostico={user?.role === "admin" ? () => handleAbrirDiagnostico(machine) : null}
                 />
               ))}
             </div>
@@ -368,14 +398,26 @@ export default function SaudeMaquinas() {
                       <td className="px-5 py-4 min-w-[180px]"><PulseInfo pulse={machine.ultimo_pulso} alert={machine.pulse_alert} /></td>
                       <td className="px-5 py-4 min-w-[210px]"><DiagnosticoInfo machine={machine} /></td>
                       <td className="px-5 py-4">
-                        <button
-                          type="button"
-                          className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                          onClick={() => navigate(`/maquinas/${machine.id_hardware}`)}
-                        >
-                          <Activity size={15} />
-                          Abrir
-                        </button>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            type="button"
+                            className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                            onClick={() => navigate(`/maquinas/${machine.id_hardware}`)}
+                          >
+                            <Activity size={15} />
+                            Abrir
+                          </button>
+                          {user?.role === "admin" ? (
+                            <button
+                              type="button"
+                              className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                              onClick={() => handleAbrirDiagnostico(machine)}
+                            >
+                              <Terminal size={15} />
+                              Historico
+                            </button>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -385,6 +427,75 @@ export default function SaudeMaquinas() {
           </>
         )}
       </section>
+
+      <Modal
+        open={diagnosticoState.open}
+        onClose={() => setDiagnosticoState({ open: false, machine: null, loading: false, eventos: [], error: "" })}
+      >
+        <div className="space-y-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
+                Historico de diagnostico
+              </div>
+              <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
+                {diagnosticoState.machine?.nome || diagnosticoState.machine?.id_hardware}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+                Todo evento tecnico que a placa mandou (quedas de Wi-Fi, reinicios forcados, config de pulso etc.),
+                do mais recente pro mais antigo - pra ver todas as vezes que ela caiu e o motivo de cada uma.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="pill-button inline-flex shrink-0 items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+              onClick={() => diagnosticoState.machine && handleAbrirDiagnostico(diagnosticoState.machine)}
+              disabled={diagnosticoState.loading}
+            >
+              <RefreshCcw size={15} className={diagnosticoState.loading ? "animate-spin" : ""} />
+              Atualizar
+            </button>
+          </div>
+
+          {diagnosticoState.loading ? (
+            <LoadingSpinner className="h-40" />
+          ) : diagnosticoState.error ? (
+            <div className="rounded-[18px] border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700">
+              {diagnosticoState.error}
+            </div>
+          ) : diagnosticoState.eventos.length === 0 ? (
+            <div className="rounded-[18px] border border-[var(--color-border)] bg-white p-6 text-center text-sm text-[var(--color-text-soft)]">
+              Nenhum evento tecnico recebido da placa ainda.
+            </div>
+          ) : (
+            <div className="max-h-[50vh] space-y-2 overflow-y-auto rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-3">
+              {diagnosticoState.eventos.map((evento) => {
+                const isQueda =
+                  /OFFLINE|caiu|reiniciou|preso/i.test(evento.descricao || "");
+                return (
+                  <div
+                    key={evento.id}
+                    className={`rounded-[12px] border px-3 py-2 ${
+                      isQueda ? "border-rose-200 bg-rose-50" : "border-[var(--color-border)] bg-white"
+                    }`}
+                  >
+                    <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-soft)]">
+                      {brasiliaDate(evento.created_at).format("DD/MM/YYYY HH:mm:ss")}
+                    </div>
+                    <div
+                      className={`mt-1 break-all text-xs ${
+                        isQueda ? "font-semibold text-rose-700" : "font-mono text-[var(--color-text)]"
+                      }`}
+                    >
+                      {evento.descricao}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -564,7 +675,7 @@ function DiagnosticoInfo({ machine }) {
   );
 }
 
-function HealthMobileCard({ machine, onOpen }) {
+function HealthMobileCard({ machine, onOpen, onAbrirDiagnostico }) {
   return (
     <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4">
       <div className="flex items-start justify-between gap-3">
@@ -586,14 +697,26 @@ function HealthMobileCard({ machine, onOpen }) {
         <InfoTile label="Pulso" value={<PulseInfo pulse={machine.ultimo_pulso} alert={machine.pulse_alert} />} />
         <InfoTile label="Diagnostico" value={<DiagnosticoInfo machine={machine} />} wide />
       </div>
-      <button
-        type="button"
-        className="pill-button mt-4 inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold"
-        onClick={onOpen}
-      >
-        <Activity size={15} />
-        Abrir maquina
-      </button>
+      <div className="mt-4 grid grid-cols-1 gap-2">
+        <button
+          type="button"
+          className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold"
+          onClick={onOpen}
+        >
+          <Activity size={15} />
+          Abrir maquina
+        </button>
+        {onAbrirDiagnostico ? (
+          <button
+            type="button"
+            className="pill-button inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold"
+            onClick={onAbrirDiagnostico}
+          >
+            <Terminal size={15} />
+            Historico de diagnostico
+          </button>
+        ) : null}
+      </div>
     </article>
   );
 }
