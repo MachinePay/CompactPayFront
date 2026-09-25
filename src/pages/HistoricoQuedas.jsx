@@ -5,6 +5,7 @@ import api, { getApiErrorMessage } from "../api/axios";
 import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Toast from "../components/Toast";
+import { useAuth } from "../context/useAuth";
 import { brasiliaDate } from "../utils/dateTime";
 
 const emptyDateRange = { start: "", end: "" };
@@ -35,11 +36,14 @@ function TipoBadge({ tipo }) {
 }
 
 export default function HistoricoQuedas() {
+  const { user } = useAuth();
+  const [clientes, setClientes] = useState([]);
   const [maquinas, setMaquinas] = useState([]);
   const [quedas, setQuedas] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "success" });
+  const [clienteId, setClienteId] = useState("");
   const [maquinaId, setMaquinaId] = useState("");
   const [dateRange, setDateRange] = useState(emptyDateRange);
   const [limite, setLimite] = useState("300");
@@ -51,10 +55,31 @@ export default function HistoricoQuedas() {
       .catch(() => setMaquinas([]));
   }, []);
 
+  useEffect(() => {
+    if (user?.role !== "admin") return;
+    api
+      .get("/clientes")
+      .then(({ data }) => setClientes(data || []))
+      .catch(() => setClientes([]));
+  }, [user?.role]);
+
+  const maquinasDoCliente = useMemo(() => {
+    if (!clienteId) return maquinas;
+    return maquinas.filter((item) => String(item.cliente_id || "") === clienteId);
+  }, [maquinas, clienteId]);
+
+  const handleClienteChange = (value) => {
+    setClienteId(value);
+    if (maquinaId && !maquinas.some((item) => item.id_hardware === maquinaId && String(item.cliente_id || "") === value)) {
+      setMaquinaId("");
+    }
+  };
+
   const loadQuedas = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      if (clienteId) params.set("cliente_id", clienteId);
       if (maquinaId) params.set("maquina_id", maquinaId);
       if (dateRange.start) params.set("data_inicio", dateRange.start);
       if (dateRange.end) params.set("data_fim", `${dateRange.end}T23:59:59`);
@@ -70,7 +95,7 @@ export default function HistoricoQuedas() {
     } finally {
       setLoading(false);
     }
-  }, [maquinaId, dateRange, limite]);
+  }, [clienteId, maquinaId, dateRange, limite]);
 
   useEffect(() => {
     const timer = window.setTimeout(loadQuedas, 0);
@@ -105,14 +130,28 @@ export default function HistoricoQuedas() {
       </div>
 
       <section className="app-panel rounded-[30px] p-5 md:p-6">
-        <div className="grid gap-3 md:grid-cols-[1fr_auto_140px_auto]">
+        <div className={`grid gap-3 ${user?.role === "admin" ? "md:grid-cols-[220px_1fr_auto_140px_auto]" : "md:grid-cols-[1fr_auto_140px_auto]"}`}>
+          {user?.role === "admin" ? (
+            <select
+              className="min-w-0 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+              value={clienteId}
+              onChange={(event) => handleClienteChange(event.target.value)}
+            >
+              <option value="">Todos os clientes</option>
+              {clientes.map((item) => (
+                <option key={item.id} value={String(item.id)}>
+                  {item.nome_empresa || item.email_contato}
+                </option>
+              ))}
+            </select>
+          ) : null}
           <select
             className="min-w-0 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
             value={maquinaId}
             onChange={(event) => setMaquinaId(event.target.value)}
           >
             <option value="">Todas as maquinas</option>
-            {maquinas.map((item) => (
+            {maquinasDoCliente.map((item) => (
               <option key={item.id_hardware} value={item.id_hardware}>
                 {(item.nome || item.id_hardware) + ` - ${item.id_hardware}`}
               </option>
