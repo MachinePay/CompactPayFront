@@ -824,46 +824,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       </section>
 
       <section className="app-panel rounded-[30px] p-5 md:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-3">
-            <Button type="button" className="justify-center" onClick={() => navigate("/maquinas")}>
-              Voltar para maquinas
-            </Button>
-            <button
-              type="button"
-              className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
-              onClick={loadHistorico}
-            >
-              <RefreshCcw size={16} />
-              Recarregar
-            </button>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            {detailed ? (
-            <button
-              type="button"
-              className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
-              onClick={handleExportCsv}
-            >
-              <Download size={16} />
-              Exportar CSV
-            </button>
-            ) : null}
-            {detailed && !isAggregate ? (
-            <button
-              type="button"
-              className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
-              onClick={() => handleExportPdf()}
-            >
-              <FileDown size={16} />
-              Fechamento PDF
-            </button>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] sm:w-auto sm:rounded-full">
             Periodo
             <select
@@ -937,6 +898,45 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               Desfazer ultimo fechamento
             </button>
           ) : null}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-3">
+            <Button type="button" className="justify-center" onClick={() => navigate("/maquinas")}>
+              Voltar para maquinas
+            </Button>
+            <button
+              type="button"
+              className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
+              onClick={loadHistorico}
+            >
+              <RefreshCcw size={16} />
+              Recarregar
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {detailed ? (
+            <button
+              type="button"
+              className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
+              onClick={handleExportCsv}
+            >
+              <Download size={16} />
+              Exportar CSV
+            </button>
+            ) : null}
+            {detailed && !isAggregate ? (
+            <button
+              type="button"
+              className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
+              onClick={() => handleExportPdf()}
+            >
+              <FileDown size={16} />
+              Fechamento PDF
+            </button>
+            ) : null}
+          </div>
         </div>
       </section>
 
