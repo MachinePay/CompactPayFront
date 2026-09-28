@@ -888,61 +888,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <SummaryCard
-          label="Total pagamentos"
-          value={`R$ ${Number(historico.resumo.total_pagamentos).toFixed(2)}`}
-          helper="Ja descontando devolucoes"
-          icon={<Wallet size={18} />}
-        />
-        <SummaryCard
-          label="Qtde pagamentos"
-          value={String(historico.resumo.quantidade_pagamentos)}
-          helper={formatResumoData(historico.resumo.ultimo_pagamento_em, "Ultimo pagamento")}
-        />
-        <SummaryCard
-          label="Qtde testes"
-          value={String(historico.resumo.quantidade_testes)}
-          helper={formatResumoData(historico.resumo.ultimo_teste_em, "Ultimo teste")}
-          featured
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard
-          label="Total digital"
-          value={`R$ ${Number(historico.resumo.total_digital).toFixed(2)}`}
-          helper="Pagamentos digitais no periodo"
-        />
-        <SummaryCard
-          label="Total fisico"
-          value={`R$ ${Number(historico.resumo.total_fisico).toFixed(2)}`}
-          helper="Entradas fisicas detectadas no periodo"
-        />
-        <SummaryCard
-          label="Valor devolvido"
-          value={`R$ ${Number(historico.resumo.total_devolvido || 0).toFixed(2)}`}
-          helper="Pagamentos estornados no periodo"
-          icon={<Undo2 size={18} />}
-        />
-        <SummaryCard
-          label="Premios entregues"
-          value={String(historico.resumo.quantidade_saidas)}
-          helper={formatResumoData(historico.resumo.ultima_saida_em, "Ultima saida")}
-          icon={<Sparkles size={18} />}
-        />
-      </div>
-
-      {detailed && !isAggregate ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatusCard
-            maquina={maquina}
-            eventos={historico.eventos_dispositivo || []}
-            showFirmware={user?.role === "admin"}
-          />
-        </div>
-      ) : null}
-
       <section className="app-panel rounded-[30px] p-5 md:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-3">
@@ -1088,7 +1033,64 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             </button>
           ) : null}
         </div>
+      </section>
 
+      <div className="grid gap-4 md:grid-cols-3">
+        <SummaryCard
+          label="Total pagamentos"
+          value={`R$ ${Number(historico.resumo.total_pagamentos).toFixed(2)}`}
+          helper="Ja descontando devolucoes"
+          icon={<Wallet size={18} />}
+        />
+        <SummaryCard
+          label="Qtde pagamentos"
+          value={String(historico.resumo.quantidade_pagamentos)}
+          helper={formatResumoData(historico.resumo.ultimo_pagamento_em, "Ultimo pagamento")}
+        />
+        <SummaryCard
+          label="Qtde testes"
+          value={String(historico.resumo.quantidade_testes)}
+          helper={formatResumoData(historico.resumo.ultimo_teste_em, "Ultimo teste")}
+          featured
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard
+          label="Total digital"
+          value={`R$ ${Number(historico.resumo.total_digital).toFixed(2)}`}
+          helper="Pagamentos digitais no periodo"
+        />
+        <SummaryCard
+          label="Total fisico"
+          value={`R$ ${Number(historico.resumo.total_fisico).toFixed(2)}`}
+          helper="Entradas fisicas detectadas no periodo"
+        />
+        <SummaryCard
+          label="Valor devolvido"
+          value={`R$ ${Number(historico.resumo.total_devolvido || 0).toFixed(2)}`}
+          helper="Pagamentos estornados no periodo"
+          icon={<Undo2 size={18} />}
+        />
+        <SummaryCard
+          label="Premios entregues"
+          value={String(historico.resumo.quantidade_saidas)}
+          helper={formatResumoData(historico.resumo.ultima_saida_em, "Ultima saida")}
+          icon={<Sparkles size={18} />}
+        />
+      </div>
+
+      {detailed && !isAggregate ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatusCard
+            maquina={maquina}
+            eventos={historico.eventos_dispositivo || []}
+            showFirmware={user?.role === "admin"}
+          />
+        </div>
+      ) : null}
+
+      <section className="app-panel rounded-[30px] p-5 md:p-6">
         {loading ? (
           <LoadingSpinner className="h-56" />
         ) : (
