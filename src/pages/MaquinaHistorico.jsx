@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { Coins, CreditCard, Download, FileDown, QrCode, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wifi, Wrench } from "lucide-react";
+import { CreditCard, Download, FileDown, QrCode, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wifi, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -1811,7 +1811,7 @@ function TerminalBadge({ maquina, compact = false }) {
 // registro com pulse_count = quantidade de pulsos - entao pulse_count bate
 // certinho com o valor da nota inserida (2 pulsos = nota de R$2, e assim
 // por diante). Sem imagem cadastrada pro valor (ex.: 1 pulso = moeda), cai
-// no icone generico de dinheiro.
+// na imagem generica de dinheiro (fallback).
 const NOTE_IMAGES = {
   2: "/notas/2reais.png",
   5: "/notas/5reais.png",
@@ -1820,9 +1820,10 @@ const NOTE_IMAGES = {
   50: "/notas/50reais.png",
   100: "/notas/100reais.png",
 };
+const NOTE_IMAGE_FALLBACK = "/notas/dinheiro.png";
 
 function getNoteImage(pulseCount) {
-  return NOTE_IMAGES[Number(pulseCount)] || null;
+  return NOTE_IMAGES[Number(pulseCount)] || NOTE_IMAGE_FALLBACK;
 }
 
 function PhysicalNoteBadge({ item, compact = false }) {
@@ -1830,15 +1831,11 @@ function PhysicalNoteBadge({ item, compact = false }) {
   return (
     <div className={compact ? "" : "text-center"}>
       <div className={`flex flex-wrap items-center gap-2 ${compact ? "" : "justify-center"}`}>
-        {noteImage ? (
-          <img
-            src={noteImage}
-            alt={`Nota de R$ ${item.pulse_count}`}
-            className={compact ? "h-8 w-auto shrink-0 object-contain" : "h-11 w-auto shrink-0 object-contain"}
-          />
-        ) : (
-          <Coins size={compact ? 20 : 23} className="text-[var(--color-text-soft)]" />
-        )}
+        <img
+          src={noteImage}
+          alt="Pagamento fisico"
+          className={compact ? "h-8 w-auto shrink-0 object-contain" : "h-11 w-auto shrink-0 object-contain"}
+        />
         <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700">
           R$ {Number(item.valor || 0).toFixed(2)}
         </span>
