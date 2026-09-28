@@ -11,6 +11,7 @@ import {
   QrCode,
   RefreshCcw,
   Rocket,
+  Search,
   Server,
   ShieldAlert,
   Terminal,
@@ -130,6 +131,7 @@ export default function Maquinas() {
   const [selectedClienteId, setSelectedClienteId] = useState(
     persistedFilters.cliente_id || "",
   );
+  const [buscaMaquina, setBuscaMaquina] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState("");
   const [form, setForm] = useState(emptyForm);
@@ -663,6 +665,16 @@ export default function Maquinas() {
 
   const onlineCount = maquinas.filter((m) => m.status_online).length;
 
+  const maquinasVisiveis = useMemo(() => {
+    const termo = buscaMaquina.trim().toLowerCase();
+    if (!termo) return maquinas;
+    return maquinas.filter((m) =>
+      [m.id_hardware, m.nome, m.localizacao]
+        .filter(Boolean)
+        .some((campo) => String(campo).toLowerCase().includes(termo)),
+    );
+  }, [maquinas, buscaMaquina]);
+
   return (
     <div className="flex min-h-full flex-col gap-4">
       <Toast
@@ -1114,6 +1126,15 @@ export default function Maquinas() {
               </select>
             </label>
             <DateRangePicker value={dateRange} onChange={setDateRange} />
+            <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm sm:flex-none">
+              <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
+              <input
+                className="min-w-0 flex-1 bg-transparent outline-none"
+                placeholder="Buscar maquina (nome, ID ou local)"
+                value={buscaMaquina}
+                onChange={(event) => setBuscaMaquina(event.target.value)}
+              />
+            </label>
           </div>
 
           <button
@@ -1139,15 +1160,16 @@ export default function Maquinas() {
             </div>
           ) : loading ? (
             <LoadingSpinner className="h-40" />
-          ) : maquinas.length === 0 ? (
+          ) : maquinasVisiveis.length === 0 ? (
             <div className="flex h-40 items-center justify-center px-6 text-center text-sm text-[var(--color-text-soft)]">
-              Nenhuma maquina cadastrada ainda. Gere um ID, configure o ESP e
-              crie a unidade por aqui.
+              {buscaMaquina.trim()
+                ? "Nenhuma maquina encontrada para essa busca."
+                : "Nenhuma maquina cadastrada ainda. Gere um ID, configure o ESP e crie a unidade por aqui."}
             </div>
           ) : (
             <>
               <div className="grid gap-3 p-3 md:hidden">
-                {maquinas.map((m) => (
+                {maquinasVisiveis.map((m) => (
                   <MachineMobileCard
                     key={m.id_hardware}
                     machine={m}
@@ -1186,7 +1208,7 @@ export default function Maquinas() {
                     </tr>
                   </thead>
                   <tbody>
-                    {maquinas.map((m) => (
+                    {maquinasVisiveis.map((m) => (
                       <tr
                         key={m.id_hardware}
                         className="cursor-pointer border-t border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]"
