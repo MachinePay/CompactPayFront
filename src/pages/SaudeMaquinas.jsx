@@ -254,66 +254,15 @@ export default function SaudeMaquinas() {
       />
 
       <section className="app-panel rounded-[22px] p-4 sm:rounded-[30px] sm:p-6 md:p-7">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
-              Radar operacional
-            </div>
-            <h1 className="mt-3 text-3xl font-extrabold text-[var(--color-text)] sm:text-4xl">
-              Saude das maquinas
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-text-soft)]">
-              Monitore conexao, Wi-Fi, firmware, pagamento e pulso em tempo quase real para priorizar manutencao.
-            </p>
-          </div>
-
-          <div className="grid w-full gap-2 sm:grid-cols-2 xl:w-auto xl:min-w-[620px] xl:grid-cols-3">
-            {user?.role === "admin" ? (
-              <FilterSelect
-                label="Cliente"
-                value={filters.cliente_id}
-                onChange={(value) => setFilters((current) => ({ ...current, cliente_id: value }))}
-                options={[
-                  ["", "Todos"],
-                  ...clientes.map((item) => [String(item.id), item.nome_empresa || item.email_contato]),
-                ]}
-              />
-            ) : null}
-            <FilterSelect
-              label="Estado"
-              value={filters.status}
-              onChange={(value) => setFilters((current) => ({ ...current, status: value }))}
-              options={[["todos", "Todos"], ["online", "Online"], ["atencao", "Atencao"], ["offline", "Offline"]]}
-            />
-            <FilterSelect
-              label="Wi-Fi"
-              value={filters.wifi}
-              onChange={(value) => setFilters((current) => ({ ...current, wifi: value }))}
-              options={[["todos", "Todos"], ["ruim", "Ruim"], ["bom", "Bom"], ["otimo", "Otimo"], ["sem_leitura", "Sem leitura"]]}
-            />
-            <FilterSelect
-              label="Firmware"
-              value={filters.firmware}
-              onChange={(value) => setFilters((current) => ({ ...current, firmware: value }))}
-              options={[["todos", "Todos"], ["pendente", "Pendente"], ["ok", "OK"]]}
-            />
-            <FilterSelect
-              label="Pulso"
-              value={filters.pulso}
-              onChange={(value) => setFilters((current) => ({ ...current, pulso: value }))}
-              options={[["todos", "Todos"], ["confirmado", "Confirmado"], ["ausente", "Ausente"]]}
-            />
-            <label className="flex min-w-0 items-center gap-2 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm">
-              <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
-              <input
-                className="min-w-0 flex-1 bg-transparent outline-none"
-                placeholder="Buscar maquina"
-                value={filters.busca}
-                onChange={(event) => setFilters((current) => ({ ...current, busca: event.target.value }))}
-              />
-            </label>
-          </div>
+        <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
+          Radar operacional
         </div>
+        <h1 className="mt-3 text-3xl font-extrabold text-[var(--color-text)] sm:text-4xl">
+          Saude das maquinas
+        </h1>
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-text-soft)]">
+          Monitore conexao, Wi-Fi, firmware, pagamento e pulso em tempo quase real para priorizar manutencao.
+        </p>
       </section>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
@@ -325,6 +274,55 @@ export default function SaudeMaquinas() {
         <HealthCard label="Pulso ausente" value={health.resumo.pulso_ausente} icon={<Zap size={18} />} tone="danger" />
         <HealthCard label="Firmware" value={health.resumo.firmware_pendente} icon={<Cpu size={18} />} tone="warning" />
       </div>
+
+      <section className="app-panel rounded-[22px] p-4 sm:rounded-[30px] sm:p-6 md:p-7">
+        <div className={`grid gap-2 sm:grid-cols-2 ${user?.role === "admin" ? "xl:grid-cols-6" : "xl:grid-cols-5"}`}>
+          {user?.role === "admin" ? (
+            <FilterSelect
+              label="Cliente"
+              value={filters.cliente_id}
+              onChange={(value) => setFilters((current) => ({ ...current, cliente_id: value }))}
+              options={[
+                ["", "Todos"],
+                ...clientes.map((item) => [String(item.id), item.nome_empresa || item.email_contato]),
+              ]}
+            />
+          ) : null}
+          <FilterSelect
+            label="Estado"
+            value={filters.status}
+            onChange={(value) => setFilters((current) => ({ ...current, status: value }))}
+            options={[["todos", "Todos"], ["online", "Online"], ["atencao", "Atencao"], ["offline", "Offline"]]}
+          />
+          <FilterSelect
+            label="Wi-Fi"
+            value={filters.wifi}
+            onChange={(value) => setFilters((current) => ({ ...current, wifi: value }))}
+            options={[["todos", "Todos"], ["ruim", "Ruim"], ["bom", "Bom"], ["otimo", "Otimo"], ["sem_leitura", "Sem leitura"]]}
+          />
+          <FilterSelect
+            label="Firmware"
+            value={filters.firmware}
+            onChange={(value) => setFilters((current) => ({ ...current, firmware: value }))}
+            options={[["todos", "Todos"], ["pendente", "Pendente"], ["ok", "OK"]]}
+          />
+          <FilterSelect
+            label="Pulso"
+            value={filters.pulso}
+            onChange={(value) => setFilters((current) => ({ ...current, pulso: value }))}
+            options={[["todos", "Todos"], ["confirmado", "Confirmado"], ["ausente", "Ausente"]]}
+          />
+          <label className="flex min-w-0 items-center gap-2 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm">
+            <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
+            <input
+              className="min-w-0 flex-1 bg-transparent outline-none"
+              placeholder="Buscar maquina"
+              value={filters.busca}
+              onChange={(event) => setFilters((current) => ({ ...current, busca: event.target.value }))}
+            />
+          </label>
+        </div>
+      </section>
 
       <section className="overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-white">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-bg-muted)] px-5 py-4">
