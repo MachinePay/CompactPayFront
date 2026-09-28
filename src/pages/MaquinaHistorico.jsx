@@ -49,17 +49,11 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     timeline: [],
     vendas: [],
   });
-  const [periodo, setPeriodo] = useState("");
+  const [periodo, setPeriodo] = useState("fechamento");
   const [selectedMonth, setSelectedMonth] = useState(dayjs().format("YYYY-MM"));
-  const [dateRange, setDateRange] = useState({
-    start: dayjs().subtract(30, "day").format("YYYY-MM-DD"),
-    end: dayjs().format("YYYY-MM-DD"),
-  });
-  const [appliedPeriodo, setAppliedPeriodo] = useState("");
-  const [appliedDateRange, setAppliedDateRange] = useState({
-    start: dayjs().subtract(30, "day").format("YYYY-MM-DD"),
-    end: dayjs().format("YYYY-MM-DD"),
-  });
+  const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [appliedPeriodo, setAppliedPeriodo] = useState("fechamento");
+  const [appliedDateRange, setAppliedDateRange] = useState({ start: "", end: "" });
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [observacao, setObservacao] = useState("");
   const [savingObservacao, setSavingObservacao] = useState(false);
@@ -666,6 +660,10 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       });
       return;
     }
+    if (value === "fechamento") {
+      setDateRange({ start: "", end: "" });
+      return;
+    }
     setDateRange({
       start: hoje.subtract(30, "day").format("YYYY-MM-DD"),
       end: hoje.format("YYYY-MM-DD"),
@@ -778,7 +776,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 ? "Somando vendas, testes e saidas de todas as maquinas do cliente selecionado no periodo."
                 : detailed
                   ? "Escolha a maquina e consulte vendas, historico, observacoes, fechamentos e auditoria."
-                  : "Pagamentos e testes dos ultimos 30 dias. Selecione uma data para consultar outro periodo."}
+                  : "Pagamentos e testes desde o ultimo fechamento. Selecione um periodo para consultar outra janela."}
             </p>
             <div className="mt-3 text-sm text-[var(--color-text-soft)]">
               {isAggregate
@@ -1025,6 +1023,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               value={periodo}
               onChange={(e) => handlePeriodoChange(e.target.value)}
             >
+              <option value="fechamento">Desde o ultimo fechamento</option>
               <option value="">Ultimos 30 dias</option>
               <option value="dia">Hoje</option>
               <option value="mes">Mes atual</option>
@@ -2101,7 +2100,9 @@ function formatPeriodoLabel(periodo, range) {
   }
   if (range?.start) return `A partir de ${dayjs(range.start).format("DD/MM/YYYY")}`;
   if (range?.end) return `Ate ${dayjs(range.end).format("DD/MM/YYYY")}`;
-  return periodo === "dia" ? dayjs().format("DD/MM/YYYY") : "Mes atual";
+  if (periodo === "dia") return dayjs().format("DD/MM/YYYY");
+  if (periodo === "fechamento") return "Desde o ultimo fechamento";
+  return "Mes atual";
 }
 
 function HistoryTable({ title, columns, rows, empty, rowClassNames }) {
