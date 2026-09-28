@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { CreditCard, Download, FileDown, QrCode, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wifi, Wrench } from "lucide-react";
+import { CreditCard, Download, FileDown, QrCode, RefreshCcw, Search, ShieldCheck, Sparkles, Undo2, Wallet, Wifi, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -57,7 +57,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   const [toast, setToast] = useState({ message: "", type: "success" });
   const [observacao, setObservacao] = useState("");
   const [savingObservacao, setSavingObservacao] = useState(false);
-  const [deleteState, setDeleteState] = useState({ open: false, confirmationText: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [saleFilters, setSaleFilters] = useState({
     registro: "todos",
@@ -343,22 +342,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     printWindow.print();
   };
 
-  const handleDeleteHistorico = async () => {
-    if (deleteState.confirmationText.trim().toLowerCase() !== "confirmar") return;
-    try {
-      const query = buildQuery();
-      await api.delete(`/maquinas/${machineId}/historico${query}`);
-      setToast({ message: "Historico apagado com sucesso.", type: "success" });
-      setDeleteState({ open: false, confirmationText: "" });
-      await loadHistorico();
-    } catch (error) {
-      setToast({
-        message: getApiErrorMessage(error, "Nao foi possivel apagar o historico."),
-        type: "error",
-      });
-    }
-  };
-
   const requestRefund = (venda) => {
     setRefundState({ open: true, venda, confirmationText: "" });
   };
@@ -565,40 +548,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     URL.revokeObjectURL(url);
   };
 
-  const handleFechamentoHoje = async () => {
-    const hoje = dayjs().format("YYYY-MM-DD");
-    const nextRange = { start: hoje, end: hoje };
-    setPeriodo("dia");
-    setDateRange(nextRange);
-    setAppliedPeriodo("dia");
-    setAppliedDateRange(nextRange);
-    // Abrir a janela aqui, ainda dentro do clique do usuario - depois de um
-    // await o navegador (principalmente no celular) trata como pop-up e bloqueia.
-    const printWindow = window.open("", "_blank", "width=960,height=720");
-    try {
-      const data = await loadHistorico({ periodo: "dia", dateRange: nextRange });
-      if (!data) {
-        printWindow?.close();
-        return;
-      }
-      setHistorico(data);
-      try {
-        await handleSalvarFechamento("dia", nextRange, { silentSuccess: true, silentError: true });
-        setToast({ message: "Fechamento de hoje salvo e PDF gerado com sucesso.", type: "success" });
-      } catch (error) {
-        if (error?.response?.status !== 409) throw error;
-        setToast({ message: "O fechamento de hoje ja estava salvo. PDF gerado com o mesmo recorte.", type: "success" });
-      }
-      handleExportPdf(data, "dia", nextRange, printWindow);
-    } catch (error) {
-      printWindow?.close();
-      setToast({
-        message: getApiErrorMessage(error, "Nao foi possivel gerar o fechamento do dia."),
-        type: "error",
-      });
-    }
-  };
-
   const handleFecharPeriodoSelecionado = async () => {
     const selectedPeriodo = periodo;
     const selectedRange = dateRange;
@@ -708,20 +657,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         message={toast.message}
         type={toast.type}
         onClose={() => setToast({ message: "", type: toast.type })}
-      />
-      <ConfirmModal
-        open={deleteState.open}
-        title="Apagar historico"
-        description="Esta acao remove pagamentos, vendas oficiais e testes do periodo filtrado. Digite confirmar para continuar."
-        confirmLabel="Apagar historico"
-        requireText="confirmar"
-        inputValue={deleteState.confirmationText}
-        inputPlaceholder='Digite "confirmar"'
-        onInputChange={(value) =>
-          setDeleteState((current) => ({ ...current, confirmationText: value }))
-        }
-        onCancel={() => setDeleteState({ open: false, confirmationText: "" })}
-        onConfirm={handleDeleteHistorico}
       />
       <ConfirmModal
         open={refundState.open}
@@ -894,26 +829,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <Button type="button" className="justify-center" onClick={() => navigate("/maquinas")}>
               Voltar para maquinas
             </Button>
-            {detailed && !isAggregate ? (
-            <button
-              type="button"
-              className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
-              onClick={handleSalvarFechamento}
-            >
-              <ShieldCheck size={16} />
-              Salvar fechamento
-            </button>
-            ) : null}
-            {detailed && !isAggregate ? (
-            <button
-              type="button"
-              className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
-              onClick={handleFechamentoHoje}
-            >
-              <FileDown size={16} />
-              Fechamento do dia
-            </button>
-            ) : null}
             <button
               type="button"
               className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
@@ -943,16 +858,6 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             >
               <FileDown size={16} />
               Fechamento PDF
-            </button>
-            ) : null}
-            {detailed && !isAggregate ? (
-            <button
-              type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-3 font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-              onClick={() => setDeleteState({ open: true, confirmationText: "" })}
-            >
-              <Trash2 size={16} />
-              Apagar historicos
             </button>
             ) : null}
           </div>
