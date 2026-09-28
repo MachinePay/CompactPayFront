@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { CreditCard, Download, FileDown, QrCode, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wifi, Wrench } from "lucide-react";
+import { Coins, CreditCard, Download, FileDown, QrCode, RefreshCcw, Search, ShieldCheck, Sparkles, Trash2, Undo2, Wallet, Wifi, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -1585,7 +1585,11 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                     ) : null}
                   </td>
                   <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[165px]">
-                    {maquina ? <TerminalBadge maquina={maquina} /> : null}
+                    {isPhysicalSale(item) ? (
+                      <PhysicalNoteBadge item={item} />
+                    ) : maquina ? (
+                      <TerminalBadge maquina={maquina} />
+                    ) : null}
                     {isPixPayment(item) ? (
                       <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-1 text-xs font-bold text-teal-700">
                         <QrCode size={12} /> Via Pix (QR Code)
@@ -1694,9 +1698,13 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
         {maquina ? (
           <div className="col-span-2 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3">
             <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
-              Maquininha
+              {isPhysicalSale(item) ? "Nota recebida" : "Maquininha"}
             </div>
-            <TerminalBadge maquina={maquina} compact />
+            {isPhysicalSale(item) ? (
+              <PhysicalNoteBadge item={item} compact />
+            ) : (
+              <TerminalBadge maquina={maquina} compact />
+            )}
             {isPixPayment(item) ? (
               <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-1 text-xs font-bold text-teal-700">
                 <QrCode size={12} /> Via Pix (QR Code)
@@ -1794,6 +1802,47 @@ function TerminalBadge({ maquina, compact = false }) {
           {brasiliaDate(maquina.terminal_last_payment_at).format("HH:mm:ss")}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// Cada pulso do noteiro fisico vale R$ 1 (ver registrar_venda_pagamento em
+// mqtt_worker.py) e pagamentos fisicos seguidos sao agrupados num unico
+// registro com pulse_count = quantidade de pulsos - entao pulse_count bate
+// certinho com o valor da nota inserida (2 pulsos = nota de R$2, e assim
+// por diante). Sem imagem cadastrada pro valor (ex.: 1 pulso = moeda), cai
+// no icone generico de dinheiro.
+const NOTE_IMAGES = {
+  2: "/notas/2reais.png",
+  5: "/notas/5reais.png",
+  10: "/notas/10reais.png",
+  20: "/notas/20reais.png",
+  50: "/notas/50reais.png",
+  100: "/notas/100reais.png",
+};
+
+function getNoteImage(pulseCount) {
+  return NOTE_IMAGES[Number(pulseCount)] || null;
+}
+
+function PhysicalNoteBadge({ item, compact = false }) {
+  const noteImage = getNoteImage(item.pulse_count);
+  return (
+    <div className={compact ? "" : "text-center"}>
+      <div className={`flex flex-wrap items-center gap-2 ${compact ? "" : "justify-center"}`}>
+        {noteImage ? (
+          <img
+            src={noteImage}
+            alt={`Nota de R$ ${item.pulse_count}`}
+            className={compact ? "h-8 w-auto shrink-0 object-contain" : "h-11 w-auto shrink-0 object-contain"}
+          />
+        ) : (
+          <Coins size={compact ? 20 : 23} className="text-[var(--color-text-soft)]" />
+        )}
+        <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-700">
+          R$ {Number(item.valor || 0).toFixed(2)}
+        </span>
+      </div>
     </div>
   );
 }
