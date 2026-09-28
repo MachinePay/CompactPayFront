@@ -763,130 +763,128 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       />
 
       <section className="app-panel min-w-0 rounded-[22px] p-3 sm:rounded-[30px] sm:p-6 md:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
-              {detailed ? "Relatorio detalhado" : "Relatorio de vendas"}
-            </div>
-            <h1 className="mt-3 break-words text-3xl font-extrabold text-[var(--color-text)] sm:text-4xl md:text-5xl">
-              {isAggregate ? "Todas as maquinas" : maquina?.nome || machineId}
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
-              {isAggregate
-                ? "Somando vendas, testes e saidas de todas as maquinas do cliente selecionado no periodo."
-                : detailed
-                  ? "Escolha a maquina e consulte vendas, historico, observacoes, fechamentos e auditoria."
-                  : "Pagamentos e testes desde o ultimo fechamento. Selecione um periodo para consultar outra janela."}
-            </p>
-            <div className="mt-3 text-sm text-[var(--color-text-soft)]">
-              {isAggregate
-                ? `${historico.quantidade_maquinas ?? machineOptions.length} maquina(s) somada(s)`
-                : `${maquina?.id_hardware || machineId} ${maquina?.localizacao ? ` - ${maquina.localizacao}` : ""}`}
-            </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-text-soft)]">
+            {detailed ? "Relatorio detalhado" : "Relatorio de vendas"}
           </div>
+          <h1 className="mt-3 break-words text-3xl font-extrabold text-[var(--color-text)] sm:text-4xl md:text-5xl">
+            {isAggregate ? "Todas as maquinas" : maquina?.nome || machineId}
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
+            {isAggregate
+              ? "Somando vendas, testes e saidas de todas as maquinas do cliente selecionado no periodo."
+              : detailed
+                ? "Escolha a maquina e consulte vendas, historico, observacoes, fechamentos e auditoria."
+                : "Pagamentos e testes desde o ultimo fechamento. Selecione um periodo para consultar outra janela."}
+          </p>
+          <div className="mt-3 text-sm text-[var(--color-text-soft)]">
+            {isAggregate
+              ? `${historico.quantidade_maquinas ?? machineOptions.length} maquina(s) somada(s)`
+              : `${maquina?.id_hardware || machineId} ${maquina?.localizacao ? ` - ${maquina.localizacao}` : ""}`}
+          </div>
+        </div>
 
-          <div className="flex w-full min-w-0 flex-wrap items-center gap-3 lg:w-auto lg:justify-end">
-            {selectable && user?.role === "admin" ? (
-              <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] sm:min-w-[260px] sm:w-auto sm:rounded-full">
-                Cliente
-                <select
-                  className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none"
-                  value={selectedClienteId}
-                  onChange={(event) => setSelectedClienteId(event.target.value)}
-                >
-                  <option value="">Selecione um cliente</option>
-                  {clientes.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.nome_empresa || item.email_contato}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            {selectable ? (
-              <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)] sm:min-w-[260px] sm:w-auto sm:rounded-full">
-                Maquina
-                <select
-                  className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none"
-                  value={selectedMachineId}
-                  onChange={(event) => setSelectedMachineId(event.target.value)}
-                  disabled={user?.role === "admin" && !selectedClienteId}
-                >
-                  <option value="">
-                    {user?.role === "admin" && !selectedClienteId ? "Selecione um cliente primeiro" : "Selecione uma maquina"}
+        <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-[var(--color-border)] pt-6">
+          {selectable && user?.role === "admin" ? (
+            <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-5 py-4 text-base font-semibold text-[var(--color-text)] sm:min-w-[260px] sm:w-auto sm:rounded-full">
+              Cliente
+              <select
+                className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none"
+                value={selectedClienteId}
+                onChange={(event) => setSelectedClienteId(event.target.value)}
+              >
+                <option value="">Selecione um cliente</option>
+                {clientes.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.nome_empresa || item.email_contato}
                   </option>
-                  {machineOptions.length > 0 ? (
-                    <option value={ALL_MACHINES_VALUE}>Todas as maquinas</option>
-                  ) : null}
-                  {machineOptions.map((item) => (
-                    <option key={item.id_hardware} value={item.id_hardware}>
-                      {(item.nome || item.id_hardware) + ` - ${item.id_hardware}`}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            <FilterSelect
-              label="Registro"
-              value={saleFilters.registro}
-              onChange={(value) =>
-                setSaleFilters((current) => ({ ...current, registro: value }))
-              }
-              options={[
-                ["todos", "Todos"],
-                ["reais", "Pagamentos reais"],
-                ["testes", "Testes"],
-              ]}
-            />
-            <FilterSelect
-              label="Origem"
-              value={saleFilters.origem}
-              onChange={(value) =>
-                setSaleFilters((current) => ({ ...current, origem: value }))
-              }
-              options={[
-                ["todos", "Fisico + digital"],
-                ["fisico", "Fisico"],
-                ["digital", "Digital"],
-                ["app_agarra", "Aplicativo Agarra"],
-              ]}
-            />
-            <FilterSelect
-              label="Forma"
-              value={saleFilters.forma}
-              onChange={(value) =>
-                setSaleFilters((current) => ({ ...current, forma: value }))
-              }
-              options={[
-                ["todos", "Todas"],
-                ["pix", "Pix"],
-                ["cartao", "Cartao"],
-                ["credito", "Credito"],
-                ["debito", "Debito"],
-              ]}
-            />
-            <FilterSelect
-              label="Pulso"
-              value={saleFilters.pulso}
-              onChange={(value) =>
-                setSaleFilters((current) => ({ ...current, pulso: value }))
-              }
-              options={[
-                ["todos", "Todos"],
-                ["confirmados", "Confirmados"],
-                ["ausentes", "Ausentes"],
-              ]}
-            />
-            <button
-              type="button"
-              className="pill-button pill-button--primary inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold sm:w-auto"
-              onClick={handleApplyFilters}
-              disabled={loading || !machineId}
-            >
-              <Search size={16} />
-              {loading ? "Aplicando..." : "Aplicar filtros"}
-            </button>
-          </div>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {selectable ? (
+            <label className="flex w-full min-w-0 items-center gap-3 rounded-[22px] border border-[var(--color-border)] bg-white px-5 py-4 text-base font-semibold text-[var(--color-text)] sm:min-w-[260px] sm:w-auto sm:rounded-full">
+              Maquina
+              <select
+                className="min-w-0 flex-1 bg-transparent text-[var(--color-text-soft)] outline-none"
+                value={selectedMachineId}
+                onChange={(event) => setSelectedMachineId(event.target.value)}
+                disabled={user?.role === "admin" && !selectedClienteId}
+              >
+                <option value="">
+                  {user?.role === "admin" && !selectedClienteId ? "Selecione um cliente primeiro" : "Selecione uma maquina"}
+                </option>
+                {machineOptions.length > 0 ? (
+                  <option value={ALL_MACHINES_VALUE}>Todas as maquinas</option>
+                ) : null}
+                {machineOptions.map((item) => (
+                  <option key={item.id_hardware} value={item.id_hardware}>
+                    {(item.nome || item.id_hardware) + ` - ${item.id_hardware}`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <FilterSelect
+            label="Registro"
+            value={saleFilters.registro}
+            onChange={(value) =>
+              setSaleFilters((current) => ({ ...current, registro: value }))
+            }
+            options={[
+              ["todos", "Todos"],
+              ["reais", "Pagamentos reais"],
+              ["testes", "Testes"],
+            ]}
+          />
+          <FilterSelect
+            label="Origem"
+            value={saleFilters.origem}
+            onChange={(value) =>
+              setSaleFilters((current) => ({ ...current, origem: value }))
+            }
+            options={[
+              ["todos", "Fisico + digital"],
+              ["fisico", "Fisico"],
+              ["digital", "Digital"],
+              ["app_agarra", "Aplicativo Agarra"],
+            ]}
+          />
+          <FilterSelect
+            label="Forma"
+            value={saleFilters.forma}
+            onChange={(value) =>
+              setSaleFilters((current) => ({ ...current, forma: value }))
+            }
+            options={[
+              ["todos", "Todas"],
+              ["pix", "Pix"],
+              ["cartao", "Cartao"],
+              ["credito", "Credito"],
+              ["debito", "Debito"],
+            ]}
+          />
+          <FilterSelect
+            label="Pulso"
+            value={saleFilters.pulso}
+            onChange={(value) =>
+              setSaleFilters((current) => ({ ...current, pulso: value }))
+            }
+            options={[
+              ["todos", "Todos"],
+              ["confirmados", "Confirmados"],
+              ["ausentes", "Ausentes"],
+            ]}
+          />
+          <button
+            type="button"
+            className="pill-button pill-button--primary inline-flex w-full items-center justify-center gap-2 px-6 py-4 text-base font-semibold sm:w-auto"
+            onClick={handleApplyFilters}
+            disabled={loading || !machineId}
+          >
+            <Search size={16} />
+            {loading ? "Aplicando..." : "Aplicar filtros"}
+          </button>
         </div>
       </section>
 
