@@ -1095,6 +1095,15 @@ export default function Maquinas() {
       <section className="app-panel rounded-[30px] p-5 md:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-3">
+            <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm sm:flex-none">
+              <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
+              <input
+                className="min-w-0 flex-1 bg-transparent outline-none"
+                placeholder="Buscar maquina (nome, ID ou local)"
+                value={buscaMaquina}
+                onChange={(event) => setBuscaMaquina(event.target.value)}
+              />
+            </label>
             {user?.role === "admin" ? (
               <label className="flex min-w-[260px] items-center gap-3 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--color-text)]">
                 Cliente
@@ -1126,15 +1135,6 @@ export default function Maquinas() {
               </select>
             </label>
             <DateRangePicker value={dateRange} onChange={setDateRange} />
-            <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm sm:flex-none">
-              <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
-              <input
-                className="min-w-0 flex-1 bg-transparent outline-none"
-                placeholder="Buscar maquina (nome, ID ou local)"
-                value={buscaMaquina}
-                onChange={(event) => setBuscaMaquina(event.target.value)}
-              />
-            </label>
           </div>
 
           <button
