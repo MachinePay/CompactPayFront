@@ -7,6 +7,7 @@ import {
   PowerOff,
   Radio,
   RefreshCcw,
+  Repeat,
   Search,
   Wifi,
   XCircle,
@@ -31,6 +32,7 @@ const emptyPayload = {
     pulso_ausente: 0,
     firmware: 0,
     ruido_contador: 0,
+    quedas_frequentes: 0,
     filtrados: 0,
   },
   alertas: [],
@@ -48,6 +50,7 @@ function alertIcon(tipo) {
     firmware: Cpu,
     ruido_contador: Radio,
     sem_pagamento_recente: Info,
+    quedas_frequentes: Repeat,
   };
   return icons[tipo] || AlertTriangle;
 }
@@ -175,6 +178,7 @@ export default function AlertasMaquinas() {
                 ["firmware", "Firmware"],
                 ["ruido_contador", "Ruido"],
                 ["sem_pagamento_recente", "Sem pagamento"],
+                ["quedas_frequentes", "Quedas frequentes"],
               ]}
             />
             <FilterSelect
@@ -201,6 +205,7 @@ export default function AlertasMaquinas() {
         <SummaryCard label="Criticos" value={payload.resumo.criticos} icon={<XCircle size={18} />} tone="danger" />
         <SummaryCard label="Offline" value={payload.resumo.offline} icon={<PowerOff size={18} />} tone="danger" />
         <SummaryCard label="Pulso ausente" value={payload.resumo.pulso_ausente} icon={<Zap size={18} />} tone="danger" />
+        <SummaryCard label="Quedas frequentes" value={payload.resumo.quedas_frequentes} icon={<Repeat size={18} />} tone="danger" />
         <SummaryCard label="Avisos" value={payload.resumo.avisos} icon={<AlertTriangle size={18} />} tone="warning" />
         <SummaryCard label="Wi-Fi ruim" value={payload.resumo.wifi_ruim} icon={<Wifi size={18} />} tone="warning" />
         <SummaryCard label="Ruido" value={payload.resumo.ruido_contador} icon={<Radio size={18} />} tone="warning" />
@@ -241,6 +246,11 @@ export default function AlertasMaquinas() {
                 key={alert.id}
                 alert={alert}
                 onOpen={() => navigate(`/maquinas/${alert.maquina.id_hardware}`)}
+                onOpenQuedas={
+                  alert.tipo === "quedas_frequentes"
+                    ? () => navigate(`/historico-quedas?maquina_id=${alert.maquina.id_hardware}`)
+                    : null
+                }
               />
             ))}
           </div>
@@ -286,7 +296,7 @@ function SummaryCard({ label, value, icon, tone = "neutral" }) {
   );
 }
 
-function AlertCard({ alert, onOpen }) {
+function AlertCard({ alert, onOpen, onOpenQuedas }) {
   return (
     <article className={`rounded-[18px] border p-4 ${severityTone(alert.severidade)}`}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -310,13 +320,24 @@ function AlertCard({ alert, onOpen }) {
             </div>
           </div>
         </div>
-        <button
-          type="button"
-          className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-bold text-[var(--color-text)] shadow-[0_8px_20px_rgba(34,61,43,0.08)]"
-          onClick={onOpen}
-        >
-          Abrir maquina
-        </button>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {onOpenQuedas ? (
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-bold text-[var(--color-text)] shadow-[0_8px_20px_rgba(34,61,43,0.08)]"
+              onClick={onOpenQuedas}
+            >
+              Ver historico de quedas
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-bold text-[var(--color-text)] shadow-[0_8px_20px_rgba(34,61,43,0.08)]"
+            onClick={onOpen}
+          >
+            Abrir maquina
+          </button>
+        </div>
       </div>
     </article>
   );

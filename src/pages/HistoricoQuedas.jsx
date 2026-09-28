@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Clock, Power, RefreshCcw, Zap } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
 import DateRangePicker from "../components/DateRangePicker";
@@ -43,8 +44,9 @@ export default function HistoricoQuedas() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "success" });
+  const [searchParams] = useSearchParams();
   const [clienteId, setClienteId] = useState("");
-  const [maquinaId, setMaquinaId] = useState("");
+  const [maquinaId, setMaquinaId] = useState(searchParams.get("maquina_id") || "");
   const [dateRange, setDateRange] = useState(emptyDateRange);
   const [limite, setLimite] = useState("300");
 
