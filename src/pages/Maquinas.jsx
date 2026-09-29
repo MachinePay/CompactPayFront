@@ -15,6 +15,7 @@ import {
   Server,
   ShieldAlert,
   Terminal,
+  Timer,
   Trash2,
   UploadCloud,
   Wifi,
@@ -97,6 +98,14 @@ const emptyDiagnosticoState = {
   error: "",
 };
 
+const emptyReconexaoState = {
+  open: false,
+  machine: null,
+  saving: false,
+  hardResetSec: "",
+  fullRestartSec: "",
+};
+
 const quickCreditValues = [2, 5, 10, 20, 50, 100];
 
 function formatCurrency(value) {
@@ -154,6 +163,7 @@ export default function Maquinas() {
   const [diagnosticoState, setDiagnosticoState] = useState(
     emptyDiagnosticoState,
   );
+  const [reconexaoState, setReconexaoState] = useState(emptyReconexaoState);
   const selectedCliente = usuarios.find(
     (item) => String(item.cliente_id) === String(form.cliente_id),
   );
@@ -556,6 +566,59 @@ export default function Maquinas() {
           "Nao foi possivel carregar o diagnostico da placa.",
         ),
       });
+    }
+  };
+
+  const handleAbrirReconexao = (machine) => {
+    setReconexaoState({
+      open: true,
+      machine,
+      saving: false,
+      hardResetSec:
+        machine.wifi_hard_reset_ms != null
+          ? String(Math.round(machine.wifi_hard_reset_ms / 1000))
+          : "",
+      fullRestartSec:
+        machine.wifi_full_restart_ms != null
+          ? String(Math.round(machine.wifi_full_restart_ms / 1000))
+          : "",
+    });
+  };
+
+  const handleSalvarReconexao = async () => {
+    const machine = reconexaoState.machine;
+    if (!machine) return;
+    setReconexaoState((current) => ({ ...current, saving: true }));
+    try {
+      const payload = {
+        wifi_hard_reset_ms: reconexaoState.hardResetSec.trim()
+          ? Math.round(Number(reconexaoState.hardResetSec) * 1000)
+          : null,
+        wifi_full_restart_ms: reconexaoState.fullRestartSec.trim()
+          ? Math.round(Number(reconexaoState.fullRestartSec) * 1000)
+          : null,
+      };
+      const { data } = await api.post(
+        `/maquinas/${machine.id_hardware}/config-reconexao`,
+        payload,
+      );
+      setToast({
+        message: data.enviado
+          ? "Tempos de reconexao atualizados e enviados para a placa."
+          : "Tempos salvos, mas a placa parece offline agora - serao aplicados quando ela reconectar e voce reenviar.",
+        type: data.enviado ? "success" : "warning",
+      });
+      setReconexaoState(emptyReconexaoState);
+      await loadMaquinas({ silent: true });
+    } catch (error) {
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel salvar os tempos de reconexao.",
+        ),
+        type: "error",
+      });
+      setReconexaoState((current) => ({ ...current, saving: false }));
     }
   };
 
@@ -1111,6 +1174,79 @@ export default function Maquinas() {
         </div>
       </Modal>
 
+      <Modal
+        open={reconexaoState.open}
+        onClose={() => setReconexaoState(emptyReconexaoState)}
+      >
+        <div className="space-y-5">
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
+              Tempos de reconexao Wi-Fi
+            </div>
+            <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
+              {reconexaoState.machine?.nome || reconexaoState.machine?.id_hardware}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+              Ajusta so nesta maquina quanto tempo sem Wi-Fi ela espera antes
+              de reciclar o radio e antes de reiniciar a placa inteira. Util
+              pra locais com roteador instavel que precisam de um tempo
+              diferente do padrao (30s / 45s) usado pelas demais maquinas.
+              Deixe em branco pra voltar ao padrao. So funciona se a maquina
+              estiver online agora.
+            </p>
+          </div>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+              Reciclar radio Wi-Fi apos (segundos)
+            </span>
+            <input
+              type="number"
+              min="10"
+              max="600"
+              placeholder="Padrao: 30"
+              className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+              value={reconexaoState.hardResetSec}
+              onChange={(event) =>
+                setReconexaoState((current) => ({
+                  ...current,
+                  hardResetSec: event.target.value,
+                }))
+              }
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+              Reiniciar a placa inteira apos (segundos)
+            </span>
+            <input
+              type="number"
+              min="10"
+              max="600"
+              placeholder="Padrao: 45"
+              className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+              value={reconexaoState.fullRestartSec}
+              onChange={(event) =>
+                setReconexaoState((current) => ({
+                  ...current,
+                  fullRestartSec: event.target.value,
+                }))
+              }
+            />
+          </label>
+
+          <Button
+            type="button"
+            className="w-full justify-center"
+            onClick={handleSalvarReconexao}
+            disabled={reconexaoState.saving}
+          >
+            {reconexaoState.saving ? "Enviando..." : "Salvar e enviar para a placa"}
+          </Button>
+        </div>
+      </Modal>
+
       <CardSectionHeader
         title="Maquinas"
         description="Cadastre novas unidades, gere IDs para o ESP e crie automaticamente o caixa no Mercado Pago do cliente."
@@ -1485,6 +1621,14 @@ export default function Maquinas() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleAbrirDiagnostico(m);
+                                  }}
+                                />
+                                <IconActionButton
+                                  icon={Timer}
+                                  label="Tempos de reconexao Wi-Fi"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAbrirReconexao(m);
                                   }}
                                 />
                                 <IconActionButton
