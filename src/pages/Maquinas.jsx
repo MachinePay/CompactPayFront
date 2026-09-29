@@ -31,7 +31,10 @@ import Button from "../components/Button";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import { brasiliaDate } from "../utils/dateTime";
-import { describePulseResultToast, pollComandoStatus } from "../utils/comandoStatus";
+import {
+  describePulseResultToast,
+  pollComandoStatus,
+} from "../utils/comandoStatus";
 
 const emptyForm = {
   id_hardware: "",
@@ -148,7 +151,9 @@ export default function Maquinas() {
   const [updateState, setUpdateState] = useState(emptyUpdateState);
   const [creditState, setCreditState] = useState(emptyCreditState);
   const [caixaState, setCaixaState] = useState(emptyCaixaState);
-  const [diagnosticoState, setDiagnosticoState] = useState(emptyDiagnosticoState);
+  const [diagnosticoState, setDiagnosticoState] = useState(
+    emptyDiagnosticoState,
+  );
   const selectedCliente = usuarios.find(
     (item) => String(item.cliente_id) === String(form.cliente_id),
   );
@@ -161,38 +166,41 @@ export default function Maquinas() {
     );
   }, [selectedClienteId]);
 
-  const loadMaquinas = useCallback(async (options = {}) => {
-    const silent = Boolean(options?.silent);
-    if (!user) return;
-    if (user.role === "admin" && !selectedClienteId) {
-      setMaquinas([]);
-      setLoading(false);
-      return;
-    }
-    if (!silent) setLoading(true);
-    const params = [];
-    if (periodo) params.push(`periodo=${periodo}`);
-    if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
-    if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
-    if (user.role === "admin" && selectedClienteId) {
-      params.push(`cliente_id=${encodeURIComponent(selectedClienteId)}`);
-    }
-    const paramStr = params.length ? `?${params.join("&")}` : "";
-    try {
-      const res = await api.get(`/maquinas${paramStr}`);
-      setMaquinas(res.data);
-    } catch (error) {
-      setToast({
-        message: getApiErrorMessage(
-          error,
-          "Nao foi possivel carregar as maquinas.",
-        ),
-        type: "error",
-      });
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  }, [dateRange, periodo, selectedClienteId, user]);
+  const loadMaquinas = useCallback(
+    async (options = {}) => {
+      const silent = Boolean(options?.silent);
+      if (!user) return;
+      if (user.role === "admin" && !selectedClienteId) {
+        setMaquinas([]);
+        setLoading(false);
+        return;
+      }
+      if (!silent) setLoading(true);
+      const params = [];
+      if (periodo) params.push(`periodo=${periodo}`);
+      if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
+      if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
+      if (user.role === "admin" && selectedClienteId) {
+        params.push(`cliente_id=${encodeURIComponent(selectedClienteId)}`);
+      }
+      const paramStr = params.length ? `?${params.join("&")}` : "";
+      try {
+        const res = await api.get(`/maquinas${paramStr}`);
+        setMaquinas(res.data);
+      } catch (error) {
+        setToast({
+          message: getApiErrorMessage(
+            error,
+            "Nao foi possivel carregar as maquinas.",
+          ),
+          type: "error",
+        });
+      } finally {
+        if (!silent) setLoading(false);
+      }
+    },
+    [dateRange, periodo, selectedClienteId, user],
+  );
 
   const loadUsuarios = useCallback(async () => {
     if (user?.role !== "admin") return;
@@ -494,7 +502,13 @@ export default function Maquinas() {
   };
 
   const handleConsultarCaixa = async (machine) => {
-    setCaixaState({ open: true, machine, loading: true, data: null, error: "" });
+    setCaixaState({
+      open: true,
+      machine,
+      loading: true,
+      data: null,
+      error: "",
+    });
     try {
       const { data } = await api.get(`/maquinas/${machine.id_hardware}/caixa`);
       setCaixaState({ open: true, machine, loading: false, data, error: "" });
@@ -504,23 +518,43 @@ export default function Maquinas() {
         machine,
         loading: false,
         data: null,
-        error: getApiErrorMessage(error, "Nao foi possivel consultar o caixa no Mercado Pago."),
+        error: getApiErrorMessage(
+          error,
+          "Nao foi possivel consultar o caixa no Mercado Pago.",
+        ),
       });
     }
   };
 
   const handleAbrirDiagnostico = async (machine) => {
-    setDiagnosticoState({ open: true, machine, loading: true, eventos: [], error: "" });
+    setDiagnosticoState({
+      open: true,
+      machine,
+      loading: true,
+      eventos: [],
+      error: "",
+    });
     try {
-      const { data } = await api.get(`/maquinas/${machine.id_hardware}/eventos-dispositivo`);
-      setDiagnosticoState({ open: true, machine, loading: false, eventos: data.eventos || [], error: "" });
+      const { data } = await api.get(
+        `/maquinas/${machine.id_hardware}/eventos-dispositivo`,
+      );
+      setDiagnosticoState({
+        open: true,
+        machine,
+        loading: false,
+        eventos: data.eventos || [],
+        error: "",
+      });
     } catch (error) {
       setDiagnosticoState({
         open: true,
         machine,
         loading: false,
         eventos: [],
-        error: getApiErrorMessage(error, "Nao foi possivel carregar o diagnostico da placa."),
+        error: getApiErrorMessage(
+          error,
+          "Nao foi possivel carregar o diagnostico da placa.",
+        ),
       });
     }
   };
@@ -550,9 +584,12 @@ export default function Maquinas() {
 
     setSendingCreditId(machine.id_hardware);
     try {
-      const { data } = await api.post(`/maquinas/${machine.id_hardware}/credito-teste`, {
-        valor: value,
-      });
+      const { data } = await api.post(
+        `/maquinas/${machine.id_hardware}/credito-teste`,
+        {
+          valor: value,
+        },
+      );
       setCreditState(emptyCreditState);
 
       // Nao mostra nada ainda so por ter enviado - o botao ja fica em
@@ -560,7 +597,7 @@ export default function Maquinas() {
       // verdade (ou quando o backend desistir de esperar por ela), com o
       // resultado real: falha, pulso enviado (sem confirmacao final) ou
       // confirmado.
-      const resultado = await pollComandoStatus(data.command_id);
+      const resultado = await pollComandoStatus(data.command_id, data.pulsos);
       setToast(describePulseResultToast(resultado, value, machine.id_hardware));
       await loadMaquinas();
     } catch (error) {
@@ -917,9 +954,8 @@ export default function Maquinas() {
               {caixaState.machine?.nome || caixaState.machine?.id_hardware}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-              QR code fixo de Pix desse caixa - dá para copiar o código,
-              baixar a imagem ou o PDF pronto para imprimir e colar na
-              máquina.
+              QR code fixo de Pix desse caixa - dá para copiar o código, baixar
+              a imagem ou o PDF pronto para imprimir e colar na máquina.
             </p>
           </div>
 
@@ -932,7 +968,10 @@ export default function Maquinas() {
           ) : caixaState.data ? (
             <div className="space-y-4">
               <div className="rounded-[22px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">
-                <InfoLine label="Caixa (POS)" value={caixaState.data.name || caixaState.data.pos_id} />
+                <InfoLine
+                  label="Caixa (POS)"
+                  value={caixaState.data.name || caixaState.data.pos_id}
+                />
                 <InfoLine label="ID do caixa" value={caixaState.data.pos_id} />
               </div>
 
@@ -975,7 +1014,9 @@ export default function Maquinas() {
                   target="_blank"
                   rel="noreferrer"
                   className={`pill-button inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold ${
-                    caixaState.data.qr?.template_document ? "" : "pointer-events-none opacity-50"
+                    caixaState.data.qr?.template_document
+                      ? ""
+                      : "pointer-events-none opacity-50"
                   }`}
                 >
                   <FileText size={16} />
@@ -986,7 +1027,9 @@ export default function Maquinas() {
                   target="_blank"
                   rel="noreferrer"
                   className={`pill-button inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold ${
-                    caixaState.data.qr?.template_image ? "" : "pointer-events-none opacity-50"
+                    caixaState.data.qr?.template_image
+                      ? ""
+                      : "pointer-events-none opacity-50"
                   }`}
                 >
                   <Download size={16} />
@@ -1009,20 +1052,29 @@ export default function Maquinas() {
                 Diagnostico da placa
               </div>
               <h2 className="mt-2 text-2xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
-                {diagnosticoState.machine?.nome || diagnosticoState.machine?.id_hardware}
+                {diagnosticoState.machine?.nome ||
+                  diagnosticoState.machine?.id_hardware}
               </h2>
               <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-                Log tecnico bruto que a placa manda por MQTT (config de pulso/moeda, velocidade do noteiro, wifi,
-                reinicios etc.) - util pra configurar uma maquina nova sem precisar abrir o log do servidor.
+                Log tecnico bruto que a placa manda por MQTT (config de
+                pulso/moeda, velocidade do noteiro, wifi, reinicios etc.) - util
+                pra configurar uma maquina nova sem precisar abrir o log do
+                servidor.
               </p>
             </div>
             <button
               type="button"
               className="pill-button inline-flex shrink-0 items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
-              onClick={() => diagnosticoState.machine && handleAbrirDiagnostico(diagnosticoState.machine)}
+              onClick={() =>
+                diagnosticoState.machine &&
+                handleAbrirDiagnostico(diagnosticoState.machine)
+              }
               disabled={diagnosticoState.loading}
             >
-              <RefreshCcw size={15} className={diagnosticoState.loading ? "animate-spin" : ""} />
+              <RefreshCcw
+                size={15}
+                className={diagnosticoState.loading ? "animate-spin" : ""}
+              />
               Atualizar
             </button>
           </div>
@@ -1045,7 +1097,9 @@ export default function Maquinas() {
                   className="rounded-[12px] border border-[var(--color-border)] bg-white px-3 py-2"
                 >
                   <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-soft)]">
-                    {brasiliaDate(evento.created_at).format("DD/MM/YYYY HH:mm:ss")}
+                    {brasiliaDate(evento.created_at).format(
+                      "DD/MM/YYYY HH:mm:ss",
+                    )}
                   </div>
                   <div className="mt-1 break-all font-mono text-xs text-[var(--color-text)]">
                     {evento.descricao}
@@ -1096,7 +1150,10 @@ export default function Maquinas() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex min-w-[220px] flex-1 items-center gap-2 rounded-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm sm:flex-none">
-              <Search size={16} className="shrink-0 text-[var(--color-text-soft)]" />
+              <Search
+                size={16}
+                className="shrink-0 text-[var(--color-text-soft)]"
+              />
               <input
                 className="min-w-0 flex-1 bg-transparent outline-none"
                 placeholder="Buscar maquina (nome, ID ou local)"
@@ -1187,8 +1244,12 @@ export default function Maquinas() {
                     onSendUpdate={() => requestFirmwareUpdate(m)}
                     onEdit={() => handleEditMachine(m)}
                     onDelete={() => requestDeleteMachine(m)}
-                    onToggleFiltroSaida={() => handleToggleFiltroSaidaPosCredito(m)}
-                    togglingFiltroSaida={togglingFiltroSaidaId === m.id_hardware}
+                    onToggleFiltroSaida={() =>
+                      handleToggleFiltroSaidaPosCredito(m)
+                    }
+                    togglingFiltroSaida={
+                      togglingFiltroSaidaId === m.id_hardware
+                    }
                     onAbrirDiagnostico={() => handleAbrirDiagnostico(m)}
                   />
                 ))}
@@ -1364,9 +1425,11 @@ export default function Maquinas() {
                                       ? "Maquina offline"
                                       : firmwareVersions.length === 0
                                         ? "Cadastre uma versao em Firmwares"
-                                        : ["sent", "downloading", "restarting"].includes(
-                                              m.firmware_update_status,
-                                            )
+                                        : [
+                                              "sent",
+                                              "downloading",
+                                              "restarting",
+                                            ].includes(m.firmware_update_status)
                                           ? "Ja existe uma atualizacao em andamento"
                                           : "Atualizar firmware"
                                   }
@@ -1378,9 +1441,11 @@ export default function Maquinas() {
                                     sendingUpdateId === m.id_hardware ||
                                     !m.status_online ||
                                     firmwareVersions.length === 0 ||
-                                    ["sent", "downloading", "restarting"].includes(
-                                      m.firmware_update_status,
-                                    )
+                                    [
+                                      "sent",
+                                      "downloading",
+                                      "restarting",
+                                    ].includes(m.firmware_update_status)
                                   }
                                   busy={sendingUpdateId === m.id_hardware}
                                 />
@@ -1409,7 +1474,9 @@ export default function Maquinas() {
                                     e.stopPropagation();
                                     handleToggleFiltroSaidaPosCredito(m);
                                   }}
-                                  disabled={togglingFiltroSaidaId === m.id_hardware}
+                                  disabled={
+                                    togglingFiltroSaidaId === m.id_hardware
+                                  }
                                   busy={togglingFiltroSaidaId === m.id_hardware}
                                 />
                                 <IconActionButton
@@ -1589,10 +1656,14 @@ export default function Maquinas() {
                       <option
                         key={provider}
                         value={provider}
-                        disabled={provider !== "mercado_pago" && provider !== "token_play"}
+                        disabled={
+                          provider !== "mercado_pago" &&
+                          provider !== "token_play"
+                        }
                       >
                         {paymentProviderLabels[provider]}
-                        {provider !== "mercado_pago" && provider !== "token_play"
+                        {provider !== "mercado_pago" &&
+                        provider !== "token_play"
                           ? " - em breve"
                           : ""}
                       </option>
@@ -1697,8 +1768,7 @@ export default function Maquinas() {
               podem ser recuperados:
             </strong>{" "}
             pagamentos, vendas, testes, historico de operacoes, fechamentos
-            salvos, comandos enviados e alertas. Faturamento ja registrado
-            (
+            salvos, comandos enviados e alertas. Faturamento ja registrado (
             {deleteState.machine?.faturamento?.toFixed
               ? `R$ ${deleteState.machine.faturamento.toFixed(2)}`
               : "R$ 0,00"}{" "}
@@ -1937,7 +2007,9 @@ function MachineMobileCard({
                 ? "Enviando"
                 : machine.firmware_update_status === "downloading"
                   ? `Baixando${machine.firmware_update_progress != null ? ` ${machine.firmware_update_progress}%` : "..."}`
-                  : ["sent", "restarting"].includes(machine.firmware_update_status)
+                  : ["sent", "restarting"].includes(
+                        machine.firmware_update_status,
+                      )
                     ? "Em andamento"
                     : "Atualizar"}
             </button>
@@ -1965,9 +2037,16 @@ function MachineMobileCard({
               onClick={onToggleFiltroSaida}
               disabled={togglingFiltroSaida}
             >
-              <ShieldAlert size={14} className={togglingFiltroSaida ? "shrink-0 animate-spin" : "shrink-0"} />
+              <ShieldAlert
+                size={14}
+                className={
+                  togglingFiltroSaida ? "shrink-0 animate-spin" : "shrink-0"
+                }
+              />
               <span className="truncate">
-                {machine.ignorar_saida_pos_credito ? "Filtro: ativo" : "Filtro: inativo"}
+                {machine.ignorar_saida_pos_credito
+                  ? "Filtro: ativo"
+                  : "Filtro: inativo"}
               </span>
             </button>
             <button
@@ -2207,10 +2286,14 @@ function WifiSignal({ online, quality, rssi, compact = false }) {
   const meta = getWifiSignalMeta(online, quality);
   return (
     <div className="min-w-0">
-      <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-bold ${meta.color}`}>
+      <div
+        className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs font-bold ${meta.color}`}
+      >
         <Wifi size={compact ? 14 : 16} className="shrink-0" />
         <span className="truncate">{meta.label}</span>
-        {meta.quality !== null ? <span className="shrink-0">{meta.quality}%</span> : null}
+        {meta.quality !== null ? (
+          <span className="shrink-0">{meta.quality}%</span>
+        ) : null}
       </div>
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
         <div

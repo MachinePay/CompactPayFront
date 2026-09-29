@@ -1,7 +1,9 @@
 import api from "../api/axios";
 
 const POLL_INTERVAL_MS = 1500;
-const POLL_MAX_ATTEMPTS = 40; // ~60s de acompanhamento antes de desistir de ficar perguntando
+const POLL_BASE_TIMEOUT_MS = 60_000;
+const POLL_PER_PULSE_TIMEOUT_MS = 3000;
+const POLL_MAX_TIMEOUT_MS = 10 * 60_000;
 const FINAL_STATUSES = new Set(["executado", "falhou", "cancelado"]);
 
 // Acompanha um comando (pagamento/teste) depois que o endpoint que o
@@ -9,9 +11,15 @@ const FINAL_STATUSES = new Set(["executado", "falhou", "cancelado"]);
 // maquina confirmar o pulso fisico. Devolve o comando final (executado,
 // falhou ou cancelado) ou null se passar do tempo de acompanhamento - nesse
 // caso o comando continua em andamento no backend, so paramos de perguntar.
-export async function pollComandoStatus(commandId) {
+export async function pollComandoStatus(commandId, expectedPulseCount = 1) {
   if (!commandId) return null;
-  for (let attempt = 0; attempt < POLL_MAX_ATTEMPTS; attempt += 1) {
+  const pulseCount = Math.max(1, Math.ceil(Number(expectedPulseCount) || 1));
+  const timeoutMs = Math.min(
+    POLL_MAX_TIMEOUT_MS,
+    Math.max(POLL_BASE_TIMEOUT_MS, pulseCount * POLL_PER_PULSE_TIMEOUT_MS),
+  );
+  const maxAttempts = Math.ceil(timeoutMs / POLL_INTERVAL_MS);
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
     try {
       const { data } = await api.get(`/comandos-maquinas/${commandId}`);
@@ -42,8 +50,8 @@ export function describePulseResultToast(resultado, valor, machineId) {
   const valorFormatado = formatCurrencyBRL(valor);
   if (!resultado) {
     return {
-      message: `Sem confirmacao da maquina ${machineId} apos 60s. O pagamento de teste de ${valorFormatado} continua em acompanhamento - confira o historico da maquina.`,
-      type: "error",
+      message: `A maquina ${machineId} ainda nao confirmou o credito de ${valorFormatado}. O prazo de acompanhamento do painel terminou, mas isso nao confirma uma falha; confira o historico da maquina.`,
+      type: "warning",
     };
   }
   if (resultado.status === "executado") {

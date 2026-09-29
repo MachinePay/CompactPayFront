@@ -8,7 +8,10 @@ import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import { useAuth } from "../context/useAuth";
-import { describePulseResultToast, pollComandoStatus } from "../utils/comandoStatus";
+import {
+  describePulseResultToast,
+  pollComandoStatus,
+} from "../utils/comandoStatus";
 
 const emptyForm = {
   id: null,
@@ -40,7 +43,13 @@ export default function Produtos() {
       setProdutos(produtosRes.data);
       setMaquinas(maquinasRes.data);
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel carregar produtos."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel carregar produtos.",
+        ),
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -67,16 +76,28 @@ export default function Produtos() {
     try {
       if (form.id) {
         await api.put(`/produtos/${form.id}`, payload);
-        setToast({ message: "Produto atualizado com sucesso.", type: "success" });
+        setToast({
+          message: "Produto atualizado com sucesso.",
+          type: "success",
+        });
       } else {
         await api.post("/produtos", payload);
-        setToast({ message: "Produto cadastrado com sucesso.", type: "success" });
+        setToast({
+          message: "Produto cadastrado com sucesso.",
+          type: "success",
+        });
       }
       setShowModal(false);
       resetForm();
       await loadData();
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel salvar o produto."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel salvar o produto.",
+        ),
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -101,7 +122,13 @@ export default function Produtos() {
       setToast({ message: "Produto removido com sucesso.", type: "success" });
       await loadData();
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel excluir o produto."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel excluir o produto.",
+        ),
+        type: "error",
+      });
     } finally {
       setDeletingProduct(false);
     }
@@ -119,12 +146,22 @@ export default function Produtos() {
 
       // Nao mostra nada so por ter enviado - so avisa quando a placa
       // responder de verdade (ou quando o backend desistir de esperar).
-      const resultado = await pollComandoStatus(data.command_id);
+      const resultado = await pollComandoStatus(data.command_id, data.pulsos);
       setToast(
-        describePulseResultToast(resultado, produto.valor, produto.maquina_nome || produto.maquina_id),
+        describePulseResultToast(
+          resultado,
+          produto.valor,
+          produto.maquina_nome || produto.maquina_id,
+        ),
       );
     } catch (error) {
-      setToast({ message: getApiErrorMessage(error, "Nao foi possivel lancar o pagamento."), type: "error" });
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel lancar o pagamento.",
+        ),
+        type: "error",
+      });
     } finally {
       setSendingProductId(null);
     }
@@ -193,84 +230,87 @@ export default function Produtos() {
             <LoadingSpinner className="h-40" />
           ) : produtos.length === 0 ? (
             <div className="flex h-40 items-center justify-center px-6 text-center text-sm text-[var(--color-text-soft)]">
-              Nenhum produto cadastrado ainda. Crie o primeiro item e vincule a uma maquina para liberar o fluxo digital.
+              Nenhum produto cadastrado ainda. Crie o primeiro item e vincule a
+              uma maquina para liberar o fluxo digital.
             </div>
           ) : (
             <>
-            <div className="grid gap-3 p-3 md:hidden">
-              {produtos.map((produto) => (
-                <ProductMobileCard
-                  key={produto.id}
-                  produto={produto}
-                  sendingProductId={sendingProductId}
-                  onEdit={() => handleEdit(produto)}
-                  onLaunch={() => handleLancarPagamento(produto)}
-                  onDelete={() => setDeleteProduct(produto)}
-                />
-              ))}
-            </div>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="min-w-full">
-                <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
-                  <tr>
-                    <th className="px-5 py-4 whitespace-nowrap">Produto</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Valor</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Maquina</th>
-                    <th className="px-5 py-4 whitespace-nowrap">Acoes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {produtos.map((produto) => (
-                    <tr
-                      key={produto.id}
-                      className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
-                    >
-                      <td className="px-5 py-4 min-w-[220px]">
-                        <div className="font-semibold">{produto.nome}</div>
-                        <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                          ID #{produto.id}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 min-w-[120px] font-semibold">
-                        R$ {Number(produto.valor).toFixed(2)}
-                      </td>
-                      <td className="px-5 py-4 min-w-[220px] text-[var(--color-text-soft)]">
-                        {produto.maquina_nome || produto.maquina_id}
-                      </td>
-                      <td className="px-5 py-4 min-w-[260px]">
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                            onClick={() => handleEdit(produto)}
-                          >
-                            <Pencil size={15} />
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            className="pill-button pill-button--primary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                            onClick={() => handleLancarPagamento(produto)}
-                            disabled={sendingProductId === produto.id}
-                          >
-                            <CreditCard size={15} />
-                            {sendingProductId === produto.id ? "Enviando..." : "Lancar pagamento"}
-                          </button>
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
-                            onClick={() => setDeleteProduct(produto)}
-                          >
-                            <Trash2 size={15} />
-                            Excluir
-                          </button>
-                        </div>
-                      </td>
+              <div className="grid gap-3 p-3 md:hidden">
+                {produtos.map((produto) => (
+                  <ProductMobileCard
+                    key={produto.id}
+                    produto={produto}
+                    sendingProductId={sendingProductId}
+                    onEdit={() => handleEdit(produto)}
+                    onLaunch={() => handleLancarPagamento(produto)}
+                    onDelete={() => setDeleteProduct(produto)}
+                  />
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
+                <table className="min-w-full">
+                  <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+                    <tr>
+                      <th className="px-5 py-4 whitespace-nowrap">Produto</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Valor</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Maquina</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Acoes</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {produtos.map((produto) => (
+                      <tr
+                        key={produto.id}
+                        className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
+                      >
+                        <td className="px-5 py-4 min-w-[220px]">
+                          <div className="font-semibold">{produto.nome}</div>
+                          <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+                            ID #{produto.id}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 min-w-[120px] font-semibold">
+                          R$ {Number(produto.valor).toFixed(2)}
+                        </td>
+                        <td className="px-5 py-4 min-w-[220px] text-[var(--color-text-soft)]">
+                          {produto.maquina_nome || produto.maquina_id}
+                        </td>
+                        <td className="px-5 py-4 min-w-[260px]">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                              onClick={() => handleEdit(produto)}
+                            >
+                              <Pencil size={15} />
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              className="pill-button pill-button--primary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                              onClick={() => handleLancarPagamento(produto)}
+                              disabled={sendingProductId === produto.id}
+                            >
+                              <CreditCard size={15} />
+                              {sendingProductId === produto.id
+                                ? "Enviando..."
+                                : "Lancar pagamento"}
+                            </button>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
+                              onClick={() => setDeleteProduct(produto)}
+                            >
+                              <Trash2 size={15} />
+                              Excluir
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </>
           )}
         </div>
@@ -292,7 +332,8 @@ export default function Produtos() {
               {form.id ? "Editar produto" : "Novo produto"}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-              Defina o valor e vincule o produto a maquina correta para usar o fluxo de pagamento digital.
+              Defina o valor e vincule o produto a maquina correta para usar o
+              fluxo de pagamento digital.
             </p>
           </div>
 
@@ -302,7 +343,9 @@ export default function Produtos() {
                 className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
                 placeholder="Ex.: 1 credito premium"
                 value={form.nome}
-                onChange={(e) => setForm((current) => ({ ...current, nome: e.target.value }))}
+                onChange={(e) =>
+                  setForm((current) => ({ ...current, nome: e.target.value }))
+                }
                 required
               />
             </Field>
@@ -316,7 +359,12 @@ export default function Produtos() {
                   step="0.01"
                   placeholder="0,00"
                   value={form.valor}
-                  onChange={(e) => setForm((current) => ({ ...current, valor: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((current) => ({
+                      ...current,
+                      valor: e.target.value,
+                    }))
+                  }
                   required
                 />
               </Field>
@@ -325,21 +373,38 @@ export default function Produtos() {
                 <select
                   className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
                   value={form.maquina_id}
-                  onChange={(e) => setForm((current) => ({ ...current, maquina_id: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((current) => ({
+                      ...current,
+                      maquina_id: e.target.value,
+                    }))
+                  }
                   required
                 >
                   <option value="">Selecione uma maquina</option>
                   {maquinas.map((maquina) => (
-                    <option key={maquina.id_hardware} value={maquina.id_hardware}>
-                      {(maquina.nome || maquina.id_hardware) + ` - ${maquina.id_hardware}`}
+                    <option
+                      key={maquina.id_hardware}
+                      value={maquina.id_hardware}
+                    >
+                      {(maquina.nome || maquina.id_hardware) +
+                        ` - ${maquina.id_hardware}`}
                     </option>
                   ))}
                 </select>
               </Field>
             </div>
 
-            <Button type="submit" className="w-full justify-center" disabled={saving}>
-              {saving ? "Salvando produto..." : form.id ? "Salvar alteracoes" : "Cadastrar produto"}
+            <Button
+              type="submit"
+              className="w-full justify-center"
+              disabled={saving}
+            >
+              {saving
+                ? "Salvando produto..."
+                : form.id
+                  ? "Salvar alteracoes"
+                  : "Cadastrar produto"}
             </Button>
           </form>
         </div>
@@ -380,10 +445,14 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className={`text-sm font-semibold ${featured ? "text-white/72" : "text-[var(--color-text-soft)]"}`}>
+          <div
+            className={`text-sm font-semibold ${featured ? "text-white/72" : "text-[var(--color-text-soft)]"}`}
+          >
             {label}
           </div>
-          <div className="mt-4 text-4xl font-extrabold tracking-[-0.05em]">{value}</div>
+          <div className="mt-4 text-4xl font-extrabold tracking-[-0.05em]">
+            {value}
+          </div>
         </div>
         <div
           className={`flex h-11 w-11 items-center justify-center rounded-full ${
@@ -395,33 +464,51 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
           {icon}
         </div>
       </div>
-      <div className={`mt-4 text-sm ${featured ? "text-white/74" : "text-[var(--color-text-soft)]"}`}>
+      <div
+        className={`mt-4 text-sm ${featured ? "text-white/74" : "text-[var(--color-text-soft)]"}`}
+      >
         {helper}
       </div>
     </section>
   );
 }
 
-function ProductMobileCard({ produto, sendingProductId, onEdit, onLaunch, onDelete }) {
+function ProductMobileCard({
+  produto,
+  sendingProductId,
+  onEdit,
+  onLaunch,
+  onDelete,
+}) {
   return (
     <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="truncate text-base font-extrabold text-[var(--color-text)]">{produto.nome}</div>
-          <div className="mt-1 text-xs font-semibold text-[var(--color-text-soft)]">ID #{produto.id}</div>
+          <div className="truncate text-base font-extrabold text-[var(--color-text)]">
+            {produto.nome}
+          </div>
+          <div className="mt-1 text-xs font-semibold text-[var(--color-text-soft)]">
+            ID #{produto.id}
+          </div>
         </div>
         <div className="shrink-0 rounded-[12px] bg-[var(--color-primary-soft)] px-3 py-2 text-sm font-extrabold text-[var(--color-primary)]">
           R$ {Number(produto.valor).toFixed(2)}
         </div>
       </div>
       <div className="mt-4 rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
-        <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">Maquina</div>
+        <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
+          Maquina
+        </div>
         <div className="mt-1 truncate font-semibold text-[var(--color-text)]">
           {produto.maquina_nome || produto.maquina_id}
         </div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <button type="button" className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold" onClick={onEdit}>
+        <button
+          type="button"
+          className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+          onClick={onEdit}
+        >
           <Pencil size={15} />
           Editar
         </button>
