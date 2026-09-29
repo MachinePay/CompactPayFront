@@ -113,6 +113,22 @@ const emptyDispositivoConfigState = {
   coinReleaseMs: "",
 };
 
+// A mensagem MQTT "@config|" so existe a partir dessa versao do firmware -
+// espelha MIN_FIRMWARE_VERSION_FOR_DEVICE_CONFIG no backend. Desabilita o
+// botao em placas mais antigas em vez de deixar clicar e falhar so na hora.
+const MIN_FIRMWARE_VERSION_FOR_DEVICE_CONFIG = [2, 1, 0];
+
+function machineSupportsDeviceConfig(machine) {
+  const match = /version_(\d+)\.(\d+)\.(\d+)/.exec(machine?.firmware_version || "");
+  if (!match) return false;
+  const versao = [Number(match[1]), Number(match[2]), Number(match[3])];
+  for (let i = 0; i < MIN_FIRMWARE_VERSION_FOR_DEVICE_CONFIG.length; i += 1) {
+    if (versao[i] > MIN_FIRMWARE_VERSION_FOR_DEVICE_CONFIG[i]) return true;
+    if (versao[i] < MIN_FIRMWARE_VERSION_FOR_DEVICE_CONFIG[i]) return false;
+  }
+  return true;
+}
+
 const quickCreditValues = [2, 5, 10, 20, 50, 100];
 
 function formatCurrency(value) {
@@ -1770,11 +1786,16 @@ export default function Maquinas() {
                                 />
                                 <IconActionButton
                                   icon={Timer}
-                                  label="Configuracao da placa (pulso/moeda/reconexao)"
+                                  label={
+                                    machineSupportsDeviceConfig(m)
+                                      ? "Configuracao da placa (pulso/moeda/reconexao)"
+                                      : `Firmware ${m.firmware_version || "desconhecido"} nao suporta configuracao remota - atualize a placa primeiro`
+                                  }
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleAbrirConfigDispositivo(m);
                                   }}
+                                  disabled={!machineSupportsDeviceConfig(m)}
                                 />
                                 <IconActionButton
                                   icon={Trash2}
