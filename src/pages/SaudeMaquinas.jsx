@@ -123,6 +123,7 @@ function formatForcedRestartReason(reason) {
   const labels = {
     wifi_offline_5min: "Wi-Fi preso (radio nao voltava mesmo reciclando)",
     mqtt_offline_5min: "MQTT preso (Wi-Fi conectado mas sem falar com o broker)",
+    no_successful_publish: "Wi-Fi/MQTT diziam que estava tudo bem, mas nada era enviado de verdade",
   };
   return labels[reason] || reason;
 }
