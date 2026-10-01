@@ -43,6 +43,7 @@ const emptyForm = {
   localizacao: "",
   cliente_id: "",
   banco_pagamento: "",
+  sumup_reader_id: "",
 };
 
 const paymentProviderLabels = {
@@ -50,6 +51,7 @@ const paymentProviderLabels = {
   pagbank: "PagBank",
   s6pay: "S6Pay",
   token_play: "Token Play",
+  sumup: "SumUp",
 };
 
 function getPaymentProviders(cliente) {
@@ -61,6 +63,7 @@ function getPaymentProviders(cliente) {
     cliente.cliente_pagbank ? "pagbank" : null,
     cliente.cliente_s6pay ? "s6pay" : null,
     cliente.cliente_token_play ? "token_play" : null,
+    cliente.cliente_sumup || cliente.sumup_configurado ? "sumup" : null,
   ].filter(Boolean);
 }
 
@@ -189,10 +192,35 @@ export default function Maquinas() {
   const [dispositivoConfigState, setDispositivoConfigState] = useState(
     emptyDispositivoConfigState,
   );
+  const [sumupReaders, setSumupReaders] = useState([]);
+  const [loadingSumupReaders, setLoadingSumupReaders] = useState(false);
   const selectedCliente = usuarios.find(
     (item) => String(item.cliente_id) === String(form.cliente_id),
   );
   const paymentProviders = getPaymentProviders(selectedCliente);
+
+  useEffect(() => {
+    if (!showModal || form.banco_pagamento !== "sumup" || !form.cliente_id) {
+      setSumupReaders([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingSumupReaders(true);
+    api
+      .get(`/clientes/${form.cliente_id}/sumup/readers`)
+      .then(({ data }) => {
+        if (!cancelled) setSumupReaders(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setSumupReaders([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSumupReaders(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showModal, form.banco_pagamento, form.cliente_id]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -407,6 +435,12 @@ export default function Maquinas() {
               : Number(form.cliente_id)
             : user.cliente_id,
       };
+      if (selectedProvider === "sumup") {
+        if (!form.sumup_reader_id) {
+          throw new Error("Escolha qual reader SumUp fica vinculado a esta maquina.");
+        }
+        payload.sumup_reader_id = form.sumup_reader_id;
+      }
 
       if (
         !editingMachineId &&
@@ -470,6 +504,7 @@ export default function Maquinas() {
       localizacao: machine.localizacao || "",
       cliente_id: machine.cliente_id == null ? "" : String(machine.cliente_id),
       banco_pagamento: machine.banco_pagamento || "mercado_pago",
+      sumup_reader_id: machine.sumup_reader_id || "",
     });
     setCopyFeedback("");
     setShowModal(true);
@@ -1962,22 +1997,22 @@ export default function Maquinas() {
                         ? "Selecione o banco da maquina"
                         : "Selecione um cliente primeiro"}
                     </option>
-                    {paymentProviders.map((provider) => (
-                      <option
-                        key={provider}
-                        value={provider}
-                        disabled={
-                          provider !== "mercado_pago" &&
-                          provider !== "token_play"
-                        }
-                      >
-                        {paymentProviderLabels[provider]}
-                        {provider !== "mercado_pago" &&
-                        provider !== "token_play"
-                          ? " - em breve"
-                          : ""}
-                      </option>
-                    ))}
+                    {paymentProviders.map((provider) => {
+                      const implementado =
+                        provider === "mercado_pago" ||
+                        provider === "token_play" ||
+                        provider === "sumup";
+                      return (
+                        <option
+                          key={provider}
+                          value={provider}
+                          disabled={!implementado}
+                        >
+                          {paymentProviderLabels[provider]}
+                          {!implementado ? " - em breve" : ""}
+                        </option>
+                      );
+                    })}
                   </select>
                   {form.cliente_id && paymentProviders.length === 0 ? (
                     <span className="mt-2 block text-xs font-medium text-[var(--color-error)]">
@@ -2009,6 +2044,44 @@ export default function Maquinas() {
                         ? "Validando MP..."
                         : "Validar MP deste cliente"}
                     </button>
+                  ) : null}
+                  {form.cliente_id && form.banco_pagamento === "sumup" ? (
+                    <div className="mt-3">
+                      <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+                        Reader (maquininha) SumUp
+                      </span>
+                      <select
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        value={form.sumup_reader_id}
+                        onChange={(e) =>
+                          setForm((current) => ({
+                            ...current,
+                            sumup_reader_id: e.target.value,
+                          }))
+                        }
+                        disabled={loadingSumupReaders}
+                        required
+                      >
+                        <option value="">
+                          {loadingSumupReaders
+                            ? "Carregando readers..."
+                            : sumupReaders.length === 0
+                              ? "Nenhum reader encontrado"
+                              : "Selecione o reader ja pareado"}
+                        </option>
+                        {sumupReaders.map((reader) => (
+                          <option key={reader.id} value={reader.id}>
+                            {reader.label || reader.id}
+                          </option>
+                        ))}
+                      </select>
+                      {!loadingSumupReaders && sumupReaders.length === 0 ? (
+                        <span className="mt-2 block rounded-[14px] bg-amber-50 px-3 py-2 text-xs font-medium leading-5 text-[var(--color-warning)]">
+                          Nenhum reader pareado nessa conta SumUp ainda - pareie a
+                          maquininha pelo app do SumUp antes de continuar.
+                        </span>
+                      ) : null}
+                    </div>
                   ) : null}
                 </label>
               ) : null}

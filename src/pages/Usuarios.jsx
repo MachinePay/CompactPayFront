@@ -73,12 +73,15 @@ export default function Usuarios() {
     cliente_pagbank: false,
     cliente_s6pay: false,
     cliente_token_play: false,
+    cliente_sumup: false,
     mp_public_key: "",
     mp_access_token: "",
     mp_client_id: "",
     mp_client_secret: "",
     mp_user_id: "",
     mp_pos_category: "7994",
+    sumup_api_key: "",
+    sumup_merchant_code: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -118,12 +121,15 @@ export default function Usuarios() {
       cliente_pagbank: false,
       cliente_s6pay: false,
       cliente_token_play: false,
+      cliente_sumup: false,
       mp_public_key: "",
       mp_access_token: "",
       mp_client_id: "",
       mp_client_secret: "",
       mp_user_id: "",
       mp_pos_category: "7994",
+      sumup_api_key: "",
+      sumup_merchant_code: "",
     });
   };
 
@@ -154,12 +160,17 @@ export default function Usuarios() {
       cliente_pagbank: Boolean(currentUser.cliente_pagbank),
       cliente_s6pay: Boolean(currentUser.cliente_s6pay),
       cliente_token_play: Boolean(currentUser.cliente_token_play),
+      cliente_sumup: Boolean(
+        currentUser.cliente_sumup || currentUser.sumup_api_key || currentUser.sumup_merchant_code,
+      ),
       mp_public_key: currentUser.mp_public_key || "",
       mp_access_token: currentUser.mp_access_token || "",
       mp_client_id: currentUser.mp_client_id || "",
       mp_client_secret: currentUser.mp_client_secret || "",
       mp_user_id: currentUser.mp_user_id || "",
       mp_pos_category: currentUser.mp_pos_category ?? "7994",
+      sumup_api_key: currentUser.sumup_api_key || "",
+      sumup_merchant_code: currentUser.sumup_merchant_code || "",
     });
     setShowModal(true);
   };
@@ -227,6 +238,8 @@ export default function Usuarios() {
       mp_client_secret: form.cliente_mercado_pago ? form.mp_client_secret : "",
       mp_user_id: form.cliente_mercado_pago ? form.mp_user_id : "",
       mp_pos_category: form.cliente_mercado_pago && form.mp_pos_category !== "" ? Number(form.mp_pos_category) : null,
+      sumup_api_key: form.cliente_sumup ? form.sumup_api_key : "",
+      sumup_merchant_code: form.cliente_sumup ? form.sumup_merchant_code : "",
       cliente_id: null,
     };
 
@@ -728,6 +741,13 @@ export default function Usuarios() {
                       setForm((current) => ({ ...current, cliente_token_play: checked }))
                     }
                   />
+                  <ProviderCheckbox
+                    label="Cliente SumUp"
+                    checked={form.cliente_sumup}
+                    onChange={(checked) =>
+                      setForm((current) => ({ ...current, cliente_sumup: checked }))
+                    }
+                  />
                 </div>
 
                 {form.cliente_mercado_pago ? (
@@ -792,6 +812,32 @@ export default function Usuarios() {
                     <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
                       Ao salvar este usuario cliente, o endereco fica vinculado ao cliente. Ao criar uma maquina para ele, o sistema cria uma nova loja no Mercado Pago e o caixa dessa maquina dentro dela.
                     </div>
+                  </>
+                ) : null}
+
+                {form.cliente_sumup ? (
+                  <>
+                    <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
+                      Cole a API key gerada em developer.sumup.com (conta do cliente, nao a sua). O codigo do merchant e preenchido sozinho a partir da chave - so digite na mao se precisar trocar.
+                    </div>
+
+                    <Field label="SumUp API Key">
+                      <input
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder="sup_sk_..."
+                        value={form.sumup_api_key}
+                        onChange={(e) => setForm((current) => ({ ...current, sumup_api_key: e.target.value }))}
+                      />
+                    </Field>
+
+                    <Field label="SumUp Merchant Code (automatico)">
+                      <input
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder="Preenchido sozinho ao salvar a API key"
+                        value={form.sumup_merchant_code}
+                        onChange={(e) => setForm((current) => ({ ...current, sumup_merchant_code: e.target.value }))}
+                      />
+                    </Field>
                   </>
                 ) : null}
               </div>
