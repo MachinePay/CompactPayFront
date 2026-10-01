@@ -9,6 +9,7 @@ import {
   RefreshCcw,
   Repeat,
   Search,
+  Wallet,
   Wifi,
   XCircle,
   Zap,
@@ -51,6 +52,7 @@ function alertIcon(tipo) {
     ruido_contador: Radio,
     sem_pagamento_recente: Info,
     quedas_frequentes: Repeat,
+    sumup_pendente: Wallet,
   };
   return icons[tipo] || AlertTriangle;
 }
@@ -112,6 +114,32 @@ export default function AlertasMaquinas() {
   useEffect(() => {
     const timer = window.setTimeout(loadAlerts, 0);
     return () => window.clearTimeout(timer);
+  }, [loadAlerts]);
+
+  const resolverPendenciaSumup = useCallback(async (pendenciaId, maquinaId) => {
+    try {
+      await api.post(`/pagamentos/sumup/pendencias/${pendenciaId}/resolver`, { maquina_id: maquinaId });
+      setToast({ message: "Pagamento vinculado e pulso liberado.", type: "success" });
+      loadAlerts();
+    } catch (error) {
+      setToast({
+        message: getApiErrorMessage(error, "Nao foi possivel vincular o pagamento."),
+        type: "error",
+      });
+    }
+  }, [loadAlerts]);
+
+  const ignorarPendenciaSumup = useCallback(async (pendenciaId) => {
+    try {
+      await api.post(`/pagamentos/sumup/pendencias/${pendenciaId}/ignorar`);
+      setToast({ message: "Pendencia descartada.", type: "success" });
+      loadAlerts();
+    } catch (error) {
+      setToast({
+        message: getApiErrorMessage(error, "Nao foi possivel descartar a pendencia."),
+        type: "error",
+      });
+    }
   }, [loadAlerts]);
 
   useEffect(() => {
@@ -179,6 +207,7 @@ export default function AlertasMaquinas() {
                 ["ruido_contador", "Ruido"],
                 ["sem_pagamento_recente", "Sem pagamento"],
                 ["quedas_frequentes", "Quedas frequentes"],
+                ["sumup_pendente", "SumUp pendente"],
               ]}
             />
             <FilterSelect
@@ -251,6 +280,16 @@ export default function AlertasMaquinas() {
                     ? () => navigate(`/historico-quedas?maquina_id=${alert.maquina.id_hardware}`)
                     : null
                 }
+                onResolverSumup={
+                  alert.tipo === "sumup_pendente"
+                    ? (maquinaId) => resolverPendenciaSumup(alert.extra.pendencia_id, maquinaId)
+                    : null
+                }
+                onIgnorarSumup={
+                  alert.tipo === "sumup_pendente"
+                    ? () => ignorarPendenciaSumup(alert.extra.pendencia_id)
+                    : null
+                }
               />
             ))}
           </div>
@@ -296,7 +335,10 @@ function SummaryCard({ label, value, icon, tone = "neutral" }) {
   );
 }
 
-function AlertCard({ alert, onOpen, onOpenQuedas }) {
+function AlertCard({ alert, onOpen, onOpenQuedas, onResolverSumup, onIgnorarSumup }) {
+  const candidatas = alert.extra?.maquinas_candidatas || [];
+  const [maquinaEscolhida, setMaquinaEscolhida] = useState(candidatas[0]?.id_hardware || "");
+
   return (
     <article className={`rounded-[18px] border p-4 ${severityTone(alert.severidade)}`}>
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -318,6 +360,38 @@ function AlertCard({ alert, onOpen, onOpenQuedas }) {
               {alert.maquina.cliente_nome ? <span>{alert.maquina.cliente_nome}</span> : null}
               <span>{formatDateTime(alert.detected_at)}</span>
             </div>
+            {onResolverSumup ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <select
+                  className="min-w-[180px] rounded-full border border-white/60 bg-white/70 px-3 py-2 text-xs font-semibold outline-none"
+                  value={maquinaEscolhida}
+                  onChange={(event) => setMaquinaEscolhida(event.target.value)}
+                >
+                  {candidatas.map((maquina) => (
+                    <option key={maquina.id_hardware} value={maquina.id_hardware}>
+                      {maquina.nome || maquina.id_hardware}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-xs font-bold text-[var(--color-text)] shadow-[0_8px_20px_rgba(34,61,43,0.08)]"
+                  onClick={() => onResolverSumup(maquinaEscolhida)}
+                  disabled={!maquinaEscolhida}
+                >
+                  Vincular e liberar pulso
+                </button>
+                {onIgnorarSumup ? (
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center rounded-full bg-white/70 px-4 py-2 text-xs font-bold text-[var(--color-text)]"
+                    onClick={onIgnorarSumup}
+                  >
+                    Ignorar
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
@@ -330,13 +404,15 @@ function AlertCard({ alert, onOpen, onOpenQuedas }) {
               Ver historico de quedas
             </button>
           ) : null}
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-bold text-[var(--color-text)] shadow-[0_8px_20px_rgba(34,61,43,0.08)]"
-            onClick={onOpen}
-          >
-            Abrir maquina
-          </button>
+          {!onResolverSumup ? (
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-bold text-[var(--color-text)] shadow-[0_8px_20px_rgba(34,61,43,0.08)]"
+              onClick={onOpen}
+            >
+              Abrir maquina
+            </button>
+          ) : null}
         </div>
       </div>
     </article>

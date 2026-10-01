@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Copy,
+  CreditCard,
   Cpu,
   Download,
   FileText,
@@ -80,6 +81,12 @@ const emptyUpdateState = {
 };
 
 const emptyCreditState = {
+  open: false,
+  machine: null,
+  value: "",
+};
+
+const emptyCobrarState = {
   open: false,
   machine: null,
   value: "",
@@ -185,6 +192,8 @@ export default function Maquinas() {
   const [deleteState, setDeleteState] = useState(emptyDeleteState);
   const [updateState, setUpdateState] = useState(emptyUpdateState);
   const [creditState, setCreditState] = useState(emptyCreditState);
+  const [cobrarState, setCobrarState] = useState(emptyCobrarState);
+  const [sendingCobrancaId, setSendingCobrancaId] = useState("");
   const [caixaState, setCaixaState] = useState(emptyCaixaState);
   const [diagnosticoState, setDiagnosticoState] = useState(
     emptyDiagnosticoState,
@@ -569,6 +578,47 @@ export default function Maquinas() {
       machine,
       value: "",
     });
+  };
+
+  const openCobrarModal = (machine) => {
+    setCobrarState({
+      open: true,
+      machine,
+      value: "",
+    });
+  };
+
+  const sendCobrancaSumup = async () => {
+    const machine = cobrarState.machine;
+    if (!machine) return;
+    const value = Number(String(cobrarState.value).replace(",", "."));
+    if (!Number.isFinite(value) || value <= 0) {
+      setToast({ message: "Informe um valor maior que zero.", type: "error" });
+      return;
+    }
+
+    setSendingCobrancaId(machine.id_hardware);
+    try {
+      await api.post("/pagamentos/terminal/cobrar-sumup", {
+        maquina_id: machine.id_hardware,
+        valor: value,
+      });
+      setCobrarState(emptyCobrarState);
+      setToast({
+        message: `Cobrança de ${formatCurrency(value)} enviada para a maquininha. Aproxime o cartão para pagar.`,
+        type: "success",
+      });
+    } catch (error) {
+      setToast({
+        message: getApiErrorMessage(
+          error,
+          "Nao foi possivel enviar a cobranca para a maquininha.",
+        ),
+        type: "error",
+      });
+    } finally {
+      setSendingCobrancaId("");
+    }
   };
 
   const handleConsultarCaixa = async (machine) => {
@@ -1079,6 +1129,74 @@ export default function Maquinas() {
       </Modal>
 
       <Modal
+        open={cobrarState.open}
+        onClose={() => {
+          if (!sendingCobrancaId) setCobrarState(emptyCobrarState);
+        }}
+      >
+        <div className="mx-auto max-w-xl space-y-5">
+          <div className="text-center">
+            <h2 className="mt-3 text-3xl font-extrabold text-[var(--color-text)]">
+              Cobrar na maquininha
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
+              Envia o valor direto para a maquininha SumUp da máquina{" "}
+              <strong>
+                {cobrarState.machine?.nome || cobrarState.machine?.id_hardware}
+              </strong>
+              . O cliente aproxima o cartão na maquininha pra pagar; o crédito é
+              liberado sozinho assim que o pagamento for confirmado.
+            </p>
+          </div>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+              Valor da cobrança
+            </span>
+            <div className="flex items-center rounded-[18px] border border-[var(--color-border)] bg-white px-4 focus-within:border-[var(--color-primary)]">
+              <span className="font-extrabold text-[var(--color-primary)]">
+                R$
+              </span>
+              <input
+                type="text"
+                inputMode="decimal"
+                autoFocus
+                className="min-w-0 flex-1 bg-transparent px-3 py-4 text-xl font-extrabold text-[var(--color-text)] outline-none"
+                placeholder="Ex.: 10,00"
+                value={cobrarState.value}
+                onChange={(event) =>
+                  setCobrarState((current) => ({
+                    ...current,
+                    value: event.target.value.replace(/[^\d.,]/g, ""),
+                  }))
+                }
+              />
+            </div>
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              className="pill-button inline-flex items-center justify-center px-5 py-3 font-semibold"
+              onClick={() => setCobrarState(emptyCobrarState)}
+              disabled={Boolean(sendingCobrancaId)}
+            >
+              Fechar
+            </button>
+            <Button
+              type="button"
+              className="justify-center"
+              onClick={sendCobrancaSumup}
+              disabled={Boolean(sendingCobrancaId) || !cobrarState.value}
+            >
+              <CreditCard size={17} />
+              {sendingCobrancaId ? "Enviando..." : "Cobrar"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
         open={caixaState.open}
         onClose={() => setCaixaState(emptyCaixaState)}
       >
@@ -1571,6 +1689,8 @@ export default function Maquinas() {
                     )}
                     onOpen={() => navigate(`/maquinas/${m.id_hardware}`)}
                     onSendCredit={() => openCreditModal(m)}
+                    sendingCobrancaId={sendingCobrancaId}
+                    onCobrarMaquininha={() => openCobrarModal(m)}
                     onConsultarCaixa={() => handleConsultarCaixa(m)}
                     onVerify={() => verifyMachineOnline(m)}
                     onSendUpdate={() => requestFirmwareUpdate(m)}
@@ -1740,6 +1860,19 @@ export default function Maquinas() {
                               disabled={Boolean(sendingCreditId)}
                               busy={sendingCreditId === m.id_hardware}
                             />
+                            {m.banco_pagamento === "sumup" ? (
+                              <IconActionButton
+                                icon={CreditCard}
+                                label="Cobrar na maquininha SumUp"
+                                tone="primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openCobrarModal(m);
+                                }}
+                                disabled={Boolean(sendingCobrancaId)}
+                                busy={sendingCobrancaId === m.id_hardware}
+                              />
+                            ) : null}
                             <IconActionButton
                               icon={QrCode}
                               label="Consultar caixa (QR code Pix)"
@@ -2242,11 +2375,13 @@ function MachineMobileCard({
   machine,
   user,
   sendingCreditId,
+  sendingCobrancaId,
   sendingUpdateId,
   verifyingMachineId,
   canUpdateFirmware,
   onOpen,
   onSendCredit,
+  onCobrarMaquininha,
   onConsultarCaixa,
   onVerify,
   onSendUpdate,
@@ -2344,6 +2479,17 @@ function MachineMobileCard({
           <Rocket size={15} />
           {sendingCreditId === machine.id_hardware ? "Enviando" : "Credito"}
         </button>
+        {machine.banco_pagamento === "sumup" ? (
+          <button
+            type="button"
+            className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+            onClick={onCobrarMaquininha}
+            disabled={sendingCobrancaId === machine.id_hardware}
+          >
+            <CreditCard size={15} />
+            {sendingCobrancaId === machine.id_hardware ? "Enviando" : "Cobrar"}
+          </button>
+        ) : null}
         <button
           type="button"
           className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
