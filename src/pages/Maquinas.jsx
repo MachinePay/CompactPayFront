@@ -204,33 +204,64 @@ export default function Maquinas() {
   );
   const [sumupReaders, setSumupReaders] = useState([]);
   const [loadingSumupReaders, setLoadingSumupReaders] = useState(false);
+  const [pairingSumup, setPairingSumup] = useState(false);
+  const [pairingCode, setPairingCode] = useState("");
+  const [pairingName, setPairingName] = useState("");
+  const [pairingMessage, setPairingMessage] = useState({ text: "", type: "" });
   const selectedCliente = usuarios.find(
     (item) => String(item.cliente_id) === String(form.cliente_id),
   );
   const paymentProviders = getPaymentProviders(selectedCliente);
+
+  const loadSumupReaders = useCallback(() => {
+    if (!form.cliente_id) {
+      setSumupReaders([]);
+      return;
+    }
+    setLoadingSumupReaders(true);
+    api
+      .get(`/clientes/${form.cliente_id}/sumup/readers`)
+      .then(({ data }) => setSumupReaders(Array.isArray(data) ? data : []))
+      .catch(() => setSumupReaders([]))
+      .finally(() => setLoadingSumupReaders(false));
+  }, [form.cliente_id]);
 
   useEffect(() => {
     if (!showModal || form.banco_pagamento !== "sumup" || !form.cliente_id) {
       setSumupReaders([]);
       return;
     }
-    let cancelled = false;
-    setLoadingSumupReaders(true);
-    api
-      .get(`/clientes/${form.cliente_id}/sumup/readers`)
-      .then(({ data }) => {
-        if (!cancelled) setSumupReaders(Array.isArray(data) ? data : []);
-      })
-      .catch(() => {
-        if (!cancelled) setSumupReaders([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingSumupReaders(false);
+    loadSumupReaders();
+  }, [showModal, form.banco_pagamento, form.cliente_id, loadSumupReaders]);
+
+  const handlePairSumupReader = async () => {
+    if (!pairingCode.trim()) {
+      setPairingMessage({ text: "Informe o codigo de pareamento.", type: "error" });
+      return;
+    }
+    setPairingSumup(true);
+    setPairingMessage({ text: "", type: "" });
+    try {
+      const { data } = await api.post(`/clientes/${form.cliente_id}/sumup/readers`, {
+        pairing_code: pairingCode.trim(),
+        name: pairingName.trim() || undefined,
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [showModal, form.banco_pagamento, form.cliente_id]);
+      setPairingMessage({
+        text: `Reader "${data.name || data.id}" pareado! (status: ${data.status || "processing"})`,
+        type: "success",
+      });
+      setPairingCode("");
+      setPairingName("");
+      loadSumupReaders();
+    } catch (error) {
+      setPairingMessage({
+        text: getApiErrorMessage(error, "Nao foi possivel parear o reader."),
+        type: "error",
+      });
+    } finally {
+      setPairingSumup(false);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem(
@@ -2218,6 +2249,50 @@ export default function Maquinas() {
                           maquininha pelo app do SumUp antes de continuar.
                         </span>
                       ) : null}
+
+                      <div className="mt-4 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">
+                        <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+                          Parear nova maquininha (pra aparecer na lista acima)
+                        </span>
+                        <p className="mb-3 text-xs leading-5 text-[var(--color-text-soft)]">
+                          No aparelho: menu (gaveta de cima) → Connections → conecta no
+                          Wi-Fi → selecione &quot;API&quot; → Connect. O codigo aparece na
+                          tela e expira em 5 minutos.
+                        </p>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <input
+                            type="text"
+                            className="flex-1 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3 text-sm text-[var(--color-text)] outline-none"
+                            placeholder="Codigo de pareamento"
+                            value={pairingCode}
+                            onChange={(e) => setPairingCode(e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            className="flex-1 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3 text-sm text-[var(--color-text)] outline-none"
+                            placeholder="Nome (opcional)"
+                            value={pairingName}
+                            onChange={(e) => setPairingName(e.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="pill-button whitespace-nowrap px-4 py-3 text-sm font-semibold"
+                            onClick={handlePairSumupReader}
+                            disabled={pairingSumup}
+                          >
+                            {pairingSumup ? "Pareando..." : "Parear"}
+                          </button>
+                        </div>
+                        {pairingMessage.text ? (
+                          <p
+                            className={`mt-2 text-xs font-medium ${
+                              pairingMessage.type === "error" ? "text-rose-600" : "text-emerald-600"
+                            }`}
+                          >
+                            {pairingMessage.text}
+                          </p>
+                        ) : null}
+                      </div>
 
                       <span className="mb-2 mt-4 block text-sm font-semibold text-[var(--color-text)]">
                         Ou codigo do reader (sem pareamento Cloud)
