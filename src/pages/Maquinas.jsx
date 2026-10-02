@@ -45,6 +45,7 @@ const emptyForm = {
   cliente_id: "",
   banco_pagamento: "",
   sumup_reader_id: "",
+  sumup_device_code: "",
 };
 
 const paymentProviderLabels = {
@@ -445,10 +446,13 @@ export default function Maquinas() {
             : user.cliente_id,
       };
       if (selectedProvider === "sumup") {
-        if (!form.sumup_reader_id) {
-          throw new Error("Escolha qual reader SumUp fica vinculado a esta maquina.");
+        if (!form.sumup_reader_id && !form.sumup_device_code) {
+          throw new Error(
+            "Escolha qual reader SumUp fica vinculado a esta maquina, ou informe o codigo do reader.",
+          );
         }
         payload.sumup_reader_id = form.sumup_reader_id;
+        payload.sumup_device_code = form.sumup_device_code;
       }
 
       if (
@@ -514,6 +518,7 @@ export default function Maquinas() {
       cliente_id: machine.cliente_id == null ? "" : String(machine.cliente_id),
       banco_pagamento: machine.banco_pagamento || "mercado_pago",
       sumup_reader_id: machine.sumup_reader_id || "",
+      sumup_device_code: machine.sumup_device_code || "",
     });
     setCopyFeedback("");
     setShowModal(true);
@@ -2193,7 +2198,6 @@ export default function Maquinas() {
                           }))
                         }
                         disabled={loadingSumupReaders}
-                        required
                       >
                         <option value="">
                           {loadingSumupReaders
@@ -2214,6 +2218,27 @@ export default function Maquinas() {
                           maquininha pelo app do SumUp antes de continuar.
                         </span>
                       ) : null}
+
+                      <span className="mb-2 mt-4 block text-sm font-semibold text-[var(--color-text)]">
+                        Ou codigo do reader (sem pareamento Cloud)
+                      </span>
+                      <input
+                        type="text"
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder="Ex: 200300136586"
+                        value={form.sumup_device_code}
+                        onChange={(e) =>
+                          setForm((current) => ({
+                            ...current,
+                            sumup_device_code: e.target.value,
+                          }))
+                        }
+                      />
+                      <span className="mt-2 block text-xs leading-5 text-[var(--color-text-soft)]">
+                        Faca um pagamento de teste nessa maquininha e peça o codigo que
+                        aparece no log do servidor (campo "card_reader.code" do recibo) -
+                        util quando a maquininha nao esta pareada na Cloud API da SumUp.
+                      </span>
                     </div>
                   ) : null}
                 </label>
