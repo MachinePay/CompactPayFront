@@ -259,6 +259,7 @@ export default function FirmwareVersions() {
                           <a className="block max-w-[340px] truncate font-semibold text-[var(--color-primary-strong)] hover:underline" href={firmware.url_bin} target="_blank" rel="noreferrer">
                             {firmware.url_bin}
                           </a>
+                          {firmware.arquivo_tamanho ? <div className="mt-1 text-xs text-[var(--color-text-soft)]">{formatFileSize(firmware.arquivo_tamanho)} no banco</div> : null}
                         </td>
                         <td className="px-5 py-4 min-w-[260px] text-[var(--color-text-soft)]">{firmware.observacao || "--"}</td>
                         <td className="px-5 py-4 min-w-[160px] text-[var(--color-text-soft)]">
@@ -277,12 +278,10 @@ export default function FirmwareVersions() {
                               <Power size={15} />
                               {firmware.ativo ? "Inativar" : "Ativar"}
                             </button>
-                            {!firmware.ativo ? (
-                              <button type="button" className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)]" onClick={() => openDeleteConfirmation(firmware)}>
-                                <Trash2 size={15} />
-                                Excluir
-                              </button>
-                            ) : null}
+                            <button type="button" className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)]" onClick={() => openDeleteConfirmation(firmware)}>
+                              <Trash2 size={15} />
+                              Excluir
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -419,6 +418,10 @@ function StatusPill({ active }) {
   );
 }
 
+function formatFileSize(bytes) {
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 function FirmwareMobileCard({ firmware, onEdit, onToggle, onDelete }) {
   return (
     <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
@@ -432,6 +435,7 @@ function FirmwareMobileCard({ firmware, onEdit, onToggle, onDelete }) {
       <a className="mt-3 block truncate text-sm font-semibold text-[var(--color-primary-strong)]" href={firmware.url_bin} target="_blank" rel="noreferrer">
         {firmware.url_bin}
       </a>
+      {firmware.arquivo_tamanho ? <div className="mt-1 text-xs text-[var(--color-text-soft)]">{formatFileSize(firmware.arquivo_tamanho)} no banco</div> : null}
       {firmware.observacao ? <div className="mt-3 text-sm text-[var(--color-text-soft)]">{firmware.observacao}</div> : null}
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button type="button" className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold" onClick={onEdit}>
@@ -442,12 +446,10 @@ function FirmwareMobileCard({ firmware, onEdit, onToggle, onDelete }) {
           <Power size={15} />
           {firmware.ativo ? "Inativar" : "Ativar"}
         </button>
-        {!firmware.ativo ? (
-          <button type="button" className="col-span-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)]" onClick={onDelete}>
-            <Trash2 size={15} />
-            Excluir permanentemente
-          </button>
-        ) : null}
+        <button type="button" className="col-span-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)]" onClick={onDelete}>
+          <Trash2 size={15} />
+          Excluir permanentemente
+        </button>
       </div>
     </article>
   );
