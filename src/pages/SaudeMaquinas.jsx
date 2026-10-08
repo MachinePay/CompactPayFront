@@ -92,37 +92,54 @@ function formatResetReason(reason) {
   return labels[reason] || reason || "--";
 }
 
-function formatWifiDisconnectReason(reason) {
-  if (reason == null) return "--";
+// Mesma tabela de app/services/quedas_diagnostico.py (wifi_err_reason_t do
+// ESP-IDF). O 36 (STA_LEAVING) e' a PROPRIA placa encerrando a conexao - antes
+// estava traduzido como "roteador encerrou", o que confundia o diagnostico.
+const WIFI_DISCONNECT_REASON_LABELS = {
+  1: "Motivo nao especificado",
+  2: "Autenticacao expirou",
+  3: "Roteador desautenticou a placa",
+  4: "Associacao expirou por inatividade",
+  5: "Roteador cheio (muitos aparelhos conectados)",
+  6: "Roteador recusou a placa (nao autenticada)",
+  7: "Roteador recusou a placa (nao associada)",
+  8: "A placa saiu da rede (desconexao voluntaria)",
+  14: "Erro de seguranca (MIC) - senha ou criptografia",
+  15: "Senha incorreta ou falha no handshake",
+  16: "Falha na troca de chave do grupo",
+  23: "Falha de autenticacao 802.1X",
+  34: "Muitos pacotes perdidos (interferencia ou sinal ruim)",
+  36: "A propria placa encerrou a tentativa de conexao",
+  200: "Sinal do roteador sumiu (roteador desligou/reiniciou ou ficou fora de alcance)",
+  201: "Rede Wi-Fi nao encontrada",
+  202: "Falha de autenticacao (senha incorreta?)",
+  203: "Falha de associacao com o roteador",
+  204: "Timeout no handshake (senha incorreta?)",
+  205: "Falha ao conectar",
+  206: "Roteador reiniciou",
+  207: "Troca de ponto de acesso (roaming)",
+  208: "Roteador pediu para tentar mais tarde",
+  210: "Rede encontrada mas com seguranca incompativel",
+  211: "Rede encontrada mas com seguranca abaixo do minimo",
+  212: "Rede encontrada mas com sinal abaixo do minimo",
+};
+
+// Os contadores da placa zeram a cada boot: sem nenhuma queda desde que ligou,
+// o "ultimo motivo" guardado e' de antes e nao deve aparecer como atual.
+function formatWifiDisconnectReason(reason, count) {
+  if (count === 0) return "Nenhuma desde que a placa ligou";
+  if (reason == null || Number(reason) === 0) return "--";
   const code = Number(reason);
-  const labels = {
-    2: "Autenticacao expirou",
-    3: "Desconexao pelo cliente",
-    4: "Associacao expirou",
-    6: "Nao autenticado",
-    8: "Desconectado (AP saiu)",
-    15: "Timeout no handshake (senha errada?)",
-    // STA_LEAVING (802.11/ESP-IDF) - normalmente e' o ROTEADOR encerrando a
-    // conexao (reinicio, gerenciamento de clientes, DHCP) e nao fraqueza de
-    // sinal - repetir muito com sinal bom aponta pro roteador, nao pra placa.
-    36: "Roteador encerrou a conexao (nao e' sinal fraco)",
-    200: "Sinal perdido (beacon timeout)",
-    201: "Rede nao encontrada",
-    202: "Falha de autenticacao",
-    203: "Falha de associacao",
-    204: "Timeout de handshake",
-    205: "Falha ao conectar",
-    206: "AP reiniciou (TSF reset)",
-    207: "Roaming",
-  };
-  return labels[code] ? `${labels[code]} (${code})` : `Codigo ${code}`;
+  const label = WIFI_DISCONNECT_REASON_LABELS[code];
+  return label ? `${label} (${code})` : `Codigo ${code}`;
 }
 
 function formatForcedRestartReason(reason) {
   if (!reason) return null;
   const labels = {
-    wifi_offline_5min: "Wi-Fi preso (radio nao voltava mesmo reciclando)",
-    mqtt_offline_5min: "MQTT preso (Wi-Fi conectado mas sem falar com o broker)",
+    wifi_offline_5min: "Wi-Fi ficou fora por muito tempo e a placa se reiniciou para tentar de novo",
+    mqtt_offline_5min: "Wi-Fi conectado mas sem falar com o servidor por 5 min; a placa se reiniciou",
+    wifi_no_ap_boot: "Rede Wi-Fi nao encontrada ao ligar; reinicio rapido para tentar de novo",
     no_successful_publish: "Wi-Fi/MQTT diziam que estava tudo bem, mas nada era enviado de verdade",
   };
   return labels[reason] || reason;
@@ -661,8 +678,8 @@ function DiagnosticoInfo({ machine }) {
         <span className="font-semibold text-[var(--color-text)]">Pulsos curtos:</span> {machine.short_pulse_count ?? 0}
       </div>
       <div>
-        <span className="font-semibold text-[var(--color-text)]">Ultima queda Wi-Fi:</span> {formatWifiDisconnectReason(machine.wifi_disconnect_reason)}
-        {machine.wifi_disconnect_count ? ` (${machine.wifi_disconnect_count}x)` : ""}
+        <span className="font-semibold text-[var(--color-text)]">Ultima queda Wi-Fi:</span> {formatWifiDisconnectReason(machine.wifi_disconnect_reason, machine.wifi_disconnect_count)}
+        {machine.wifi_disconnect_count ? ` (${machine.wifi_disconnect_count}x desde que ligou)` : ""}
       </div>
       {formatForcedRestartReason(machine.last_forced_restart_reason) && (
         <div className="text-red-600 dark:text-red-400">

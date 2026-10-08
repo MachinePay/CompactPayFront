@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Clock, Power, RefreshCcw, Zap } from "lucide-react";
+import { AlertTriangle, Clock, Copy, Cpu, Download, Globe, PlugZap, Power, RefreshCcw, Settings, Wifi, WifiOff, Zap } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -22,17 +22,48 @@ function formatDuracao(segundos) {
   return `${segs}s`;
 }
 
-function TipoBadge({ tipo }) {
-  const isReinicio = tipo === "reinicio_forcado";
+// Categoria vem do backend (app/services/quedas_diagnostico.py), que cruza o
+// historico em volta de cada queda para dizer o que realmente aconteceu.
+const CATEGORIA_ESTILO = {
+  energia: { icon: PlugZap, className: "bg-amber-50 text-amber-700" },
+  tensao: { icon: Zap, className: "bg-amber-50 text-amber-700" },
+  travamento: { icon: Cpu, className: "bg-rose-50 text-rose-700" },
+  reinicio_forcado: { icon: RefreshCcw, className: "bg-amber-50 text-amber-700" },
+  reinicio: { icon: RefreshCcw, className: "bg-slate-100 text-slate-700" },
+  atualizacao: { icon: Download, className: "bg-sky-50 text-sky-700" },
+  configuracao: { icon: Settings, className: "bg-sky-50 text-sky-700" },
+  wifi: { icon: WifiOff, className: "bg-rose-50 text-rose-700" },
+  internet: { icon: Globe, className: "bg-violet-50 text-violet-700" },
+  id_duplicado: { icon: Copy, className: "bg-rose-100 text-rose-800" },
+  oscilacao: { icon: Wifi, className: "bg-slate-100 text-slate-700" },
+  offline: { icon: Power, className: "bg-rose-50 text-rose-700" },
+  desconhecido: { icon: Power, className: "bg-slate-100 text-slate-700" },
+};
+
+function CategoriaBadge({ item }) {
+  const estilo = CATEGORIA_ESTILO[item.categoria] || CATEGORIA_ESTILO.desconhecido;
+  const Icon = estilo.icon;
+  const label = item.categoria_label || (item.tipo === "reinicio_forcado" ? "Reinicio automatico" : "Queda de conexao");
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
-        isReinicio ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"
-      }`}
-    >
-      {isReinicio ? <RefreshCcw size={12} /> : <Power size={12} />}
-      {isReinicio ? "Reinicio forcado" : "Queda de conexao"}
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${estilo.className}`}>
+      <Icon size={12} />
+      {label}
     </span>
+  );
+}
+
+function MotivoQueda({ item }) {
+  return (
+    <>
+      <div>{item.motivo}</div>
+      {item.detalhes?.length ? (
+        <ul className="mt-1 list-disc pl-4 text-xs text-[var(--color-text-soft)]">
+          {item.detalhes.map((detalhe) => (
+            <li key={detalhe}>{detalhe}</li>
+          ))}
+        </ul>
+      ) : null}
+    </>
   );
 }
 
@@ -220,9 +251,11 @@ export default function HistoricoQuedas() {
                           <div className="mt-1 text-xs font-semibold text-[var(--color-primary)]">{item.maquina_id}</div>
                         </td>
                         <td className="px-5 py-4 min-w-[190px]">
-                          <TipoBadge tipo={item.tipo} />
+                          <CategoriaBadge item={item} />
                         </td>
-                        <td className="px-5 py-4 min-w-[320px] leading-6 text-[var(--color-text-soft)]">{item.motivo}</td>
+                        <td className="px-5 py-4 min-w-[320px] leading-6 text-[var(--color-text-soft)]">
+                          <MotivoQueda item={item} />
+                        </td>
                         <td className="px-5 py-4 min-w-[160px] text-[var(--color-text-soft)]">
                           {item.reconectou_em ? brasiliaDate(item.reconectou_em).format("DD/MM HH:mm:ss") : "Ainda nao"}
                         </td>
@@ -269,7 +302,7 @@ function QuedaMobileCard({ item }) {
           <div className="text-sm font-extrabold text-[var(--color-text)]">{item.maquina_nome || item.maquina_id}</div>
           <div className="mt-1 text-xs font-semibold text-[var(--color-primary)]">{item.maquina_id}</div>
         </div>
-        <TipoBadge tipo={item.tipo} />
+        <CategoriaBadge item={item} />
       </div>
       <div className="mt-3 text-xs text-[var(--color-text-soft)]">
         <span className="font-semibold text-[var(--color-text)]">
@@ -277,7 +310,7 @@ function QuedaMobileCard({ item }) {
         </span>
       </div>
       <div className="mt-3 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-3 py-3 text-sm leading-6 text-[var(--color-text-soft)]">
-        {item.motivo}
+        <MotivoQueda item={item} />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
         <div className="rounded-[16px] border border-[var(--color-border)] px-3 py-3">
