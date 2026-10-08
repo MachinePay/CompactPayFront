@@ -52,10 +52,21 @@ function CategoriaBadge({ item }) {
   );
 }
 
+// O aviso de queda (Last Will) chega ate 90s depois de a maquina parar de
+// falar; o backend devolve o inicio estimado, que e' o que interessa.
+function inicioDaQueda(item) {
+  return item.inicio_estimado || item.created_at;
+}
+
 function MotivoQueda({ item }) {
   return (
     <>
       <div>{item.motivo}</div>
+      {item.ligou_em ? (
+        <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+          Placa voltou a ligar as {brasiliaDate(item.ligou_em).format("HH:mm:ss")}
+        </div>
+      ) : null}
       {item.detalhes?.length ? (
         <ul className="mt-1 list-disc pl-4 text-xs text-[var(--color-text-soft)]">
           {item.detalhes.map((detalhe) => (
@@ -241,9 +252,9 @@ export default function HistoricoQuedas() {
                     {quedas.map((item) => (
                       <tr key={item.id} className="border-t border-[var(--color-border)] align-top text-sm text-[var(--color-text)]">
                         <td className="px-5 py-4 min-w-[170px]">
-                          <div className="font-semibold">{brasiliaDate(item.created_at).format("DD/MM/YYYY")}</div>
-                          <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                            {brasiliaDate(item.created_at).format("HH:mm:ss")}
+                          <div className="font-semibold">{brasiliaDate(inicioDaQueda(item)).format("DD/MM/YYYY")}</div>
+                          <div className="mt-1 text-xs text-[var(--color-text-soft)]" title="Horario estimado em que a maquina parou de responder">
+                            ~{brasiliaDate(inicioDaQueda(item)).format("HH:mm:ss")}
                           </div>
                         </td>
                         <td className="px-5 py-4 min-w-[190px]">
@@ -306,7 +317,7 @@ function QuedaMobileCard({ item }) {
       </div>
       <div className="mt-3 text-xs text-[var(--color-text-soft)]">
         <span className="font-semibold text-[var(--color-text)]">
-          {brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss")}
+          ~{brasiliaDate(inicioDaQueda(item)).format("DD/MM/YYYY HH:mm:ss")}
         </span>
       </div>
       <div className="mt-3 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-3 py-3 text-sm leading-6 text-[var(--color-text-soft)]">
