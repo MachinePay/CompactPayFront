@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+import usePolling from "../hooks/usePolling";
 import api, { getApiErrorMessage } from "../api/axios";
 import { useAuth } from "../context/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -343,16 +344,13 @@ export default function Maquinas() {
     return () => window.clearTimeout(timer);
   }, [loadMaquinas]);
 
-  useEffect(() => {
-    if (!user || (user.role === "admin" && !selectedClienteId)) {
-      return undefined;
-    }
-    const timer = window.setInterval(
-      () => loadMaquinas({ silent: true }),
-      10000,
-    );
-    return () => window.clearInterval(timer);
-  }, [loadMaquinas, selectedClienteId, user]);
+  // Durante atualizacao de firmware, 5s para acompanhar o progresso.
+  const hasUpdateInProgress = maquinas.some((item) =>
+    ["sent", "downloading", "restarting"].includes(item.firmware_update_status),
+  );
+  const podeAtualizarLista = Boolean(user) && !(user?.role === "admin" && !selectedClienteId);
+  usePolling(() => loadMaquinas({ silent: true }), 20000, podeAtualizarLista && !hasUpdateInProgress);
+  usePolling(loadMaquinas, 5000, hasUpdateInProgress);
 
   useEffect(() => {
     const timer = window.setTimeout(loadUsuarios, 0);
@@ -363,17 +361,6 @@ export default function Maquinas() {
     const timer = window.setTimeout(loadFirmwareVersions, 0);
     return () => window.clearTimeout(timer);
   }, [loadFirmwareVersions]);
-
-  useEffect(() => {
-    const hasUpdateInProgress = maquinas.some((item) =>
-      ["sent", "downloading", "restarting"].includes(
-        item.firmware_update_status,
-      ),
-    );
-    if (!hasUpdateInProgress) return undefined;
-    const timer = window.setInterval(loadMaquinas, 5000);
-    return () => window.clearInterval(timer);
-  }, [loadMaquinas, maquinas]);
 
   const generateId = async () => {
     setGeneratingId(true);

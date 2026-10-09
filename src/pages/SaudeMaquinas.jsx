@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+import usePolling from "../hooks/usePolling";
 import api, { getApiErrorMessage } from "../api/axios";
 import { useAuth } from "../context/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -245,10 +246,7 @@ export default function SaudeMaquinas() {
     return () => window.clearTimeout(timer);
   }, [loadHealth]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => loadHealth({ silent: true }), 15000);
-    return () => window.clearInterval(timer);
-  }, [loadHealth]);
+  usePolling(() => loadHealth({ silent: true }), 30000);
 
   useEffect(() => {
     if (user?.role !== "admin") return;

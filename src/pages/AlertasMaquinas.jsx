@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+import usePolling from "../hooks/usePolling";
 import api, { getApiErrorMessage } from "../api/axios";
 import { useAuth } from "../context/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -145,10 +146,7 @@ export default function AlertasMaquinas() {
     }
   }, [loadAlerts]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => loadAlerts({ silent: true }), 15000);
-    return () => window.clearInterval(timer);
-  }, [loadAlerts]);
+  usePolling(() => loadAlerts({ silent: true }), 30000);
 
   useEffect(() => {
     if (user?.role !== "admin") return;

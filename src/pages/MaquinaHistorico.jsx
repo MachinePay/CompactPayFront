@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { CreditCard, Download, FileDown, Gift, QrCode, RefreshCcw, Search, ShieldCheck, Sparkles, Undo2, Wallet, Wifi, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import usePolling from "../hooks/usePolling";
 import api, { getApiErrorMessage } from "../api/axios";
 import { useAuth } from "../context/useAuth";
 import Button from "../components/Button";
@@ -152,18 +153,12 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     return () => window.clearTimeout(timer);
   }, [loadHistorico, machineId, selectable, selectedClienteId, user]);
 
-  useEffect(() => {
-    const status = historico.maquina?.firmware_update_status;
-    if (!["sent", "downloading", "restarting"].includes(status)) return undefined;
-    const timer = window.setInterval(() => loadHistorico({ silent: true }), 5000);
-    return () => window.clearInterval(timer);
-  }, [historico.maquina?.firmware_update_status, loadHistorico]);
-
-  useEffect(() => {
-    if (!machineId) return undefined;
-    const timer = window.setInterval(() => loadHistorico({ silent: true }), 30000);
-    return () => window.clearInterval(timer);
-  }, [loadHistorico, machineId]);
+  // Durante atualizacao de firmware, 5s para acompanhar o progresso.
+  const atualizandoFirmware = ["sent", "downloading", "restarting"].includes(
+    historico.maquina?.firmware_update_status,
+  );
+  usePolling(() => loadHistorico({ silent: true }), 5000, atualizandoFirmware);
+  usePolling(() => loadHistorico({ silent: true }), 30000, Boolean(machineId) && !atualizandoFirmware);
 
   useEffect(() => {
     if (!selectable || !user) return;
