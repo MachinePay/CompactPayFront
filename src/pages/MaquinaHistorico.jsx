@@ -1442,6 +1442,7 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Pago/Devolver</th>
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Tipo de pagamento</th>
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Situacao</th>
+                <th className="px-4 py-4 lg:py-5 xl:py-6">Pelucia saiu</th>
               </tr>
             </thead>
             <tbody>
@@ -1542,6 +1543,9 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                       </div>
                     ) : null}
                   </td>
+                  <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[150px]">
+                    <PeluciaSaiuBadge item={item} />
+                  </td>
                 </tr>
                 );
               })}
@@ -1623,6 +1627,12 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
         ) : null}
         <div className="col-span-2">
           <PulseBadge status={item.pulse_status} isTest={item.is_test} />
+        </div>
+        <div className="col-span-2 rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
+          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">Pelucia saiu</div>
+          <div className="mt-1">
+            <PeluciaSaiuBadge item={item} />
+          </div>
         </div>
       </div>
 
@@ -1836,6 +1846,27 @@ function StatusBadge({ item }) {
     }`}>
       {refunded ? "Extornado" : pulseFailed ? "Pago, pulso falhou" : pulsePending ? "Pago, aguardando pulso" : "Venda aprovada"}
     </span>
+  );
+}
+
+// pelucia_saiu_em vem do backend (build_machine_history_payload) - casa cada
+// venda com a saida fisica (sensor OUT) mais proxima depois dela, em ordem
+// cronologica. Nao tem como saber com 100% de certeza que foi ESSA entrega
+// que correspondeu a ESSA venda (a placa nao manda um ID em comum), so a
+// ordem - por isso o rotulo fala "provavel" em vez de afirmar com certeza.
+function PeluciaSaiuBadge({ item }) {
+  if (!item.pelucia_saiu_em) {
+    return <span className="text-xs font-semibold text-[var(--color-text-soft)]">Nao saiu ainda</span>;
+  }
+  return (
+    <div>
+      <span className="rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-[var(--color-success)]">
+        Saiu
+      </span>
+      <div className="mt-1 text-xs text-[var(--color-text-soft)]">
+        {brasiliaDate(item.pelucia_saiu_em).format("DD/MM HH:mm:ss")}
+      </div>
+    </div>
   );
 }
 
