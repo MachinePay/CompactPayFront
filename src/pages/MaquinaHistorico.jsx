@@ -1868,7 +1868,7 @@ function SaidaPeluciaRow({ item }) {
       </td>
       <td className="px-4 py-4 lg:py-5 xl:py-6" colSpan={7}>
         <span className="rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-[var(--color-success)]">
-          Pelucia saiu
+          Pelucia saiu{item.pulse_count > 1 ? ` (${item.pulse_count}x)` : ""}
         </span>
         <span className="ml-3 text-xs text-[var(--color-text-soft)]">{item.ponto}</span>
       </td>
@@ -1887,7 +1887,7 @@ function SaidaPeluciaCard({ item }) {
           <div className="mt-1 text-base font-extrabold text-[var(--color-text)]">{item.ponto}</div>
         </div>
         <span className="rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-[var(--color-success)]">
-          Pelucia saiu
+          Pelucia saiu{item.pulse_count > 1 ? ` (${item.pulse_count}x)` : ""}
         </span>
       </div>
     </article>
