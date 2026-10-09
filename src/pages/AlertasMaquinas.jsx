@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   Bell,
+  Copy,
   Cpu,
   Info,
   PowerOff,
@@ -34,6 +35,7 @@ const emptyPayload = {
     firmware: 0,
     ruido_contador: 0,
     quedas_frequentes: 0,
+    id_duplicado: 0,
     filtrados: 0,
   },
   alertas: [],
@@ -52,6 +54,7 @@ function alertIcon(tipo) {
     ruido_contador: Radio,
     sem_pagamento_recente: Info,
     quedas_frequentes: Repeat,
+    id_duplicado: Copy,
     sumup_pendente: Wallet,
   };
   return icons[tipo] || AlertTriangle;
@@ -207,6 +210,7 @@ export default function AlertasMaquinas() {
                 ["ruido_contador", "Ruido"],
                 ["sem_pagamento_recente", "Sem pagamento"],
                 ["quedas_frequentes", "Quedas frequentes"],
+                ["id_duplicado", "ID duplicado"],
                 ["sumup_pendente", "SumUp pendente"],
               ]}
             />
@@ -235,6 +239,7 @@ export default function AlertasMaquinas() {
         <SummaryCard label="Offline" value={payload.resumo.offline} icon={<PowerOff size={18} />} tone="danger" />
         <SummaryCard label="Pulso ausente" value={payload.resumo.pulso_ausente} icon={<Zap size={18} />} tone="danger" />
         <SummaryCard label="Quedas frequentes" value={payload.resumo.quedas_frequentes} icon={<Repeat size={18} />} tone="danger" />
+        <SummaryCard label="ID duplicado" value={payload.resumo.id_duplicado ?? 0} icon={<Copy size={18} />} tone="danger" />
         <SummaryCard label="Avisos" value={payload.resumo.avisos} icon={<AlertTriangle size={18} />} tone="warning" />
         <SummaryCard label="Wi-Fi ruim" value={payload.resumo.wifi_ruim} icon={<Wifi size={18} />} tone="warning" />
         <SummaryCard label="Ruido" value={payload.resumo.ruido_contador} icon={<Radio size={18} />} tone="warning" />
@@ -276,7 +281,7 @@ export default function AlertasMaquinas() {
                 alert={alert}
                 onOpen={() => navigate(`/maquinas/${alert.maquina.id_hardware}`)}
                 onOpenQuedas={
-                  alert.tipo === "quedas_frequentes"
+                  alert.tipo === "quedas_frequentes" || alert.tipo === "id_duplicado"
                     ? () => navigate(`/historico-quedas?maquina_id=${alert.maquina.id_hardware}`)
                     : null
                 }
