@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import dayjs from "dayjs";
-import { CreditCard, Download, FileDown, QrCode, RefreshCcw, Search, ShieldCheck, Sparkles, Undo2, Wallet, Wifi, Wrench } from "lucide-react";
+import { CreditCard, Download, FileDown, Gift, QrCode, RefreshCcw, Search, ShieldCheck, Sparkles, Undo2, Wallet, Wifi, Wrench } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -1419,15 +1419,19 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
       ) : (
         <>
         <div className="grid gap-3 p-3 md:hidden">
-          {filtered.map((item) => (
-            <SaleMobileCard
-              key={`${item.kind}-${item.id}`}
-              item={item}
-              maquina={maquina}
-              onRefund={onRefund}
-              refundingId={refundingId}
-            />
-          ))}
+          {filtered.map((item) =>
+            item.kind === "saida_pelucia" ? (
+              <SaidaPeluciaCard key={`${item.kind}-${item.id}`} item={item} />
+            ) : (
+              <SaleMobileCard
+                key={`${item.kind}-${item.id}`}
+                item={item}
+                maquina={maquina}
+                onRefund={onRefund}
+                refundingId={refundingId}
+              />
+            ),
+          )}
         </div>
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full min-w-[1180px]">
@@ -1442,11 +1446,13 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Pago/Devolver</th>
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Tipo de pagamento</th>
                 <th className="px-4 py-4 lg:py-5 xl:py-6">Situacao</th>
-                <th className="px-4 py-4 lg:py-5 xl:py-6">Pelucia saiu</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((item) => {
+                if (item.kind === "saida_pelucia") {
+                  return <SaidaPeluciaRow key={`${item.kind}-${item.id}`} item={item} />;
+                }
                 const pulseFailed = String(item.pulse_status || "").toLowerCase().startsWith("falha");
                 return (
                 <tr
@@ -1543,9 +1549,6 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                       </div>
                     ) : null}
                   </td>
-                  <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[150px]">
-                    <PeluciaSaiuBadge item={item} />
-                  </td>
                 </tr>
                 );
               })}
@@ -1627,12 +1630,6 @@ function SaleMobileCard({ item, maquina, onRefund, refundingId }) {
         ) : null}
         <div className="col-span-2">
           <PulseBadge status={item.pulse_status} isTest={item.is_test} />
-        </div>
-        <div className="col-span-2 rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2">
-          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-soft)]">Pelucia saiu</div>
-          <div className="mt-1">
-            <PeluciaSaiuBadge item={item} />
-          </div>
         </div>
       </div>
 
@@ -1849,24 +1846,51 @@ function StatusBadge({ item }) {
   );
 }
 
-// pelucia_saiu_em vem do backend (build_machine_history_payload) - casa cada
-// venda com a saida fisica (sensor OUT) mais proxima depois dela, em ordem
-// cronologica. Nao tem como saber com 100% de certeza que foi ESSA entrega
-// que correspondeu a ESSA venda (a placa nao manda um ID em comum), so a
-// ordem - por isso o rotulo fala "provavel" em vez de afirmar com certeza.
-function PeluciaSaiuBadge({ item }) {
-  if (!item.pelucia_saiu_em) {
-    return <span className="text-xs font-semibold text-[var(--color-text-soft)]">Nao saiu ainda</span>;
-  }
+// kind="saida_pelucia" vem do backend (build_machine_history_payload) - cada
+// acionamento do sensor de saida (pelucia entregue) vira sua propria linha na
+// lista de vendas, na posicao certa da linha do tempo, em vez de ficar
+// escondida dentro da linha do pagamento que a originou.
+function SaidaPeluciaRow({ item }) {
   return (
-    <div>
-      <span className="rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-[var(--color-success)]">
-        Saiu
-      </span>
-      <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-        {brasiliaDate(item.pelucia_saiu_em).format("DD/MM HH:mm:ss")}
+    <tr className={`border-t align-top text-sm text-[var(--color-text)] ${
+      item.fechado
+        ? "border-[var(--color-border)] bg-slate-100 grayscale opacity-60"
+        : "border-emerald-200 bg-emerald-50/70"
+    }`}>
+      <td className="px-4 py-4 lg:py-5 xl:py-6">
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-emerald-600">
+          <Gift size={17} />
+        </span>
+      </td>
+      <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[150px]">
+        <div className="font-semibold">{brasiliaDate(item.data).format("DD/MM/YYYY")}</div>
+        <div className="text-xs text-[var(--color-text-soft)]">{brasiliaDate(item.data).format("HH:mm:ss")}</div>
+      </td>
+      <td className="px-4 py-4 lg:py-5 xl:py-6" colSpan={7}>
+        <span className="rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-[var(--color-success)]">
+          Pelucia saiu
+        </span>
+        <span className="ml-3 text-xs text-[var(--color-text-soft)]">{item.ponto}</span>
+      </td>
+    </tr>
+  );
+}
+
+function SaidaPeluciaCard({ item }) {
+  return (
+    <article className="rounded-[18px] border border-emerald-200 bg-emerald-50/70 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold text-[var(--color-text-soft)]">
+            {brasiliaDate(item.data).format("DD/MM/YYYY HH:mm:ss")}
+          </div>
+          <div className="mt-1 text-base font-extrabold text-[var(--color-text)]">{item.ponto}</div>
+        </div>
+        <span className="rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-[var(--color-success)]">
+          Pelucia saiu
+        </span>
       </div>
-    </div>
+    </article>
   );
 }
 
