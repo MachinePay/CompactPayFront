@@ -1850,27 +1850,86 @@ function StatusBadge({ item }) {
 // acionamento do sensor de saida (pelucia entregue) vira sua propria linha na
 // lista de vendas, na posicao certa da linha do tempo, em vez de ficar
 // escondida dentro da linha do pagamento que a originou.
+function peluciaCountLabel(count) {
+  const total = Math.max(1, Number(count || 1));
+  return { total, texto: total === 1 ? "pelucia" : "pelucias" };
+}
+
+function SaidaPeluciaIcon({ fechado, size = "h-11 w-11" }) {
+  return (
+    <span
+      className={`relative inline-flex ${size} shrink-0 items-center justify-center rounded-2xl text-white shadow-[0_6px_16px_rgba(16,185,129,0.35)] ${
+        fechado ? "bg-slate-400 shadow-none" : "bg-gradient-to-br from-emerald-400 to-teal-600"
+      }`}
+    >
+      <Gift size={20} strokeWidth={2.4} />
+      {!fechado ? (
+        <Sparkles size={12} className="absolute -right-1 -top-1 text-amber-400 drop-shadow" strokeWidth={2.6} />
+      ) : null}
+    </span>
+  );
+}
+
+function SaidaPeluciaContador({ item }) {
+  const { total, texto } = peluciaCountLabel(item.pulse_count);
+  return (
+    <span
+      className={`inline-flex items-baseline gap-1.5 rounded-2xl px-4 py-2 ${
+        item.fechado ? "bg-slate-200 text-slate-600" : "bg-white text-emerald-700 ring-1 ring-emerald-200"
+      }`}
+    >
+      <span className="text-2xl font-black leading-none tracking-[-0.04em]">{total}</span>
+      <span className="text-xs font-bold uppercase tracking-[0.12em]">{texto}</span>
+    </span>
+  );
+}
+
+// kind="saida_pelucia" vem do backend (build_machine_history_payload) - cada
+// acionamento do sensor de saida (pelucia entregue) vira sua propria linha na
+// lista de vendas, na posicao certa da linha do tempo, em vez de ficar
+// escondida dentro da linha do pagamento que a originou.
 function SaidaPeluciaRow({ item }) {
   return (
-    <tr className={`border-t align-top text-sm text-[var(--color-text)] ${
-      item.fechado
-        ? "border-[var(--color-border)] bg-slate-100 grayscale opacity-60"
-        : "border-emerald-200 bg-emerald-50/70"
-    }`}>
-      <td className="px-4 py-4 lg:py-5 xl:py-6">
-        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-emerald-600">
-          <Gift size={17} />
-        </span>
+    <tr
+      className={`border-t align-middle text-sm text-[var(--color-text)] ${
+        item.fechado
+          ? "border-[var(--color-border)] bg-slate-100 grayscale opacity-60"
+          : "border-emerald-200 bg-gradient-to-r from-emerald-50 via-emerald-50/60 to-white"
+      }`}
+    >
+      <td
+        className={`px-4 py-4 lg:py-5 border-l-4 ${item.fechado ? "border-l-slate-300" : "border-l-emerald-500"}`}
+      >
+        <SaidaPeluciaIcon fechado={item.fechado} />
       </td>
-      <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[150px]">
+      <td className="px-4 py-4 lg:py-5 min-w-[150px]">
         <div className="font-semibold">{brasiliaDate(item.data).format("DD/MM/YYYY")}</div>
         <div className="text-xs text-[var(--color-text-soft)]">{brasiliaDate(item.data).format("HH:mm:ss")}</div>
       </td>
-      <td className="px-4 py-4 lg:py-5 xl:py-6" colSpan={7}>
-        <span className="rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-[var(--color-success)]">
-          Pelucia saiu{item.pulse_count > 1 ? ` (${item.pulse_count}x)` : ""}
-        </span>
-        <span className="ml-3 text-xs text-[var(--color-text-soft)]">{item.ponto}</span>
+      <td className="px-4 py-4 lg:py-5" colSpan={7}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className={`text-base font-extrabold ${item.fechado ? "text-slate-600" : "text-emerald-800"}`}>
+              Pelucia entregue
+            </div>
+            <div className="mt-0.5 text-xs text-[var(--color-text-soft)]">
+              Sensor de saida da maquina
+              {item.ponto ? (
+                <>
+                  <span className="mx-1.5">&middot;</span>
+                  <span className="font-semibold text-[var(--color-text)]">{item.ponto}</span>
+                </>
+              ) : null}
+              {item.fechado ? (
+                <>
+                  <span className="mx-1.5">&middot;</span>
+                  Caixa fechado
+                </>
+              ) : null}
+            </div>
+          </div>
+          <SaidaPeluciaContador item={item} />
+        </div>
       </td>
     </tr>
   );
@@ -1878,17 +1937,29 @@ function SaidaPeluciaRow({ item }) {
 
 function SaidaPeluciaCard({ item }) {
   return (
-    <article className="rounded-[18px] border border-emerald-200 bg-emerald-50/70 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-xs font-semibold text-[var(--color-text-soft)]">
-            {brasiliaDate(item.data).format("DD/MM/YYYY HH:mm:ss")}
+    <article
+      className={`relative overflow-hidden rounded-[18px] border p-4 ${
+        item.fechado
+          ? "border-[var(--color-border)] bg-slate-100 grayscale opacity-60"
+          : "border-emerald-200 bg-gradient-to-br from-emerald-50 to-white"
+      }`}
+    >
+      <span
+        className={`absolute inset-y-0 left-0 w-1.5 ${item.fechado ? "bg-slate-300" : "bg-emerald-500"}`}
+        aria-hidden="true"
+      />
+      <div className="flex items-center gap-3 pl-1">
+        <SaidaPeluciaIcon fechado={item.fechado} size="h-10 w-10" />
+        <div className="min-w-0 flex-1">
+          <div className={`text-sm font-extrabold ${item.fechado ? "text-slate-600" : "text-emerald-800"}`}>
+            Pelucia entregue
           </div>
-          <div className="mt-1 text-base font-extrabold text-[var(--color-text)]">{item.ponto}</div>
+          <div className="mt-0.5 truncate text-xs text-[var(--color-text-soft)]">
+            {brasiliaDate(item.data).format("DD/MM/YYYY HH:mm:ss")}
+            {item.ponto ? ` · ${item.ponto}` : ""}
+          </div>
         </div>
-        <span className="rounded-full bg-emerald-100 px-3 py-2 text-xs font-bold text-[var(--color-success)]">
-          Pelucia saiu{item.pulse_count > 1 ? ` (${item.pulse_count}x)` : ""}
-        </span>
+        <SaidaPeluciaContador item={item} />
       </div>
     </article>
   );
