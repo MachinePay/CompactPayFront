@@ -160,6 +160,7 @@ function formatPulseStatus(status) {
     fisico: "Pagamento fisico",
     falha_timeout: "Sem confirmacao",
     falha_sem_confirmacao: "Pulso ausente",
+    falha_fila_expirada: "Credito nao enviado (fila expirou)",
     falha_publicacao: "Falha publicacao",
     falha_cmd_ignorado: "Comando ignorado",
     falha_bloqueado: "Pulso bloqueado",

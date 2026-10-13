@@ -1305,6 +1305,7 @@ const PULSE_ABSENT_STATUSES = new Set([
   "falha_cmd_ignorado",
   "falha_bloqueado",
   "pulso_sem_retorno",
+  "falha_fila_expirada",
 ]);
 
 function getSaleSearchValues(item) {
@@ -1786,6 +1787,7 @@ function formatPulseStatus(status, isTest) {
     falha: "Pulso nao liberado",
     falha_timeout: "Sem confirmacao",
     falha_sem_confirmacao: "Pulso nao confirmado",
+    falha_fila_expirada: "Credito nao enviado (fila expirou)",
     falha_publicacao: "Falha ao publicar",
     falha_cmd_ignorado: "Comando ignorado",
     falha_bloqueado: "Pulso bloqueado",
