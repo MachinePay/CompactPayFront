@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  Banknote,
   Bell,
   Copy,
   Cpu,
@@ -37,6 +38,7 @@ const emptyPayload = {
     ruido_contador: 0,
     quedas_frequentes: 0,
     id_duplicado: 0,
+    pagamento_sem_credito: 0,
     filtrados: 0,
   },
   alertas: [],
@@ -56,6 +58,7 @@ function alertIcon(tipo) {
     sem_pagamento_recente: Info,
     quedas_frequentes: Repeat,
     id_duplicado: Copy,
+    pagamento_sem_credito: Banknote,
     sumup_pendente: Wallet,
   };
   return icons[tipo] || AlertTriangle;
@@ -209,6 +212,7 @@ export default function AlertasMaquinas() {
                 ["sem_pagamento_recente", "Sem pagamento"],
                 ["quedas_frequentes", "Quedas frequentes"],
                 ["id_duplicado", "ID duplicado"],
+                ["pagamento_sem_credito", "Pagamento sem credito"],
                 ["sumup_pendente", "SumUp pendente"],
               ]}
             />
@@ -234,6 +238,7 @@ export default function AlertasMaquinas() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard label="Total" value={payload.resumo.total} icon={<Bell size={18} />} />
         <SummaryCard label="Criticos" value={payload.resumo.criticos} icon={<XCircle size={18} />} tone="danger" />
+        <SummaryCard label="Pagamento sem credito" value={payload.resumo.pagamento_sem_credito ?? 0} icon={<Banknote size={18} />} tone="danger" />
         <SummaryCard label="Offline" value={payload.resumo.offline} icon={<PowerOff size={18} />} tone="danger" />
         <SummaryCard label="Pulso ausente" value={payload.resumo.pulso_ausente} icon={<Zap size={18} />} tone="danger" />
         <SummaryCard label="Quedas frequentes" value={payload.resumo.quedas_frequentes} icon={<Repeat size={18} />} tone="danger" />
