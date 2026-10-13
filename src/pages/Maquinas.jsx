@@ -121,9 +121,118 @@ const emptyDispositivoConfigState = {
   pulseCredit: "",
   pulseValue: "",
   pulseQuantity: "",
+  pulseGapMs: "",
   coinDebounceUs: "",
-  coinReleaseMs: "",
 };
+
+// Valores de fabrica do firmware (PONTOsalvioIOScerto.ino). O botao
+// "Redefinir para o padrao" envia exatamente estes valores para a placa.
+const DISPOSITIVO_CONFIG_PADRAO = {
+  pulseValue: "1",
+  pulseQuantity: "1",
+  pulseCredit: "200",
+  pulseGapMs: "250",
+  pulseCoin: "30",
+  coinDebounceUs: "10000",
+  pulseOut: "100",
+  hardResetSec: "60",
+  fullRestartSec: "90",
+};
+
+// Campos da configuracao da placa, agrupados pelo que controlam na maquina.
+// Cada texto explica o efeito pratico, nao o nome tecnico do firmware.
+const DISPOSITIVO_CONFIG_SECOES = [
+  {
+    titulo: "Liberacao de credito",
+    descricao:
+      "Como a placa transforma um pagamento (Pix, cartao ou teste pelo painel) em jogadas na maquina. A placa simula a moeda caindo, mandando pulsos para a entrada de credito da maquina.",
+    campos: [
+      {
+        chave: "pulseValue",
+        rotulo: "Valor de cada credito (R$)",
+        dica: "Quanto o cliente paga por 1 credito. Ex.: 1 = cada R$ 1 pago vira 1 credito. Se sobrar troco (ex.: R$ 2,50 com credito de R$ 1), os R$ 0,50 ficam guardados para o proximo pagamento.",
+      },
+      {
+        chave: "pulseQuantity",
+        rotulo: "Pulsos por credito",
+        dica: "Quantos pulsos a maquina precisa receber para contar 1 credito. A maioria das maquinas usa 1. Funciona a partir do firmware 2.7.6.",
+      },
+      {
+        chave: "pulseCredit",
+        rotulo: "Duracao de cada pulso (ms)",
+        dica: "Quanto tempo cada pulso fica ligado. Se a maquina nao reconhece o credito, aumente. Se ela conta 2 creditos por pulso, diminua.",
+      },
+      {
+        chave: "pulseGapMs",
+        rotulo: "Intervalo entre pulsos (ms)",
+        dica: "Espera entre um pulso e o proximo. Junto com a duracao, define a velocidade: se a maquina perde pulsos quando eles vem rapido, aumente. Entre 20 e 5000. Funciona a partir do firmware 2.7.6.",
+      },
+    ],
+  },
+  {
+    titulo: "Entrada de dinheiro (moedeiro e noteiro)",
+    descricao:
+      "Como a placa conta o dinheiro fisico que entra pelo moedeiro ou noteiro da maquina. Cada pulso valido conta como R$ 1,00 no faturamento.",
+    campos: [
+      {
+        chave: "pulseCoin",
+        rotulo: "Duracao minima do pulso de moeda/nota (ms)",
+        dica: "Pulsos mais curtos que isso sao ignorados como ruido eletrico. Se moedas de verdade nao estao sendo contadas, diminua. Se aparecem moedas que nao entraram, aumente.",
+      },
+      {
+        chave: "coinDebounceUs",
+        rotulo: "Intervalo minimo entre moedas (microssegundos)",
+        dica: "Dois pulsos mais proximos que isso contam como uma moeda so (evita contar a mesma moeda duas vezes). 10000 = 0,01 segundo.",
+      },
+    ],
+  },
+  {
+    titulo: "Saida de premio (sensor de pelucia)",
+    descricao: "Como a placa conta as pelucias que saem pela boca da maquina.",
+    campos: [
+      {
+        chave: "pulseOut",
+        rotulo: "Bloqueio apos saida de pelucia (ms)",
+        dica: "Depois de detectar uma pelucia, o sensor fica bloqueado esse tempo para nao contar a mesma pelucia duas vezes. Se uma pelucia conta 2 vezes, aumente.",
+      },
+    ],
+  },
+  {
+    titulo: "Reconexao Wi-Fi",
+    descricao: "O que a placa faz quando perde o Wi-Fi. Em geral nao precisa mexer.",
+    campos: [
+      {
+        chave: "hardResetSec",
+        rotulo: "Reiniciar o radio Wi-Fi apos (segundos)",
+        dica: "Sem Wi-Fi por esse tempo, a placa desliga e liga o radio Wi-Fi para tentar de novo. Entre 10 e 600.",
+        tipo: "number",
+      },
+      {
+        chave: "fullRestartSec",
+        rotulo: "Reiniciar a placa apos (segundos)",
+        dica: "Sem Wi-Fi por esse tempo, a placa reinicia por completo (a configuracao nao se perde). Entre 10 e 600.",
+        tipo: "number",
+      },
+    ],
+  },
+];
+
+// Exemplo ao vivo para a secao de credito: quantos pulsos sai um pagamento
+// de R$ 10 com os valores do formulario (ou o padrao, se em branco).
+function exemploCredito(state) {
+  const numero = (valor, padrao) => {
+    const n = Number(String(valor || "").replace(",", "."));
+    return Number.isFinite(n) && n > 0 ? n : padrao;
+  };
+  const valor = numero(state.pulseValue, 1);
+  const quantidade = Math.round(numero(state.pulseQuantity, 1));
+  const duracao = numero(state.pulseCredit, 200);
+  const intervalo = numero(state.pulseGapMs, 250);
+  const creditos = Math.floor(10 / valor);
+  const pulsos = creditos * quantidade;
+  const segundos = pulsos > 0 ? (pulsos * (duracao + 40) + (pulsos - 1) * intervalo) / 1000 : 0;
+  return { creditos, pulsos, segundos };
+}
 
 // A mensagem MQTT "@config|" so existe a partir dessa versao do firmware -
 // espelha MIN_FIRMWARE_VERSION_FOR_DEVICE_CONFIG no backend. Desabilita o
@@ -720,30 +829,41 @@ export default function Maquinas() {
       pulseCredit: machine.pulse_credit || "",
       pulseValue: machine.pulse_value || "",
       pulseQuantity: machine.pulse_quantity || "",
+      pulseGapMs: machine.pulse_gap_ms || "",
       coinDebounceUs: machine.coin_debounce_us || "",
-      coinReleaseMs: machine.coin_release_ms || "",
     });
   };
 
-  const handleSalvarConfigDispositivo = async () => {
+  const handleRedefinirConfigDispositivo = () => {
     const machine = dispositivoConfigState.machine;
     if (!machine) return;
-    setDispositivoConfigState((current) => ({ ...current, saving: true }));
+    const confirmado = window.confirm(
+      `Redefinir TODA a configuracao da placa ${machine.nome || machine.id_hardware} para o padrao de fabrica e enviar agora?\n\n` +
+        "Valor do credito R$ 1, 1 pulso por credito, pulso de 200 ms, intervalo de 250 ms, " +
+        "moeda minima de 30 ms, intervalo entre moedas de 10000 us, bloqueio de pelucia de 100 ms, " +
+        "reconexao Wi-Fi 60 s / 90 s.",
+    );
+    if (!confirmado) return;
+    handleSalvarConfigDispositivo(DISPOSITIVO_CONFIG_PADRAO);
+  };
+
+  const handleSalvarConfigDispositivo = async (valoresForcados = null) => {
+    const machine = dispositivoConfigState.machine;
+    if (!machine) return;
+    const valores = { ...dispositivoConfigState, ...(valoresForcados || {}) };
+    const texto = (campo) => String(valores[campo] || "").trim();
+    setDispositivoConfigState((current) => ({ ...current, ...(valoresForcados || {}), saving: true }));
     try {
       const payload = {
-        wifi_hard_reset_ms: dispositivoConfigState.hardResetSec.trim()
-          ? Math.round(Number(dispositivoConfigState.hardResetSec) * 1000)
-          : null,
-        wifi_full_restart_ms: dispositivoConfigState.fullRestartSec.trim()
-          ? Math.round(Number(dispositivoConfigState.fullRestartSec) * 1000)
-          : null,
-        pulse_coin: dispositivoConfigState.pulseCoin.trim(),
-        pulse_out: dispositivoConfigState.pulseOut.trim(),
-        pulse_credit: dispositivoConfigState.pulseCredit.trim(),
-        pulse_value: dispositivoConfigState.pulseValue.trim(),
-        pulse_quantity: dispositivoConfigState.pulseQuantity.trim(),
-        coin_debounce_us: dispositivoConfigState.coinDebounceUs.trim(),
-        coin_release_ms: dispositivoConfigState.coinReleaseMs.trim(),
+        wifi_hard_reset_ms: texto("hardResetSec") ? Math.round(Number(texto("hardResetSec")) * 1000) : null,
+        wifi_full_restart_ms: texto("fullRestartSec") ? Math.round(Number(texto("fullRestartSec")) * 1000) : null,
+        pulse_coin: texto("pulseCoin"),
+        pulse_out: texto("pulseOut"),
+        pulse_credit: texto("pulseCredit"),
+        pulse_value: texto("pulseValue"),
+        pulse_quantity: texto("pulseQuantity"),
+        pulse_gap_ms: texto("pulseGapMs"),
+        coin_debounce_us: texto("coinDebounceUs"),
       };
       const { data } = await api.post(
         `/maquinas/${machine.id_hardware}/config-dispositivo`,
@@ -751,7 +871,9 @@ export default function Maquinas() {
       );
       setToast({
         message: data.enviado
-          ? "Configuracao atualizada e enviada para a placa."
+          ? valoresForcados
+            ? "Configuracao redefinida para o padrao e enviada para a placa."
+            : "Configuracao atualizada e enviada para a placa."
           : "Configuracao salva, mas a placa parece offline agora - sera aplicada quando ela reconectar e voce reenviar.",
         type: data.enviado ? "success" : "warning",
       });
@@ -1402,185 +1524,80 @@ export default function Maquinas() {
               {dispositivoConfigState.machine?.nome || dispositivoConfigState.machine?.id_hardware}
             </h2>
             <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-              Ajusta so nesta maquina os mesmos campos do portal fisico de
-              Wi-Fi (pulso/moeda, debounce/liberacao do IN e os tempos de
-              reconexao) - <strong>exceto SSID/senha de Wi-Fi</strong>, que
-              continuam so pelo portal fisico. Campo em branco nao mexe no
-              valor que a placa ja tem. So funciona se a maquina estiver
-              online agora (se estiver offline, fica salvo aqui e e' so
-              reenviar quando ela voltar).
+              Ajusta so esta maquina. Sao os mesmos campos do portal da placa
+              (CONFIG_COMPACTPAY), <strong>exceto nome e senha do Wi-Fi</strong>,
+              que so mudam pelo portal. <strong>Campo em branco nao muda nada</strong>:
+              a placa continua com o valor que ja tem. A placa precisa estar
+              online para receber; se estiver offline, a configuracao fica salva
+              aqui e e' so enviar de novo quando ela voltar.
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                Minimo pulso IN (ms)
-              </span>
-              <input
-                className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                placeholder="Ex.: 30"
-                value={dispositivoConfigState.pulseCoin}
-                onChange={(event) =>
-                  setDispositivoConfigState((current) => ({
-                    ...current,
-                    pulseCoin: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                Pulso saida (ms)
-              </span>
-              <input
-                className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                placeholder="Ex.: 100"
-                value={dispositivoConfigState.pulseOut}
-                onChange={(event) =>
-                  setDispositivoConfigState((current) => ({
-                    ...current,
-                    pulseOut: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                Pulso credito (ms)
-              </span>
-              <input
-                className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                placeholder="Ex.: 200"
-                value={dispositivoConfigState.pulseCredit}
-                onChange={(event) =>
-                  setDispositivoConfigState((current) => ({
-                    ...current,
-                    pulseCredit: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                Valor do pulso (R$)
-              </span>
-              <input
-                className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                placeholder="Ex.: 1"
-                value={dispositivoConfigState.pulseValue}
-                onChange={(event) =>
-                  setDispositivoConfigState((current) => ({
-                    ...current,
-                    pulseValue: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                Quantidade de pulso
-              </span>
-              <input
-                className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                placeholder="Ex.: 1"
-                value={dispositivoConfigState.pulseQuantity}
-                onChange={(event) =>
-                  setDispositivoConfigState((current) => ({
-                    ...current,
-                    pulseQuantity: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                Debounce IN (us)
-              </span>
-              <input
-                className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                placeholder="Ex.: 10000"
-                value={dispositivoConfigState.coinDebounceUs}
-                onChange={(event) =>
-                  setDispositivoConfigState((current) => ({
-                    ...current,
-                    coinDebounceUs: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                Liberacao IN (ms)
-              </span>
-              <input
-                className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                placeholder="Ex.: 30"
-                value={dispositivoConfigState.coinReleaseMs}
-                onChange={(event) =>
-                  setDispositivoConfigState((current) => ({
-                    ...current,
-                    coinReleaseMs: event.target.value,
-                  }))
-                }
-              />
-            </label>
-          </div>
+          {DISPOSITIVO_CONFIG_SECOES.map((secao, indice) => (
+            <section
+              key={secao.titulo}
+              className={indice > 0 ? "border-t border-[var(--color-border)] pt-5" : ""}
+            >
+              <div className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--color-text)]">
+                {secao.titulo}
+              </div>
+              <p className="mt-1 mb-4 text-xs leading-5 text-[var(--color-text-soft)]">{secao.descricao}</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {secao.campos.map((campo) => (
+                  <label key={campo.chave} className="block">
+                    <span className="block text-sm font-semibold text-[var(--color-text)]">{campo.rotulo}</span>
+                    <span className="mt-1 block text-xs leading-5 text-[var(--color-text-soft)]">{campo.dica}</span>
+                    <span className="mb-2 mt-1 block text-xs font-semibold text-[var(--color-primary)]">
+                      Padrao: {DISPOSITIVO_CONFIG_PADRAO[campo.chave]}
+                    </span>
+                    <input
+                      type={campo.tipo || "text"}
+                      inputMode="decimal"
+                      className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                      placeholder={`Em branco = mantem o atual (padrao ${DISPOSITIVO_CONFIG_PADRAO[campo.chave]})`}
+                      value={dispositivoConfigState[campo.chave]}
+                      onChange={(event) =>
+                        setDispositivoConfigState((current) => ({
+                          ...current,
+                          [campo.chave]: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+              {indice === 0 ? (() => {
+                const exemplo = exemploCredito(dispositivoConfigState);
+                return (
+                  <div className="mt-4 rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] px-4 py-3 text-xs leading-5 text-[var(--color-text)]">
+                    <strong>Exemplo com estes valores:</strong> um pagamento de R$ 10,00 vira{" "}
+                    {exemplo.creditos} credito(s) = <strong>{exemplo.pulsos} pulso(s)</strong>, liberados em
+                    pelo menos {exemplo.segundos.toFixed(1).replace(".", ",")} s (a placa ainda espera o retorno do
+                    contador da maquina, entao pode demorar um pouco mais).
+                  </div>
+                );
+              })() : null}
+            </section>
+          ))}
 
-          <div className="border-t border-[var(--color-border)] pt-4">
-            <div className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
-              Reconexao Wi-Fi
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                  Reciclar radio apos (segundos)
-                </span>
-                <input
-                  type="number"
-                  min="10"
-                  max="600"
-                  placeholder="Padrao: 60"
-                  className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                  value={dispositivoConfigState.hardResetSec}
-                  onChange={(event) =>
-                    setDispositivoConfigState((current) => ({
-                      ...current,
-                      hardResetSec: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                  Reiniciar placa apos (segundos)
-                </span>
-                <input
-                  type="number"
-                  min="10"
-                  max="600"
-                  placeholder="Padrao: 90"
-                  className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                  value={dispositivoConfigState.fullRestartSec}
-                  onChange={(event) =>
-                    setDispositivoConfigState((current) => ({
-                      ...current,
-                      fullRestartSec: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-            </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              className="pill-button inline-flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold"
+              onClick={handleRedefinirConfigDispositivo}
+              disabled={dispositivoConfigState.saving}
+            >
+              Redefinir para o padrao
+            </button>
+            <Button
+              type="button"
+              className="w-full justify-center"
+              onClick={() => handleSalvarConfigDispositivo()}
+              disabled={dispositivoConfigState.saving}
+            >
+              {dispositivoConfigState.saving ? "Enviando..." : "Salvar e enviar para a placa"}
+            </Button>
           </div>
-
-          <Button
-            type="button"
-            className="w-full justify-center"
-            onClick={handleSalvarConfigDispositivo}
-            disabled={dispositivoConfigState.saving}
-          >
-            {dispositivoConfigState.saving ? "Enviando..." : "Salvar e enviar para a placa"}
-          </Button>
         </div>
       </Modal>
 
