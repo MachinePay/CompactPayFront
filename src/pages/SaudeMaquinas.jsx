@@ -595,6 +595,14 @@ function WifiBadge({ machine }) {
           IP {machine.ip_local}
         </div>
       ) : null}
+      {machine.wifi_ssid ? (
+        <div
+          className="max-w-[160px] truncate text-xs font-semibold text-slate-500"
+          title={`Rede Wi-Fi: ${machine.wifi_ssid}`}
+        >
+          Rede {machine.wifi_ssid}
+        </div>
+      ) : null}
     </div>
   );
 }

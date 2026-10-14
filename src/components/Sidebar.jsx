@@ -11,6 +11,7 @@ import {
   Menu,
   Server,
   Users,
+  Wifi,
   X,
   ChevronDown,
 } from "lucide-react";
@@ -69,6 +70,14 @@ export default function Sidebar() {
           <History size={20} /> Historico de quedas
         </NavLink>
       </li>
+
+      {user?.role === "admin" && (
+        <li>
+          <NavLink to="/wifi-maquinas" className={linkClassName} onClick={closeMobile}>
+            <Wifi size={20} /> Wi-Fi das maquinas
+          </NavLink>
+        </li>
+      )}
 
       <li>
         <button

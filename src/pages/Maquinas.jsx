@@ -1841,6 +1841,14 @@ export default function Maquinas() {
                               IP {m.ip_local}
                             </div>
                           ) : null}
+                          {m.wifi_ssid ? (
+                            <div
+                              className="max-w-[150px] truncate text-[11px] text-[var(--color-text-soft)]"
+                              title={`Rede Wi-Fi: ${m.wifi_ssid}`}
+                            >
+                              Rede {m.wifi_ssid}
+                            </div>
+                          ) : null}
                           {m.firmware_version ? (
                             <div
                               className="text-[11px] text-[var(--color-text-soft)]"
@@ -2551,6 +2559,9 @@ function MachineMobileCard({
         />
         {machine.ip_local ? (
           <InfoPill label="IP local" value={machine.ip_local} />
+        ) : null}
+        {machine.wifi_ssid ? (
+          <InfoPill label="Rede Wi-Fi" value={machine.wifi_ssid} />
         ) : null}
         <InfoPill
           label="Banco"
