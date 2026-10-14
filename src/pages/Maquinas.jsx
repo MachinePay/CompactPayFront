@@ -1833,6 +1833,14 @@ export default function Maquinas() {
                             rssi={m.wifi_rssi}
                             compact
                           />
+                          {m.ip_local ? (
+                            <div
+                              className="mt-1 text-[11px] text-[var(--color-text-soft)]"
+                              title="IP que a placa recebeu do roteador do local"
+                            >
+                              IP {m.ip_local}
+                            </div>
+                          ) : null}
                         </td>
                         <td className="px-3 py-3 align-top text-xs text-[var(--color-text-soft)]">
                           <div className="truncate">
@@ -2533,6 +2541,9 @@ function MachineMobileCard({
             />
           }
         />
+        {machine.ip_local ? (
+          <InfoPill label="IP local" value={machine.ip_local} />
+        ) : null}
         <InfoPill
           label="Banco"
           value={
