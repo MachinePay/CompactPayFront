@@ -32,6 +32,7 @@ const RESULTADO_ESTILO = {
   falhou: ["Falhou", "bg-rose-50 text-rose-700"],
   recusado: ["Recusada", "bg-amber-50 text-amber-700"],
   testando: ["Testando", "bg-sky-50 text-sky-700"],
+  sem_confirmacao: ["Sem confirmacao", "bg-amber-50 text-amber-700"],
 };
 
 const ETAPA_TEXTO = {
@@ -618,7 +619,7 @@ function ResultadoTroca({ acompanhamento }) {
       </div>
     );
   }
-  if (etapa === "demorando") {
+  if (etapa === "demorando" || resultado === "sem_confirmacao") {
     return (
       <div className="mt-4 rounded-[18px] bg-amber-50 px-4 py-3 text-sm text-amber-800">
         A placa ainda nao respondeu o resultado. Ela pode estar reconectando - confira se ficou online na lista de
