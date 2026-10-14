@@ -131,6 +131,7 @@ export default function HistoricoWifi() {
 
       <TrocarWifi
         maquinas={maquinas}
+        clientes={clientes}
         maquinaInicial={filtroMaquina === TODOS ? "" : filtroMaquina}
         onConcluido={() => {
           carregarHistorico();
@@ -233,7 +234,8 @@ export default function HistoricoWifi() {
   );
 }
 
-function TrocarWifi({ maquinas, maquinaInicial, onConcluido, onToast }) {
+function TrocarWifi({ maquinas, clientes, maquinaInicial, onConcluido, onToast }) {
+  const [clienteId, setClienteId] = useState("");
   const [maquinaId, setMaquinaId] = useState(maquinaInicial || "");
   const [ssid, setSsid] = useState("");
   const [senha, setSenha] = useState("");
@@ -245,6 +247,19 @@ function TrocarWifi({ maquinas, maquinaInicial, onConcluido, onToast }) {
   useEffect(() => () => window.clearTimeout(timerRef.current), []);
 
   const maquina = useMemo(() => maquinas.find((item) => item.id_hardware === maquinaId), [maquinas, maquinaId]);
+  // Veio com ?maquina_id= na URL: o cliente ja aparece escolhido (o dessa maquina).
+  const clienteEfetivo = clienteId || (maquina ? String(maquina.cliente_id || "") : "");
+  const maquinasDoCliente = useMemo(
+    () => (clienteEfetivo ? maquinas.filter((item) => String(item.cliente_id || "") === clienteEfetivo) : []),
+    [maquinas, clienteEfetivo],
+  );
+
+  const handleClienteChange = (valor) => {
+    setClienteId(valor);
+    if (!maquinas.some((item) => item.id_hardware === maquinaId && String(item.cliente_id || "") === valor)) {
+      setMaquinaId("");
+    }
+  };
   const suporta = maquina ? suportaWifiRemoto(maquina.firmware_version) : false;
   const online = Boolean(maquina?.status_online);
 
@@ -324,10 +339,23 @@ function TrocarWifi({ maquinas, maquinaInicial, onConcluido, onToast }) {
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto]">
-        <select className={inputClassName} value={maquinaId} onChange={(event) => setMaquinaId(event.target.value)}>
-          <option value="">Escolha a maquina</option>
-          {maquinas.map((item) => (
+      <div className="mt-5 grid gap-3 md:grid-cols-[200px_1fr_1fr_1fr_auto]">
+        <select className={inputClassName} value={clienteEfetivo} onChange={(event) => handleClienteChange(event.target.value)}>
+          <option value="">Escolha o cliente</option>
+          {clientes.map((item) => (
+            <option key={item.id} value={String(item.id)}>
+              {item.nome_empresa || item.email_contato}
+            </option>
+          ))}
+        </select>
+        <select
+          className={`${inputClassName} disabled:opacity-60`}
+          value={maquinaId}
+          onChange={(event) => setMaquinaId(event.target.value)}
+          disabled={!clienteEfetivo}
+        >
+          <option value="">{clienteEfetivo ? "Escolha a maquina" : "Escolha o cliente primeiro"}</option>
+          {maquinasDoCliente.map((item) => (
             <option key={item.id_hardware} value={item.id_hardware}>
               {(item.nome || item.id_hardware) + ` - ${item.id_hardware}`}
             </option>
