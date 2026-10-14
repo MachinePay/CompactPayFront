@@ -33,6 +33,7 @@ import Modal from "../components/Modal";
 import Button from "../components/Button";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
+import { confirmar } from "../utils/confirmar";
 import { brasiliaDate } from "../utils/dateTime";
 import {
   describePulseResultToast,
@@ -834,15 +835,18 @@ export default function Maquinas() {
     });
   };
 
-  const handleRedefinirConfigDispositivo = () => {
+  const handleRedefinirConfigDispositivo = async () => {
     const machine = dispositivoConfigState.machine;
     if (!machine) return;
-    const confirmado = window.confirm(
-      `Redefinir TODA a configuracao da placa ${machine.nome || machine.id_hardware} para o padrao de fabrica e enviar agora?\n\n` +
-        "Valor do credito R$ 1, 1 pulso por credito, pulso de 200 ms, intervalo de 250 ms, " +
-        "moeda minima de 30 ms, intervalo entre moedas de 10000 us, bloqueio de pelucia de 100 ms, " +
-        "reconexao Wi-Fi 60 s / 90 s.",
-    );
+    const confirmado = await confirmar({
+      titulo: `Redefinir a placa ${machine.nome || machine.id_hardware} para o padrao?`,
+      texto:
+        "Toda a configuracao volta ao padrao de fabrica e e' enviada agora: valor do credito R$ 1, 1 pulso por credito, " +
+        "pulso de 200 ms, intervalo de 250 ms, moeda minima de 30 ms, intervalo entre moedas de 10000 us, " +
+        "bloqueio de pelucia de 100 ms, reconexao Wi-Fi 60 s / 90 s.",
+      confirmarTexto: "Redefinir e enviar",
+      perigoso: true,
+    });
     if (!confirmado) return;
     handleSalvarConfigDispositivo(DISPOSITIVO_CONFIG_PADRAO);
   };

@@ -6,6 +6,7 @@ import api, { getApiErrorMessage } from "../api/axios";
 import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Toast from "../components/Toast";
+import { confirmar } from "../utils/confirmar";
 import { brasiliaDate } from "../utils/dateTime";
 
 // Firmware que aceita troca de Wi-Fi pelo painel (backend: MIN_FIRMWARE_VERSION_FOR_WIFI).
@@ -370,12 +371,14 @@ function TrocarWifi({
 
   const handleTrocar = async () => {
     if (!maquina) return;
-    const confirmar = window.confirm(
-      `Trocar o Wi-Fi da maquina ${maquina.id_hardware} para a rede "${ssid}"?\n\n` +
-        "A placa confere se a rede esta perto, testa a conexao e, se nao funcionar, volta sozinha para a rede atual. " +
-        "Durante o teste ela fica offline por ate 2 minutos.",
-    );
-    if (!confirmar) return;
+    const confirmado = await confirmar({
+      titulo: `Trocar o Wi-Fi da maquina ${maquina.id_hardware}?`,
+      texto:
+        `Nova rede: "${ssid}". A placa confere se a rede esta perto, testa a conexao e, se nao funcionar, ` +
+        "volta sozinha para a rede atual. Durante o teste ela fica offline por ate 2 minutos.",
+      confirmarTexto: "Testar e trocar",
+    });
+    if (!confirmado) return;
     setEnviando(true);
     window.clearTimeout(timerRef.current);
     try {
