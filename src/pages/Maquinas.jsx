@@ -1841,6 +1841,14 @@ export default function Maquinas() {
                               IP {m.ip_local}
                             </div>
                           ) : null}
+                          {m.firmware_version ? (
+                            <div
+                              className="text-[11px] text-[var(--color-text-soft)]"
+                              title={m.firmware_version}
+                            >
+                              Firmware {versaoCurtaFirmware(m.firmware_version)}
+                            </div>
+                          ) : null}
                         </td>
                         <td className="px-3 py-3 align-top text-xs text-[var(--color-text-soft)]">
                           <div className="truncate">
@@ -2847,6 +2855,12 @@ function IconActionButton({
       <Icon size={15} className={busy ? "animate-spin" : ""} />
     </button>
   );
+}
+
+// "version_2.7.9-ip-local-2026-10-14" -> "v2.7.9" (nome completo no title).
+function versaoCurtaFirmware(versao) {
+  const numero = String(versao || "").match(/\d+\.\d+(\.\d+)?/);
+  return numero ? `v${numero[0]}` : versao;
 }
 
 function formatFirmwareUpdateStatus(status) {
