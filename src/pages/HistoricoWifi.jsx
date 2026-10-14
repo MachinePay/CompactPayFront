@@ -3,6 +3,7 @@ import { CheckCircle2, Eye, EyeOff, Loader2, RefreshCcw, Send, Wifi, XCircle } f
 import { useSearchParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
+import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Toast from "../components/Toast";
 import { brasiliaDate } from "../utils/dateTime";
@@ -34,13 +35,21 @@ const ETAPA_TEXTO = {
     "A placa achou a rede e esta testando. Ela fica offline por ate 2 minutos e volta sozinha para a rede antiga se nao der certo.",
 };
 
+const TODOS = "__todos__";
+const emptyDateRange = { start: "", end: "" };
+
 const inputClassName =
   "min-w-0 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]";
 
 export default function HistoricoWifi() {
   const [searchParams] = useSearchParams();
   const [maquinas, setMaquinas] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  // Os dois filtros comecam vazios (nada carregado) para nao puxar o
+  // historico de todas as maquinas sem querer; "Todos/Todas" e' escolha explicita.
+  const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroMaquina, setFiltroMaquina] = useState(searchParams.get("maquina_id") || "");
+  const [dateRange, setDateRange] = useState(emptyDateRange);
   const [redes, setRedes] = useState([]);
   const [tentativas, setTentativas] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -55,13 +64,43 @@ export default function HistoricoWifi() {
 
   useEffect(() => {
     carregarMaquinas();
+    api
+      .get("/clientes")
+      .then(({ data }) => setClientes(data || []))
+      .catch(() => setClientes([]));
   }, [carregarMaquinas]);
 
+  const clienteEscolhido = Boolean(filtroCliente) && filtroCliente !== TODOS;
+  const maquinasDoCliente = useMemo(
+    () => (clienteEscolhido ? maquinas.filter((item) => String(item.cliente_id || "") === filtroCliente) : maquinas),
+    [maquinas, filtroCliente, clienteEscolhido],
+  );
+
+  const handleClienteChange = (valor) => {
+    setFiltroCliente(valor);
+    const continuaNaLista =
+      filtroMaquina === TODOS ||
+      !valor ||
+      valor === TODOS ||
+      maquinas.some((item) => item.id_hardware === filtroMaquina && String(item.cliente_id || "") === valor);
+    if (!continuaNaLista) setFiltroMaquina("");
+  };
+
   const carregarHistorico = useCallback(async () => {
+    if (!filtroMaquina) {
+      setRedes([]);
+      setTentativas([]);
+      return;
+    }
     setLoading(true);
     try {
-      const params = filtroMaquina ? `?machine_id=${encodeURIComponent(filtroMaquina)}` : "";
-      const { data } = await api.get(`/wifi/historico${params}`);
+      const params = new URLSearchParams();
+      if (filtroMaquina !== TODOS) params.set("machine_id", filtroMaquina);
+      else if (clienteEscolhido) params.set("cliente_id", filtroCliente);
+      else params.set("todas", "true");
+      if (dateRange.start) params.set("data_inicio", `${dateRange.start}T00:00:00`);
+      if (dateRange.end) params.set("data_fim", `${dateRange.end}T23:59:59`);
+      const { data } = await api.get(`/wifi/historico?${params.toString()}`);
       setRedes(data.redes || []);
       setTentativas(data.tentativas || []);
     } catch (error) {
@@ -69,7 +108,7 @@ export default function HistoricoWifi() {
     } finally {
       setLoading(false);
     }
-  }, [filtroMaquina]);
+  }, [filtroMaquina, filtroCliente, clienteEscolhido, dateRange]);
 
   useEffect(() => {
     const timer = window.setTimeout(carregarHistorico, 0);
@@ -92,7 +131,7 @@ export default function HistoricoWifi() {
 
       <TrocarWifi
         maquinas={maquinas}
-        maquinaInicial={filtroMaquina}
+        maquinaInicial={filtroMaquina === TODOS ? "" : filtroMaquina}
         onConcluido={() => {
           carregarHistorico();
           carregarMaquinas();
@@ -101,20 +140,31 @@ export default function HistoricoWifi() {
       />
 
       <section className="app-panel rounded-[30px] p-5 md:p-6">
-        <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+        <div className="grid gap-3 md:grid-cols-[220px_1fr_auto_auto]">
+          <select className={inputClassName} value={filtroCliente} onChange={(event) => handleClienteChange(event.target.value)}>
+            <option value="">Escolha o cliente</option>
+            <option value={TODOS}>Todos os clientes</option>
+            {clientes.map((item) => (
+              <option key={item.id} value={String(item.id)}>
+                {item.nome_empresa || item.email_contato}
+              </option>
+            ))}
+          </select>
           <select className={inputClassName} value={filtroMaquina} onChange={(event) => setFiltroMaquina(event.target.value)}>
-            <option value="">Todas as maquinas</option>
-            {maquinas.map((item) => (
+            <option value="">Escolha a maquina</option>
+            <option value={TODOS}>{clienteEscolhido ? "Todas as maquinas deste cliente" : "Todas as maquinas"}</option>
+            {maquinasDoCliente.map((item) => (
               <option key={item.id_hardware} value={item.id_hardware}>
                 {(item.nome || item.id_hardware) + ` - ${item.id_hardware}`}
               </option>
             ))}
           </select>
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
           <button
             type="button"
             className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
             onClick={carregarHistorico}
-            disabled={loading}
+            disabled={loading || !filtroMaquina}
           >
             <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
             Atualizar
@@ -127,7 +177,11 @@ export default function HistoricoWifi() {
         </p>
         <Tabela
           loading={loading}
-          vazio="Nenhuma rede registrada ainda. As placas com firmware 2.8.0 ou mais novo informam a rede quando ela muda - para as que ja estavam configuradas, use 'Pedir rede atual'."
+          vazio={
+            filtroMaquina
+              ? "Nenhuma rede registrada para esses filtros. As placas com firmware 2.8.0 ou mais novo informam a rede quando ela muda - para as que ja estavam configuradas, use 'Pedir rede atual'."
+              : "Escolha um cliente e uma maquina (ou 'Todas') para ver o historico."
+          }
           colunas={["Maquina", "Rede", "Senha", "Primeira vez", "Ultima vez"]}
           linhas={redes.map((item) => ({
             key: `r-${item.id}`,
@@ -150,7 +204,11 @@ export default function HistoricoWifi() {
         <p className="mt-1 text-sm text-[var(--color-text-soft)]">Inclui as tentativas com senha errada ou rede que nao funcionou.</p>
         <Tabela
           loading={loading}
-          vazio="Nenhuma troca de Wi-Fi pedida pelo painel."
+          vazio={
+            filtroMaquina
+              ? "Nenhuma troca de Wi-Fi pedida pelo painel nesse periodo."
+              : "Escolha um cliente e uma maquina (ou 'Todas') para ver as trocas."
+          }
           colunas={["Quando", "Maquina", "Rede", "Senha", "Resultado", "Quem pediu"]}
           linhas={tentativas.map((item) => {
             const [rotulo, estilo] = RESULTADO_ESTILO[item.resultado] || [item.resultado, "bg-slate-100 text-slate-600"];
@@ -278,6 +336,9 @@ function TrocarWifi({ maquinas, maquinaInicial, onConcluido, onToast }) {
         <input
           className={inputClassName}
           placeholder="Nome da rede (exatamente como aparece)"
+          name="wifi-rede"
+          autoComplete="off"
+          data-lpignore="true"
           value={ssid}
           maxLength={32}
           onChange={(event) => setSsid(event.target.value)}
@@ -287,6 +348,9 @@ function TrocarWifi({ maquinas, maquinaInicial, onConcluido, onToast }) {
             className={`${inputClassName} w-full pr-12`}
             placeholder="Senha (vazia se a rede for aberta)"
             type={mostrarSenha ? "text" : "password"}
+            name="wifi-senha"
+            autoComplete="new-password"
+            data-lpignore="true"
             value={senha}
             maxLength={63}
             onChange={(event) => setSenha(event.target.value)}
