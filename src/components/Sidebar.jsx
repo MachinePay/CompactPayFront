@@ -1,6 +1,10 @@
 import {
   Activity,
   Bell,
+  Radio,
+  Trophy,
+  Clock,
+  Map as MapIcon,
   BarChart3,
   ClipboardList,
   Cpu,
@@ -15,8 +19,9 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
+import api from "../api/axios";
 import { useAuth } from "../context/useAuth";
 
 export default function Sidebar() {
@@ -24,6 +29,17 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
+  // Mapa: admin sempre; cliente so se o admin liberou (desligado por padrao).
+  const [mapaLiberado, setMapaLiberado] = useState(false);
+
+  useEffect(() => {
+    if (!user || user.role === "admin") return;
+    api
+      .get("/mapa/acesso")
+      .then(({ data }) => setMapaLiberado(Boolean(data?.permitido)))
+      .catch(() => setMapaLiberado(false));
+  }, [user]);
+  const mostrarMapa = user?.role === "admin" || mapaLiberado;
 
   const linkClassName = ({ isActive }) =>
     `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition lg:text-base ${
@@ -50,6 +66,32 @@ export default function Sidebar() {
       <li>
         <NavLink to="/maquinas" className={linkClassName} onClick={closeMobile}>
           <Server size={20} /> Maquinas
+        </NavLink>
+      </li>
+
+      <li>
+        <NavLink to="/ao-vivo" className={linkClassName} onClick={closeMobile}>
+          <Radio size={20} /> Ao vivo
+        </NavLink>
+      </li>
+
+      <li>
+        <NavLink to="/ranking-maquinas" className={linkClassName} onClick={closeMobile}>
+          <Trophy size={20} /> Ranking
+        </NavLink>
+      </li>
+
+      {mostrarMapa && (
+        <li>
+          <NavLink to="/mapa-maquinas" className={linkClassName} onClick={closeMobile}>
+            <MapIcon size={20} /> Mapa
+          </NavLink>
+        </li>
+      )}
+
+      <li>
+        <NavLink to="/horarios-pico" className={linkClassName} onClick={closeMobile}>
+          <Clock size={20} /> Horarios de pico
         </NavLink>
       </li>
 

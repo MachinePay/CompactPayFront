@@ -24,6 +24,10 @@ const Maquinas = lazy(() => import("./pages/Maquinas"));
 const SaudeMaquinas = lazy(() => import("./pages/SaudeMaquinas"));
 const HistoricoQuedas = lazy(() => import("./pages/HistoricoQuedas"));
 const HistoricoWifi = lazy(() => import("./pages/HistoricoWifi"));
+const AoVivo = lazy(() => import("./pages/AoVivo"));
+const RankingMaquinas = lazy(() => import("./pages/RankingMaquinas"));
+const HorariosPico = lazy(() => import("./pages/HorariosPico"));
+const MapaMaquinas = lazy(() => import("./pages/MapaMaquinas"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
 const Login = lazy(() => import("./pages/Login"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -154,6 +158,38 @@ function RouteContent() {
           <Route
             path="/teste-pagamento"
             element={<Navigate to="/maquinas" replace />}
+          />
+          <Route
+            path="/ao-vivo"
+            element={
+              <PrivatePage>
+                <AoVivo />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/mapa-maquinas"
+            element={
+              <PrivatePage>
+                <MapaMaquinas />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/horarios-pico"
+            element={
+              <PrivatePage>
+                <HorariosPico />
+              </PrivatePage>
+            }
+          />
+          <Route
+            path="/ranking-maquinas"
+            element={
+              <PrivatePage>
+                <RankingMaquinas />
+              </PrivatePage>
+            }
           />
           <Route
             path="/wifi-maquinas"

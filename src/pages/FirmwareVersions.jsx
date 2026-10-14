@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { brasiliaDate } from "../utils/dateTime";
-import { Cpu, Link as LinkIcon, Pencil, Plus, Power, RefreshCcw, Trash2, UploadCloud } from "lucide-react";
+import { Cpu, Link as LinkIcon, Pencil, Plus, Power, RefreshCcw, Send, Trash2, UploadCloud } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
 import Button from "../components/Button";
@@ -8,6 +8,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import Modal from "../components/Modal";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
+import AtualizacaoLoteModal from "../components/AtualizacaoLoteModal";
 
 const emptyForm = {
   id: null,
@@ -30,6 +31,7 @@ export default function FirmwareVersions() {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState({ message: "", type: "success" });
+  const [loteFirmware, setLoteFirmware] = useState(null);
 
   const loadFirmwares = async () => {
     setLoading(true);
@@ -236,6 +238,7 @@ export default function FirmwareVersions() {
                     onEdit={() => openEdit(firmware)}
                     onToggle={() => toggleActive(firmware)}
                     onDelete={() => openDeleteConfirmation(firmware)}
+                    onLote={() => setLoteFirmware(firmware)}
                   />
                 ))}
               </div>
@@ -270,6 +273,16 @@ export default function FirmwareVersions() {
                         </td>
                         <td className="px-5 py-4 min-w-[260px]">
                           <div className="flex flex-wrap gap-2">
+                            {firmware.ativo ? (
+                              <button
+                                type="button"
+                                className="pill-button pill-button--primary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                                onClick={() => setLoteFirmware(firmware)}
+                              >
+                                <Send size={15} />
+                                Atualizar em lote
+                              </button>
+                            ) : null}
                             <button type="button" className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold" onClick={() => openEdit(firmware)}>
                               <Pencil size={15} />
                               Editar
@@ -293,6 +306,10 @@ export default function FirmwareVersions() {
           )}
         </div>
       </section>
+
+      {loteFirmware ? (
+        <AtualizacaoLoteModal firmware={loteFirmware} onClose={() => setLoteFirmware(null)} onToast={setToast} />
+      ) : null}
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title={form.id ? "Editar versao" : "Nova versao"}>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -422,7 +439,7 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-function FirmwareMobileCard({ firmware, onEdit, onToggle, onDelete }) {
+function FirmwareMobileCard({ firmware, onEdit, onToggle, onDelete, onLote }) {
   return (
     <article className="rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
       <div className="flex items-start justify-between gap-3">
@@ -438,6 +455,16 @@ function FirmwareMobileCard({ firmware, onEdit, onToggle, onDelete }) {
       {firmware.arquivo_tamanho ? <div className="mt-1 text-xs text-[var(--color-text-soft)]">{formatFileSize(firmware.arquivo_tamanho)} no banco</div> : null}
       {firmware.observacao ? <div className="mt-3 text-sm text-[var(--color-text-soft)]">{firmware.observacao}</div> : null}
       <div className="mt-4 grid grid-cols-2 gap-2">
+        {firmware.ativo ? (
+          <button
+            type="button"
+            className="pill-button pill-button--primary col-span-2 inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+            onClick={onLote}
+          >
+            <Send size={15} />
+            Atualizar em lote
+          </button>
+        ) : null}
         <button type="button" className="pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold" onClick={onEdit}>
           <Pencil size={15} />
           Editar

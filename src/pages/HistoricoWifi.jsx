@@ -216,8 +216,8 @@ export default function HistoricoWifi() {
           }))}
         />
 
-        <h2 className="mt-8 text-lg font-extrabold text-[var(--color-text)]">Trocas pedidas pelo painel</h2>
-        <p className="mt-1 text-sm text-[var(--color-text-soft)]">Inclui as tentativas com senha errada ou rede que nao funcionou.</p>
+        <h2 className="mt-8 text-lg font-extrabold text-[var(--color-text)]">Tentativas de troca de Wi-Fi</h2>
+        <p className="mt-1 text-sm text-[var(--color-text-soft)]">Pedidas pelo painel e digitadas no portal do celular - inclusive as com senha errada ou rede que nao funcionou. As do portal chegam quando a placa consegue conectar.</p>
         <Tabela
           loading={loading}
           vazio={
@@ -225,9 +225,10 @@ export default function HistoricoWifi() {
               ? "Nenhuma troca de Wi-Fi pedida pelo painel nesse periodo."
               : "Escolha um cliente e uma maquina (ou 'Todas') para ver as trocas."
           }
-          colunas={["Quando", "Maquina", "Rede", "Senha", "Resultado", "Quem pediu"]}
+          colunas={["Quando", "Maquina", "Rede", "Senha", "Resultado", "Origem"]}
           linhas={tentativas.map((item) => {
-            const [rotulo, estilo] = RESULTADO_ESTILO[item.resultado] || [item.resultado, "bg-slate-100 text-slate-600"];
+            const [rotuloBase, estilo] = RESULTADO_ESTILO[item.resultado] || [item.resultado, "bg-slate-100 text-slate-600"];
+            const rotulo = item.origem === "portal" && item.resultado === "trocado" ? "Conectou" : rotuloBase;
             return {
               key: `t-${item.id}`,
               celulas: [
@@ -239,7 +240,10 @@ export default function HistoricoWifi() {
                   <span className={`rounded-full px-3 py-1 text-xs font-bold ${estilo}`}>{rotulo}</span>
                   {item.motivo_texto ? <div className="mt-1 text-xs text-[var(--color-text-soft)]">{item.motivo_texto}</div> : null}
                 </div>,
-                <div key="q" className="text-xs text-[var(--color-text-soft)]">{item.solicitado_por || "--"}</div>,
+                <div key="q" className="text-xs text-[var(--color-text-soft)]">
+                  <div className="font-semibold text-[var(--color-text)]">{item.origem === "portal" ? "Portal (celular)" : "Painel"}</div>
+                  {item.origem === "portal" ? null : <div>{item.solicitado_por || "--"}</div>}
+                </div>,
               ],
             };
           })}
