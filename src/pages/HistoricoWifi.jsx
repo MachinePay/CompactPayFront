@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, Loader2, RefreshCcw, Send, Wifi, XCircle } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Loader2, Lock, RefreshCcw, Search, Send, Unlock, Wifi, XCircle } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import api, { getApiErrorMessage } from "../api/axios";
@@ -11,6 +11,11 @@ import { brasiliaDate } from "../utils/dateTime";
 // Firmware que aceita troca de Wi-Fi pelo painel (backend: MIN_FIRMWARE_VERSION_FOR_WIFI).
 const VERSAO_MINIMA_WIFI = [2, 8, 0];
 const LIMITE_ACOMPANHAMENTO_MS = 3 * 60 * 1000;
+const LIMITE_PROCURA_MS = 30 * 1000;
+
+function qualidadeSinal(rssi) {
+  return Math.max(0, Math.min(100, 2 * (Number(rssi) + 100)));
+}
 
 function suportaWifiRemoto(versao) {
   const numeros = String(versao || "").match(/(\d+)\.(\d+)\.(\d+)/);
@@ -50,6 +55,7 @@ export default function HistoricoWifi() {
   const [filtroCliente, setFiltroCliente] = useState("");
   const [filtroMaquina, setFiltroMaquina] = useState(searchParams.get("maquina_id") || "");
   const [dateRange, setDateRange] = useState(emptyDateRange);
+  const [sincronizarFiltro, setSincronizarFiltro] = useState(true);
   const [redes, setRedes] = useState([]);
   const [tentativas, setTentativas] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -133,6 +139,13 @@ export default function HistoricoWifi() {
         maquinas={maquinas}
         clientes={clientes}
         maquinaInicial={filtroMaquina === TODOS ? "" : filtroMaquina}
+        sincronizarFiltro={sincronizarFiltro}
+        onSincronizarFiltroChange={setSincronizarFiltro}
+        onSelecao={(cliente, maquinaEscolhida) => {
+          if (!sincronizarFiltro) return;
+          setFiltroCliente(cliente || "");
+          setFiltroMaquina(maquinaEscolhida || (cliente ? TODOS : ""));
+        }}
         onConcluido={() => {
           carregarHistorico();
           carregarMaquinas();
@@ -234,7 +247,16 @@ export default function HistoricoWifi() {
   );
 }
 
-function TrocarWifi({ maquinas, clientes, maquinaInicial, onConcluido, onToast }) {
+function TrocarWifi({
+  maquinas,
+  clientes,
+  maquinaInicial,
+  sincronizarFiltro,
+  onSincronizarFiltroChange,
+  onSelecao,
+  onConcluido,
+  onToast,
+}) {
   const [clienteId, setClienteId] = useState("");
   const [maquinaId, setMaquinaId] = useState(maquinaInicial || "");
   const [ssid, setSsid] = useState("");
@@ -242,9 +264,17 @@ function TrocarWifi({ maquinas, clientes, maquinaInicial, onConcluido, onToast }
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [acompanhamento, setAcompanhamento] = useState(null);
+  const [procura, setProcura] = useState(null);
   const timerRef = useRef(null);
+  const procuraTimerRef = useRef(null);
 
-  useEffect(() => () => window.clearTimeout(timerRef.current), []);
+  useEffect(
+    () => () => {
+      window.clearTimeout(timerRef.current);
+      window.clearTimeout(procuraTimerRef.current);
+    },
+    [],
+  );
 
   const maquina = useMemo(() => maquinas.find((item) => item.id_hardware === maquinaId), [maquinas, maquinaId]);
   // Veio com ?maquina_id= na URL: o cliente ja aparece escolhido (o dessa maquina).
@@ -256,9 +286,57 @@ function TrocarWifi({ maquinas, clientes, maquinaInicial, onConcluido, onToast }
 
   const handleClienteChange = (valor) => {
     setClienteId(valor);
+    let maquinaMantida = maquinaId;
     if (!maquinas.some((item) => item.id_hardware === maquinaId && String(item.cliente_id || "") === valor)) {
+      maquinaMantida = "";
       setMaquinaId("");
     }
+    setProcura(null);
+    onSelecao(valor, maquinaMantida);
+  };
+
+  const handleMaquinaChange = (valor) => {
+    setMaquinaId(valor);
+    setProcura(null);
+    onSelecao(clienteEfetivo, valor);
+  };
+
+  const acompanharProcura = (machineId, pedidoEm, inicio) => {
+    api
+      .get(`/maquinas/${machineId}/wifi/redes`)
+      .then(({ data }) => {
+        const chegou = data.atualizado_em && new Date(data.atualizado_em) >= new Date(pedidoEm);
+        if (chegou) {
+          setProcura({ estado: "pronto", ...data });
+          return;
+        }
+        if (Date.now() - inicio > LIMITE_PROCURA_MS) {
+          setProcura({ estado: "sem_resposta" });
+          return;
+        }
+        procuraTimerRef.current = window.setTimeout(() => acompanharProcura(machineId, pedidoEm, inicio), 2000);
+      })
+      .catch(() => setProcura({ estado: "sem_resposta" }));
+  };
+
+  const handleProcurar = async () => {
+    if (!maquina) return;
+    window.clearTimeout(procuraTimerRef.current);
+    setProcura({ estado: "procurando" });
+    try {
+      const { data } = await api.post(`/maquinas/${maquina.id_hardware}/wifi/procurar`);
+      // pedido_em e atualizado_em vem do servidor no mesmo formato (UTC sem
+      // fuso), entao a comparacao entre os dois e' consistente.
+      acompanharProcura(maquina.id_hardware, data.pedido_em, Date.now());
+    } catch (error) {
+      setProcura(null);
+      onToast({ message: getApiErrorMessage(error, "Nao foi possivel procurar as redes."), type: "error" });
+    }
+  };
+
+  const escolherRede = (rede) => {
+    setSsid(rede.ssid);
+    if (rede.aberta) setSenha("");
   };
   const suporta = maquina ? suportaWifiRemoto(maquina.firmware_version) : false;
   const online = Boolean(maquina?.status_online);
@@ -326,17 +404,28 @@ function TrocarWifi({ maquinas, clientes, maquinaInicial, onConcluido, onToast }
 
   return (
     <section className="app-panel rounded-[30px] p-5 md:p-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-          <Wifi size={18} />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+            <Wifi size={18} />
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-[var(--color-text)]">Trocar o Wi-Fi de uma maquina</h2>
+            <p className="text-sm text-[var(--color-text-soft)]">
+              A placa so troca se conseguir conectar na rede nova e chegar no servidor. Se a senha estiver errada ou a
+              rede nao tiver internet, ela continua na rede atual.
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-lg font-extrabold text-[var(--color-text)]">Trocar o Wi-Fi de uma maquina</h2>
-          <p className="text-sm text-[var(--color-text-soft)]">
-            A placa so troca se conseguir conectar na rede nova e chegar no servidor. Se a senha estiver errada ou a
-            rede nao tiver internet, ela continua na rede atual.
-          </p>
-        </div>
+        <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-[var(--color-primary)]"
+            checked={sincronizarFiltro}
+            onChange={(event) => onSincronizarFiltroChange(event.target.checked)}
+          />
+          Usar este cliente/maquina no historico abaixo
+        </label>
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-[200px_1fr_1fr_1fr_auto]">
@@ -351,7 +440,7 @@ function TrocarWifi({ maquinas, clientes, maquinaInicial, onConcluido, onToast }
         <select
           className={`${inputClassName} disabled:opacity-60`}
           value={maquinaId}
-          onChange={(event) => setMaquinaId(event.target.value)}
+          onChange={(event) => handleMaquinaChange(event.target.value)}
           disabled={!clienteEfetivo}
         >
           <option value="">{clienteEfetivo ? "Escolha a maquina" : "Escolha o cliente primeiro"}</option>
@@ -414,15 +503,93 @@ function TrocarWifi({ maquinas, clientes, maquinaInicial, onConcluido, onToast }
               Firmware {maquina.firmware_version || "desconhecido"}: atualize para 2.8.0 ou mais novo para usar esta funcao.
             </span>
           ) : (
-            <button type="button" className="font-semibold text-[var(--color-primary)] underline" onClick={handlePedirAtual} disabled={!online}>
-              Pedir rede atual
-            </button>
+            <>
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary)] underline disabled:opacity-50"
+                onClick={handleProcurar}
+                disabled={!online || procura?.estado === "procurando"}
+              >
+                <Search size={13} /> Procurar redes perto da maquina
+              </button>
+              <button type="button" className="font-semibold text-[var(--color-primary)] underline" onClick={handlePedirAtual} disabled={!online}>
+                Pedir rede atual
+              </button>
+            </>
           )}
         </div>
       ) : null}
 
+      {procura ? <RedesProximas procura={procura} redeEscolhida={ssid} onEscolher={escolherRede} /> : null}
+
       {acompanhamento ? <ResultadoTroca acompanhamento={acompanhamento} /> : null}
     </section>
+  );
+}
+
+function RedesProximas({ procura, redeEscolhida, onEscolher }) {
+  if (procura.estado === "procurando") {
+    return (
+      <div className="mt-4 flex items-center gap-3 rounded-[18px] bg-sky-50 px-4 py-3 text-sm text-sky-800">
+        <Loader2 size={18} className="animate-spin" /> Procurando redes perto da maquina (ela continua conectada)...
+      </div>
+    );
+  }
+  if (procura.estado === "sem_resposta" || procura.erro) {
+    return (
+      <div className="mt-4 rounded-[18px] bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        A placa nao mandou a lista de redes. Confira se ela esta online e tente de novo.
+      </div>
+    );
+  }
+  const redes = procura.redes || [];
+  return (
+    <div className="mt-4 rounded-[18px] border border-[var(--color-border)] bg-white p-4">
+      <div className="text-sm font-extrabold text-[var(--color-text)]">
+        {redes.length} rede(s) perto da maquina
+        {procura.total > redes.length ? ` (mostrando as ${redes.length} com sinal mais forte de ${procura.total})` : ""}
+      </div>
+      <div className="mt-1 text-xs text-[var(--color-text-soft)]">Clique numa rede para preencher o nome.</div>
+      {redes.length === 0 ? (
+        <div className="mt-3 text-sm text-[var(--color-text-soft)]">Nenhuma rede encontrada.</div>
+      ) : (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {redes.map((rede) => {
+            const qualidade = qualidadeSinal(rede.rssi);
+            const escolhida = rede.ssid === redeEscolhida;
+            const atual = rede.ssid === procura.rede_atual;
+            return (
+              <button
+                key={rede.ssid}
+                type="button"
+                onClick={() => onEscolher(rede)}
+                disabled={rede.wep}
+                className={`flex items-center justify-between gap-3 rounded-[14px] border px-3 py-2 text-left text-sm transition disabled:opacity-50 ${
+                  escolhida
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
+                    : "border-[var(--color-border)] hover:border-[var(--color-primary)]"
+                }`}
+                title={rede.wep ? "Seguranca WEP (antiga) nao e suportada" : `${rede.rssi} dBm`}
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold text-[var(--color-text)]">{rede.ssid}</span>
+                  <span className="text-xs text-[var(--color-text-soft)]">
+                    {atual ? "rede atual - " : ""}
+                    {rede.aberta ? "aberta" : rede.wep ? "WEP (nao suportada)" : "com senha"}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2 text-xs font-bold">
+                  {rede.aberta ? <Unlock size={14} /> : <Lock size={14} />}
+                  <span className={qualidade >= 60 ? "text-emerald-700" : qualidade >= 35 ? "text-amber-700" : "text-rose-700"}>
+                    {qualidade}%
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
