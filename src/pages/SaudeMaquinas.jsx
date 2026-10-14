@@ -587,6 +587,14 @@ function WifiBadge({ machine }) {
       <div className="mt-1 text-xs font-semibold opacity-75">
         {machine.wifi_rssi == null ? "--" : `${machine.wifi_rssi} dBm`}
       </div>
+      {machine.ip_local ? (
+        <div
+          className="mt-1 text-xs font-semibold text-slate-500"
+          title="IP que a placa recebeu do roteador do local"
+        >
+          IP {machine.ip_local}
+        </div>
+      ) : null}
     </div>
   );
 }
