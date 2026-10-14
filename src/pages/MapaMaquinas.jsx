@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, RefreshCcw, Save, Users } from "lucide-react";
+import { MapPin, RefreshCcw, Save, Search, Users } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
 import Toast from "../components/Toast";
@@ -15,17 +15,8 @@ const ATUALIZAR_MS = 30000;
 const CHAVE_ESTILO = "compactpay.mapa.estilo";
 
 // Estilos de mapa gratuitos (sem chave de API), cada um com a atribuicao exigida.
+// "Claro" (CARTO) ficou para o futuro: o servico passou a exigir chave de API.
 const ESTILOS = {
-  claro: {
-    rotulo: "Claro",
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    opcoes: {
-      maxZoom: 20,
-      subdomains: "abcd",
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    },
-  },
   ruas: {
     rotulo: "Ruas",
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -41,9 +32,9 @@ const ESTILOS = {
 function lerEstiloSalvo() {
   try {
     const salvo = window.localStorage.getItem(CHAVE_ESTILO);
-    return ESTILOS[salvo] ? salvo : "claro";
+    return ESTILOS[salvo] ? salvo : "ruas";
   } catch {
-    return "claro";
+    return "ruas";
   }
 }
 
@@ -110,6 +101,7 @@ export default function MapaMaquinas() {
   const camadaRef = useRef(null);
   const enquadradoRef = useRef("");
   const fundoRef = useRef(null);
+  const marcadoresRef = useRef(new Map());
   const [estilo, setEstilo] = useState(lerEstiloSalvo);
 
   const carregar = useCallback(async () => {
@@ -175,14 +167,16 @@ export default function MapaMaquinas() {
     const camada = camadaRef.current;
     if (!mapa || !camada) return;
     camada.clearLayers();
+    marcadoresRef.current = new Map();
     const pontos = agruparPorLocal(dados.maquinas).map((grupo) => {
       const posicao = [grupo[0].latitude, grupo[0].longitude];
-      L.marker(posicao, { icon: etiquetaIcone(grupo), riseOnHover: true })
+      const marcador = L.marker(posicao, { icon: etiquetaIcone(grupo), riseOnHover: true })
         .bindPopup(grupo.map(popupHtml).join('<hr style="margin:8px 0;border:0;border-top:1px solid #e3e8e4">'), {
           offset: [0, -24],
           maxHeight: 320,
         })
         .addTo(camada);
+      grupo.forEach((m) => marcadoresRef.current.set(m.maquina_id, marcador));
       return posicao;
     });
     const chave = dados.maquinas.map((m) => m.maquina_id).sort().join(",");
@@ -194,6 +188,15 @@ export default function MapaMaquinas() {
   }, [dados]);
 
   const online = dados.maquinas.filter((m) => m.online).length;
+
+  const irParaMaquina = (maquina) => {
+    const mapa = mapaRef.current;
+    const marcador = marcadoresRef.current.get(maquina.maquina_id);
+    if (!mapa || !marcador) return;
+    mapa.flyTo([maquina.latitude, maquina.longitude], Math.max(mapa.getZoom(), 17), { duration: 0.8 });
+    mapa.once("moveend", () => marcador.openPopup());
+    mapaDivRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   return (
     <div className="flex min-h-full flex-col gap-4">
@@ -227,6 +230,7 @@ export default function MapaMaquinas() {
           <span className="inline-flex items-center gap-2 font-semibold text-[var(--color-text)]">
             <span className="h-3 w-3 rounded-full" style={{ background: COR_OFFLINE }} /> Offline ({dados.maquinas.length - online})
           </span>
+          <BuscaMaquina maquinas={dados.maquinas} onEscolher={irParaMaquina} />
           <div className="inline-flex rounded-full border border-[var(--color-border)] bg-white p-1">
             {Object.entries(ESTILOS).map(([chave, item]) => (
               <button
@@ -258,7 +262,7 @@ export default function MapaMaquinas() {
 
       {admin ? (
         <>
-          <Localizacoes semLocalizacao={dados.sem_localizacao} comLocalizacao={dados.maquinas} onSalvo={carregar} onToast={setToast} />
+          <Localizacoes onSalvo={carregar} onToast={setToast} />
           <AcessoClientes onToast={setToast} />
         </>
       ) : null}
@@ -266,90 +270,187 @@ export default function MapaMaquinas() {
   );
 }
 
-function Localizacoes({ semLocalizacao, comLocalizacao, onSalvo, onToast }) {
-  const [textos, setTextos] = useState({});
-  const [salvando, setSalvando] = useState("");
-  const [mostrarTodas, setMostrarTodas] = useState(false);
-  const lista = useMemo(
-    () => (mostrarTodas ? [...semLocalizacao, ...comLocalizacao] : semLocalizacao),
-    [mostrarTodas, semLocalizacao, comLocalizacao],
-  );
+function BuscaMaquina({ maquinas, onEscolher }) {
+  const [texto, setTexto] = useState("");
+  const [aberto, setAberto] = useState(false);
+  const termo = texto.trim().toLowerCase();
+  const sugestoes = termo
+    ? maquinas
+        .filter((m) => `${m.maquina_nome} ${m.maquina_id} ${m.cliente_nome || ""} ${m.local || ""}`.toLowerCase().includes(termo))
+        .slice(0, 8)
+    : [];
 
-  const salvar = async (machineId, limpar = false) => {
-    setSalvando(machineId);
+  return (
+    <div className="relative w-full sm:w-72">
+      <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-soft)]" />
+      <input
+        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white py-3 pl-9 pr-4 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+        placeholder="Buscar maquina no mapa"
+        value={texto}
+        onChange={(e) => {
+          setTexto(e.target.value);
+          setAberto(true);
+        }}
+        onFocus={() => setAberto(true)}
+        onBlur={() => window.setTimeout(() => setAberto(false), 150)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && sugestoes[0]) {
+            onEscolher(sugestoes[0]);
+            setAberto(false);
+          }
+        }}
+      />
+      {aberto && termo ? (
+        <div className="absolute left-0 right-0 top-full z-[1000] mt-1 overflow-hidden rounded-[16px] border border-[var(--color-border)] bg-white shadow-lg">
+          {sugestoes.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-[var(--color-text-soft)]">Nenhuma maquina no mapa com esse nome.</div>
+          ) : (
+            sugestoes.map((m) => (
+              <button
+                key={m.maquina_id}
+                type="button"
+                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-[var(--color-bg-muted)]"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onEscolher(m);
+                  setTexto(m.maquina_nome);
+                  setAberto(false);
+                }}
+              >
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: m.online ? COR_ONLINE : COR_OFFLINE }} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold text-[var(--color-text)]">{m.maquina_nome}</span>
+                  <span className="block truncate text-xs text-[var(--color-text-soft)]">
+                    {m.maquina_id}
+                    {m.cliente_nome ? ` - ${m.cliente_nome}` : ""}
+                  </span>
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Localizacoes({ onSalvo, onToast }) {
+  const [clientes, setClientes] = useState([]);
+  const [maquinas, setMaquinas] = useState([]);
+  const [clienteId, setClienteId] = useState("");
+  const [maquinaId, setMaquinaId] = useState("");
+  const [texto, setTexto] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  const carregarMaquinas = useCallback(() => {
+    api
+      .get("/maquinas")
+      .then(({ data }) => setMaquinas(data || []))
+      .catch(() => setMaquinas([]));
+  }, []);
+
+  useEffect(() => {
+    carregarMaquinas();
+    api
+      .get("/clientes")
+      .then(({ data }) => setClientes(data || []))
+      .catch(() => setClientes([]));
+  }, [carregarMaquinas]);
+
+  const doCliente = useMemo(
+    () => (clienteId ? maquinas.filter((m) => String(m.cliente_id || "") === clienteId) : []),
+    [maquinas, clienteId],
+  );
+  const maquina = maquinas.find((m) => m.id_hardware === maquinaId);
+  const temLocal = maquina?.latitude != null && maquina?.longitude != null;
+
+  const salvar = async (limpar = false) => {
+    if (!maquina) return;
+    setSalvando(true);
     try {
-      await api.put(`/mapa/maquinas/${machineId}/localizacao`, limpar ? { limpar: true } : { texto: textos[machineId] || "" });
-      setTextos((atual) => ({ ...atual, [machineId]: "" }));
+      await api.put(`/mapa/maquinas/${maquina.id_hardware}/localizacao`, limpar ? { limpar: true } : { texto });
+      setTexto("");
       onToast({ message: limpar ? "Maquina tirada do mapa." : "Localizacao salva.", type: "success" });
+      carregarMaquinas();
       onSalvo();
     } catch (error) {
       onToast({ message: getApiErrorMessage(error, "Nao foi possivel salvar a localizacao."), type: "error" });
     } finally {
-      setSalvando("");
+      setSalvando(false);
     }
   };
 
+  const campo = "min-w-0 rounded-[16px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]";
+
   return (
     <section className="app-panel rounded-[30px] p-5 md:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-            <MapPin size={18} />
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+          <MapPin size={18} />
+        </div>
+        <div>
+          <h2 className="text-lg font-extrabold text-[var(--color-text)]">Localizacao das maquinas</h2>
+          <p className="text-sm text-[var(--color-text-soft)]">
+            Escolha o cliente e a maquina. No Google Maps, abra o ponto, toque em Compartilhar e cole o link (ou as
+            coordenadas, ex.: -23.5505, -46.6333). So admin ve esta parte.
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-[220px_1fr]">
+        <select
+          className={campo}
+          value={clienteId}
+          onChange={(e) => {
+            setClienteId(e.target.value);
+            setMaquinaId("");
+          }}
+        >
+          <option value="">Escolha o cliente</option>
+          {clientes.map((c) => (
+            <option key={c.id} value={String(c.id)}>
+              {c.nome_empresa || c.email_contato}
+            </option>
+          ))}
+        </select>
+        <select className={`${campo} disabled:opacity-60`} value={maquinaId} onChange={(e) => setMaquinaId(e.target.value)} disabled={!clienteId}>
+          <option value="">{clienteId ? "Escolha a maquina" : "Escolha o cliente primeiro"}</option>
+          {doCliente.map((m) => (
+            <option key={m.id_hardware} value={m.id_hardware}>
+              {`${m.nome || m.id_hardware} - ${m.id_hardware}${m.latitude != null ? " (no mapa)" : " (sem localizacao)"}`}
+            </option>
+          ))}
+        </select>
+      </div>
+      {maquina ? (
+        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto]">
+          <input
+            className={campo}
+            placeholder={temLocal ? "Cole um novo link ou coordenadas para mudar o lugar" : "Link do Google Maps ou coordenadas"}
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="pill-button pill-button--primary inline-flex items-center gap-2 px-5 py-3 font-semibold disabled:opacity-50"
+              onClick={() => salvar(false)}
+              disabled={!texto.trim() || salvando}
+            >
+              <Save size={15} /> Salvar
+            </button>
+            {temLocal ? (
+              <button type="button" className="pill-button px-5 py-3 font-semibold" onClick={() => salvar(true)} disabled={salvando}>
+                Tirar do mapa
+              </button>
+            ) : null}
           </div>
-          <div>
-            <h2 className="text-lg font-extrabold text-[var(--color-text)]">Localizacao das maquinas</h2>
-            <p className="text-sm text-[var(--color-text-soft)]">
-              No Google Maps, abra o ponto da maquina, toque em Compartilhar e cole o link aqui (ou cole as coordenadas,
-              ex.: -23.5505, -46.6333). So admin ve esta parte.
-            </p>
+          <div className="text-xs text-[var(--color-text-soft)] md:col-span-2">
+            {temLocal
+              ? `Hoje no mapa em ${maquina.latitude.toFixed(5)}, ${maquina.longitude.toFixed(5)}.`
+              : "Esta maquina ainda nao aparece no mapa."}
           </div>
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-[var(--color-text)]">
-          <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary)]" checked={mostrarTodas} onChange={(e) => setMostrarTodas(e.target.checked)} />
-          Mostrar tambem as que ja estao no mapa
-        </label>
-      </div>
-      <div className="mt-4 space-y-2">
-        {lista.length === 0 ? (
-          <div className="rounded-[18px] bg-white px-4 py-6 text-center text-sm text-[var(--color-text-soft)]">
-            Todas as maquinas ja tem localizacao.
-          </div>
-        ) : (
-          lista.map((m) => (
-            <div key={m.maquina_id} className="grid items-center gap-2 rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm md:grid-cols-[220px_1fr_auto]">
-              <div className="min-w-0">
-                <div className="truncate font-bold text-[var(--color-text)]">{m.maquina_nome}</div>
-                <div className="truncate text-xs text-[var(--color-text-soft)]">
-                  {m.maquina_id}
-                  {m.cliente_nome ? ` - ${m.cliente_nome}` : ""}
-                  {m.latitude != null ? " - no mapa" : " - sem localizacao"}
-                </div>
-              </div>
-              <input
-                className="min-w-0 rounded-[14px] border border-[var(--color-border)] px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)]"
-                placeholder="Link do Google Maps ou coordenadas"
-                value={textos[m.maquina_id] || ""}
-                onChange={(e) => setTextos((atual) => ({ ...atual, [m.maquina_id]: e.target.value }))}
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className="pill-button pill-button--primary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold disabled:opacity-50"
-                  onClick={() => salvar(m.maquina_id)}
-                  disabled={!textos[m.maquina_id] || salvando === m.maquina_id}
-                >
-                  <Save size={14} /> Salvar
-                </button>
-                {m.latitude != null ? (
-                  <button type="button" className="pill-button px-4 py-2 text-sm font-semibold" onClick={() => salvar(m.maquina_id, true)} disabled={salvando === m.maquina_id}>
-                    Tirar do mapa
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      ) : null}
     </section>
   );
 }

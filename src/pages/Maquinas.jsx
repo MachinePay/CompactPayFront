@@ -44,6 +44,7 @@ const emptyForm = {
   id_hardware: "",
   nome: "",
   localizacao: "",
+  localizacao_mapa: "",
   cliente_id: "",
   banco_pagamento: "",
   sumup_reader_id: "",
@@ -565,6 +566,9 @@ export default function Maquinas() {
       const payload = {
         nome: form.nome,
         localizacao: form.localizacao,
+        // Opcional (admin): link do Google Maps ou "lat, lng". Vazio na edicao
+        // tira a maquina do mapa; quem nao e admin nao manda (nao mexe).
+        ...(user?.role === "admin" ? { localizacao_mapa: form.localizacao_mapa.trim() } : {}),
         banco_pagamento: selectedProvider,
         cliente_id:
           user?.role === "admin"
@@ -643,6 +647,8 @@ export default function Maquinas() {
       id_hardware: machine.id_hardware,
       nome: machine.nome || "",
       localizacao: machine.localizacao || "",
+      localizacao_mapa:
+        machine.latitude != null && machine.longitude != null ? `${machine.latitude}, ${machine.longitude}` : "",
       cliente_id: machine.cliente_id == null ? "" : String(machine.cliente_id),
       banco_pagamento: machine.banco_pagamento || "mercado_pago",
       sumup_reader_id: machine.sumup_reader_id || "",
@@ -2382,6 +2388,28 @@ export default function Maquinas() {
                   }
                 />
               </label>
+
+              {user?.role === "admin" ? (
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+                    Localizacao no mapa (opcional)
+                  </span>
+                  <input
+                    className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                    placeholder="Link do Google Maps ou coordenadas (ex.: -23.5505, -46.6333)"
+                    value={form.localizacao_mapa}
+                    onChange={(e) =>
+                      setForm((current) => ({
+                        ...current,
+                        localizacao_mapa: e.target.value,
+                      }))
+                    }
+                  />
+                  <span className="mt-1 block text-xs text-[var(--color-text-soft)]">
+                    So aparece no Mapa quem tiver isso preenchido. Para tirar do mapa, apague o campo.
+                  </span>
+                </label>
+              ) : null}
             </div>
 
             <Button
