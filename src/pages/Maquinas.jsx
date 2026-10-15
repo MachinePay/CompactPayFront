@@ -34,6 +34,7 @@ import Button from "../components/Button";
 import Toast from "../components/Toast";
 import ConfirmModal from "../components/ConfirmModal";
 import { confirmar } from "../utils/confirmar";
+import { obterGps } from "../utils/localizacaoCelular";
 import { brasiliaDate } from "../utils/dateTime";
 import {
   describePulseResultToast,
@@ -2405,6 +2406,24 @@ export default function Maquinas() {
                       }))
                     }
                   />
+                  <button
+                    type="button"
+                    className="mt-2 text-sm font-semibold text-[var(--color-primary)] underline"
+                    onClick={async () => {
+                      try {
+                        const gps = await obterGps();
+                        setForm((current) => ({
+                          ...current,
+                          localizacao_mapa: `${gps.latitude.toFixed(6)}, ${gps.longitude.toFixed(6)}`,
+                        }));
+                        setToast({ message: `Localizacao atual preenchida (+-${gps.precisao_m} m).`, type: "success" });
+                      } catch (erro) {
+                        setToast({ message: erro.message, type: "error" });
+                      }
+                    }}
+                  >
+                    Usar minha localizacao atual
+                  </button>
                   <span className="mt-1 block text-xs text-[var(--color-text-soft)]">
                     So aparece no Mapa quem tiver isso preenchido. Para tirar do mapa, apague o campo.
                   </span>

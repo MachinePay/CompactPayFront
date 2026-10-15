@@ -1,3 +1,4 @@
+import AvisoLocalizacaoPortal from "./AvisoLocalizacaoPortal";
 import Sidebar from "./Sidebar";
 
 export default function Layout({ children }) {
@@ -7,6 +8,7 @@ export default function Layout({ children }) {
       <main className="min-w-0 flex-1 overflow-visible rounded-[18px] bg-white/36 p-2 sm:p-2 lg:overflow-hidden lg:rounded-[28px]">
         {children}
       </main>
+      <AvisoLocalizacaoPortal />
     </div>
   );
 }

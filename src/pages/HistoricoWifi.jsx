@@ -132,7 +132,7 @@ export default function HistoricoWifi() {
         <h1 className="mt-3 text-3xl font-extrabold text-[var(--color-text)] sm:text-4xl">Wi-Fi das maquinas</h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-text-soft)]">
           Troque o Wi-Fi de uma maquina sem ir ao local e veja todas as redes e senhas que cada placa ja usou, alem das
-          trocas pedidas pelo painel - inclusive as que deram errado. Somente administradores veem esta tela, e cada
+          trocas pedidas pelo painel - inclusive as que deram errado. Cada cliente ve so as proprias maquinas, e cada
           acesso fica registrado na auditoria.
         </p>
       </section>

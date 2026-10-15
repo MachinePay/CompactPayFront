@@ -194,9 +194,9 @@ function RouteContent() {
           <Route
             path="/wifi-maquinas"
             element={
-              <AdminPage>
+              <PrivatePage>
                 <HistoricoWifi />
-              </AdminPage>
+              </PrivatePage>
             }
           />
           <Route

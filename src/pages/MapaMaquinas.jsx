@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, RefreshCcw, Save, Search, Users } from "lucide-react";
+import { MapPin, RefreshCcw, Save, Search, Wifi } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
 import Toast from "../components/Toast";
 import { useAuth } from "../context/useAuth";
+import { confirmar } from "../utils/confirmar";
 import { brasiliaDate } from "../utils/dateTime";
+import { GPS_PRECISAO_MAXIMA_M, obterGps, salvarGpsDaMaquina } from "../utils/localizacaoCelular";
 
 const COR_ONLINE = "#1f7a4c";
 const COR_OFFLINE = "#b64545";
@@ -72,7 +74,7 @@ function escaparHtml(texto) {
   return String(texto ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
 
-function popupHtml(m) {
+function popupHtml(m, admin = false) {
   const status = m.online
     ? `<span style="color:${COR_ONLINE};font-weight:700">● Online</span>`
     : `<span style="color:${COR_OFFLINE};font-weight:700">● Offline</span>`;
@@ -85,6 +87,13 @@ function popupHtml(m) {
       <div style="margin-top:6px;font-size:13px">${status}${m.wifi_quality != null ? ` · Wi-Fi ${m.wifi_quality}%` : ""}</div>
       <div style="margin-top:4px;font-size:13px">Hoje: <b>${brl(m.faturamento_hoje)}</b></div>
       <div style="font-size:12px;color:#6b7c72">Ultima venda: ${ultima}</div>
+      ${
+        admin
+          ? `<button type="button" class="cp-remover-local" data-maquina="${escaparHtml(m.maquina_id)}"
+              style="margin-top:8px;padding:4px 10px;border:1px solid ${COR_OFFLINE};border-radius:999px;
+              background:#fff;color:${COR_OFFLINE};font-size:12px;font-weight:700;cursor:pointer">Remover localizacao</button>`
+          : ""
+      }
     </div>`;
 }
 
@@ -171,7 +180,7 @@ export default function MapaMaquinas() {
     const pontos = agruparPorLocal(dados.maquinas).map((grupo) => {
       const posicao = [grupo[0].latitude, grupo[0].longitude];
       const marcador = L.marker(posicao, { icon: etiquetaIcone(grupo), riseOnHover: true })
-        .bindPopup(grupo.map(popupHtml).join('<hr style="margin:8px 0;border:0;border-top:1px solid #e3e8e4">'), {
+        .bindPopup(grupo.map((m) => popupHtml(m, admin)).join('<hr style="margin:8px 0;border:0;border-top:1px solid #e3e8e4">'), {
           offset: [0, -24],
           maxHeight: 320,
         })
@@ -185,7 +194,40 @@ export default function MapaMaquinas() {
       if (pontos.length === 1) mapa.setView(pontos[0], 16);
       else mapa.fitBounds(pontos, { padding: [40, 40], maxZoom: 16 });
     }
-  }, [dados]);
+  }, [dados, admin]);
+
+  // Botao "Remover localizacao" do balao (so admin): tira a maquina do mapa.
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!mapa || !admin) return undefined;
+    const aoAbrir = (evento) => {
+      evento.popup
+        .getElement()
+        ?.querySelectorAll(".cp-remover-local")
+        .forEach((botao) => {
+          botao.onclick = async () => {
+            const machineId = botao.dataset.maquina;
+            const ok = await confirmar({
+              titulo: `Remover a localizacao da maquina ${machineId}?`,
+              texto: "Ela sai do mapa ate cadastrar a localizacao de novo.",
+              confirmarTexto: "Remover",
+              perigoso: true,
+            });
+            if (!ok) return;
+            try {
+              await api.put(`/mapa/maquinas/${machineId}/localizacao`, { limpar: true });
+              mapa.closePopup();
+              setToast({ message: `Localizacao da maquina ${machineId} removida.`, type: "success" });
+              carregar();
+            } catch (error) {
+              setToast({ message: getApiErrorMessage(error, "Nao foi possivel remover a localizacao."), type: "error" });
+            }
+          };
+        });
+    };
+    mapa.on("popupopen", aoAbrir);
+    return () => mapa.off("popupopen", aoAbrir);
+  }, [admin, carregar]);
 
   const online = dados.maquinas.filter((m) => m.online).length;
 
@@ -263,7 +305,6 @@ export default function MapaMaquinas() {
       {admin ? (
         <>
           <Localizacoes onSalvo={carregar} onToast={setToast} />
-          <AcessoClientes onToast={setToast} />
         </>
       ) : null}
     </div>
@@ -334,6 +375,17 @@ function BuscaMaquina({ maquinas, onEscolher }) {
   );
 }
 
+const WIFI_STATUS_TEXTO = {
+  ok: "Localizacao encontrada pela Wi-Fi.",
+  mantida: "A posicao atual ja e' igual ou mais precisa - foi mantida.",
+  sem_chave: "Falta configurar a chave do Google (GOOGLE_GEOLOCATION_API_KEY) no servidor.",
+  sem_redes: "A placa viu poucas redes Wi-Fi em volta para calcular a posicao.",
+  nao_encontrada: "O Google nao conhece esses roteadores - use o GPS do celular ou cole o link.",
+  erro: "O servico do Google nao respondeu agora. Tente de novo em alguns minutos.",
+  limite: "Ja foi feita uma busca ha pouco. Aguarde 10 minutos.",
+};
+const ESPERA_WIFI_MS = 40000;
+
 function Localizacoes({ onSalvo, onToast }) {
   const [clientes, setClientes] = useState([]);
   const [maquinas, setMaquinas] = useState([]);
@@ -363,6 +415,57 @@ function Localizacoes({ onSalvo, onToast }) {
   );
   const maquina = maquinas.find((m) => m.id_hardware === maquinaId);
   const temLocal = maquina?.latitude != null && maquina?.longitude != null;
+
+  const localizarPelaWifi = async () => {
+    if (!maquina) return;
+    setSalvando(true);
+    try {
+      const { data } = await api.post(`/mapa/maquinas/${maquina.id_hardware}/localizar-wifi`);
+      const inicio = Date.now();
+      const pedido = new Date(data.pedido_em).getTime();
+      onToast({ message: "Procurando os roteadores em volta da maquina...", type: "success" });
+      // A placa varre e o servidor consulta o Google: espera o resultado.
+      for (;;) {
+        await new Promise((r) => window.setTimeout(r, 3000));
+        const { data: local } = await api.get(`/mapa/maquinas/${maquina.id_hardware}/localizacao`);
+        if (local.wifi_em && new Date(local.wifi_em).getTime() >= pedido) {
+          const texto = WIFI_STATUS_TEXTO[local.wifi_status] || "Busca concluida.";
+          const precisao = local.wifi_status === "ok" && local.precisao_m ? ` (+-${Math.round(local.precisao_m)} m)` : "";
+          onToast({ message: texto + precisao, type: ["ok", "mantida"].includes(local.wifi_status) ? "success" : "error" });
+          break;
+        }
+        if (Date.now() - inicio > ESPERA_WIFI_MS) {
+          onToast({ message: "A placa nao respondeu a tempo. Confira se ela esta online.", type: "error" });
+          break;
+        }
+      }
+      carregarMaquinas();
+      onSalvo();
+    } catch (error) {
+      onToast({ message: getApiErrorMessage(error, "Nao foi possivel localizar pela Wi-Fi."), type: "error" });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  const usarGps = async () => {
+    if (!maquina) return;
+    setSalvando(true);
+    try {
+      const gps = await obterGps();
+      if (gps.precisao_m > GPS_PRECISAO_MAXIMA_M) {
+        throw new Error(`GPS impreciso (+-${gps.precisao_m} m). Tente ao ar livre ou perto de uma janela.`);
+      }
+      await salvarGpsDaMaquina(maquina.id_hardware, gps);
+      onToast({ message: `Localizacao salva pelo GPS (+-${gps.precisao_m} m).`, type: "success" });
+      carregarMaquinas();
+      onSalvo();
+    } catch (error) {
+      onToast({ message: getApiErrorMessage(error, error.message || "Nao foi possivel usar o GPS."), type: "error" });
+    } finally {
+      setSalvando(false);
+    }
+  };
 
   const salvar = async (limpar = false) => {
     if (!maquina) return;
@@ -438,6 +541,12 @@ function Localizacoes({ onSalvo, onToast }) {
             >
               <Save size={15} /> Salvar
             </button>
+            <button type="button" className="pill-button inline-flex items-center gap-2 px-5 py-3 font-semibold" onClick={usarGps} disabled={salvando}>
+              <MapPin size={15} /> Usar minha localizacao atual
+            </button>
+            <button type="button" className="pill-button inline-flex items-center gap-2 px-5 py-3 font-semibold" onClick={localizarPelaWifi} disabled={salvando}>
+              <Wifi size={15} /> Localizar pela Wi-Fi
+            </button>
             {temLocal ? (
               <button type="button" className="pill-button px-5 py-3 font-semibold" onClick={() => salvar(true)} disabled={salvando}>
                 Tirar do mapa
@@ -446,53 +555,13 @@ function Localizacoes({ onSalvo, onToast }) {
           </div>
           <div className="text-xs text-[var(--color-text-soft)] md:col-span-2">
             {temLocal
-              ? `Hoje no mapa em ${maquina.latitude.toFixed(5)}, ${maquina.longitude.toFixed(5)}.`
+              ? `Hoje no mapa em ${maquina.latitude.toFixed(5)}, ${maquina.longitude.toFixed(5)}` +
+                ({ celular: " (GPS do celular)", manual: " (cadastrada a mao)", wifi: " (pela Wi-Fi)" }[maquina.localizacao_origem] || "") +
+                (maquina.localizacao_atualizada_em ? ` em ${brasiliaDate(maquina.localizacao_atualizada_em).format("DD/MM/YYYY HH:mm")}.` : ".")
               : "Esta maquina ainda nao aparece no mapa."}
           </div>
         </div>
       ) : null}
-    </section>
-  );
-}
-
-function AcessoClientes({ onToast }) {
-  const [clientes, setClientes] = useState([]);
-
-  useEffect(() => {
-    api
-      .get("/mapa/clientes")
-      .then(({ data }) => setClientes(data || []))
-      .catch(() => setClientes([]));
-  }, []);
-
-  const alternar = async (cliente) => {
-    try {
-      const { data } = await api.put(`/mapa/clientes/${cliente.id}`, { habilitado: !cliente.mapa_habilitado });
-      setClientes((atual) => atual.map((c) => (c.id === cliente.id ? { ...c, mapa_habilitado: data.mapa_habilitado } : c)));
-    } catch (error) {
-      onToast({ message: getApiErrorMessage(error, "Nao foi possivel alterar o acesso."), type: "error" });
-    }
-  };
-
-  return (
-    <section className="app-panel rounded-[30px] p-5 md:p-6">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-          <Users size={18} />
-        </div>
-        <div>
-          <h2 className="text-lg font-extrabold text-[var(--color-text)]">Clientes que podem ver o mapa</h2>
-          <p className="text-sm text-[var(--color-text-soft)]">Desligado por padrao. O cliente liberado ve so as proprias maquinas.</p>
-        </div>
-      </div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {clientes.map((cliente) => (
-          <label key={cliente.id} className="flex cursor-pointer items-center justify-between gap-3 rounded-[16px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm">
-            <span className="truncate font-semibold text-[var(--color-text)]">{cliente.nome}</span>
-            <input type="checkbox" className="h-4 w-4 accent-[var(--color-primary)]" checked={cliente.mapa_habilitado} onChange={() => alternar(cliente)} />
-          </label>
-        ))}
-      </div>
     </section>
   );
 }

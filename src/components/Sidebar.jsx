@@ -19,9 +19,8 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import api from "../api/axios";
 import { useAuth } from "../context/useAuth";
 
 export default function Sidebar() {
@@ -29,17 +28,6 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
-  // Mapa: admin sempre; cliente so se o admin liberou (desligado por padrao).
-  const [mapaLiberado, setMapaLiberado] = useState(false);
-
-  useEffect(() => {
-    if (!user || user.role === "admin") return;
-    api
-      .get("/mapa/acesso")
-      .then(({ data }) => setMapaLiberado(Boolean(data?.permitido)))
-      .catch(() => setMapaLiberado(false));
-  }, [user]);
-  const mostrarMapa = user?.role === "admin" || mapaLiberado;
 
   const linkClassName = ({ isActive }) =>
     `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition lg:text-base ${
@@ -81,13 +69,11 @@ export default function Sidebar() {
         </NavLink>
       </li>
 
-      {mostrarMapa && (
-        <li>
-          <NavLink to="/mapa-maquinas" className={linkClassName} onClick={closeMobile}>
-            <MapIcon size={20} /> Mapa
-          </NavLink>
-        </li>
-      )}
+      <li>
+        <NavLink to="/mapa-maquinas" className={linkClassName} onClick={closeMobile}>
+          <MapIcon size={20} /> Mapa
+        </NavLink>
+      </li>
 
       <li>
         <NavLink to="/horarios-pico" className={linkClassName} onClick={closeMobile}>
@@ -113,13 +99,11 @@ export default function Sidebar() {
         </NavLink>
       </li>
 
-      {user?.role === "admin" && (
-        <li>
-          <NavLink to="/wifi-maquinas" className={linkClassName} onClick={closeMobile}>
-            <Wifi size={20} /> Wi-Fi das maquinas
-          </NavLink>
-        </li>
-      )}
+      <li>
+        <NavLink to="/wifi-maquinas" className={linkClassName} onClick={closeMobile}>
+          <Wifi size={20} /> Wi-Fi das maquinas
+        </NavLink>
+      </li>
 
       <li>
         <button
