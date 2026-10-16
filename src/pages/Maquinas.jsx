@@ -52,6 +52,7 @@ const emptyForm = {
   banco_pagamento: "",
   sumup_reader_id: "",
   sumup_device_code: "",
+  sumup_usuario: "",
 };
 
 const paymentProviderLabels = {
@@ -320,6 +321,7 @@ export default function Maquinas() {
   const [sumupReaders, setSumupReaders] = useState([]);
   const [loadingSumupReaders, setLoadingSumupReaders] = useState(false);
   const [pairingSumup, setPairingSumup] = useState(false);
+  const [usuarioSumup, setUsuarioSumup] = useState({ carregando: false, login: null, erro: "" });
   const [pairingCode, setPairingCode] = useState("");
   const [pairingName, setPairingName] = useState("");
   const [pairingMessage, setPairingMessage] = useState({ text: "", type: "" });
@@ -590,6 +592,7 @@ export default function Maquinas() {
         }
         payload.sumup_reader_id = form.sumup_reader_id;
         payload.sumup_device_code = form.sumup_device_code;
+        payload.sumup_usuario = form.sumup_usuario.trim();
       }
 
       if (
@@ -646,8 +649,52 @@ export default function Maquinas() {
     }
   };
 
+  const handleCriarUsuarioSumup = async (recriar = false) => {
+    if (!editingMachineId) return;
+    if (recriar) {
+      const ok = await confirmar({
+        titulo: "Criar outro usuario para esta maquininha?",
+        texto:
+          "O sistema cria um usuario novo na SumUp e passa a usar ele para identificar o Pix. Depois sera preciso " +
+          "sair da maquininha e entrar com o login novo.",
+        confirmarTexto: "Criar novo",
+        perigoso: true,
+      });
+      if (!ok) return;
+    }
+    setUsuarioSumup({ carregando: true, login: null, erro: "" });
+    try {
+      const { data } = await api.post(`/maquinas/${editingMachineId}/sumup/usuario`, recriar ? { recriar: true } : {});
+      setUsuarioSumup({ carregando: false, login: data, erro: "" });
+      setForm((current) => ({ ...current, sumup_usuario: data.usuario }));
+      await loadMaquinas({ silent: true });
+    } catch (error) {
+      setUsuarioSumup({
+        carregando: false,
+        login: null,
+        erro: getApiErrorMessage(error, "Nao foi possivel criar o usuario na SumUp."),
+      });
+    }
+  };
+
+  const handleVerLoginSumup = async () => {
+    if (!editingMachineId) return;
+    setUsuarioSumup({ carregando: true, login: null, erro: "" });
+    try {
+      const { data } = await api.get(`/maquinas/${editingMachineId}/sumup/usuario`);
+      setUsuarioSumup({
+        carregando: false,
+        login: data.senha ? data : null,
+        erro: data.senha ? "" : "Este usuario nao foi criado pelo sistema - a senha nao esta guardada aqui.",
+      });
+    } catch (error) {
+      setUsuarioSumup({ carregando: false, login: null, erro: getApiErrorMessage(error, "Nao foi possivel buscar o login.") });
+    }
+  };
+
   const handleEditMachine = (machine) => {
     setEditingMachineId(machine.id_hardware);
+    setUsuarioSumup({ carregando: false, login: null, erro: "" });
     setForm({
       id_hardware: machine.id_hardware,
       nome: machine.nome || "",
@@ -660,6 +707,7 @@ export default function Maquinas() {
       banco_pagamento: machine.banco_pagamento || "mercado_pago",
       sumup_reader_id: machine.sumup_reader_id || "",
       sumup_device_code: machine.sumup_device_code || "",
+      sumup_usuario: machine.sumup_usuario || "",
     });
     setCopyFeedback("");
     setShowModal(true);
@@ -2367,6 +2415,80 @@ export default function Maquinas() {
                         aparece no log do servidor (campo "card_reader.code" do recibo) -
                         util quando a maquininha nao esta pareada na Cloud API da SumUp.
                       </span>
+
+                      <span className="mb-2 mt-4 block text-sm font-semibold text-[var(--color-text)]">
+                        Usuario SumUp logado nesta maquininha (para Pix)
+                      </span>
+                      <input
+                        type="text"
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder="Ex: maquina1014@seudominio.com"
+                        autoComplete="off"
+                        value={form.sumup_usuario}
+                        onChange={(e) =>
+                          setForm((current) => ({
+                            ...current,
+                            sumup_usuario: e.target.value,
+                          }))
+                        }
+                      />
+                      <span className="mt-2 block text-xs leading-5 text-[var(--color-text-soft)]">
+                        O Pix feito na maquininha nao informa qual maquininha foi usada - so o usuario
+                        logado nela. Com mais de uma maquina SumUp no mesmo cliente, logue cada maquininha
+                        com um usuario (operador) diferente e coloque aqui o e-mail dele. Cada usuario so pode
+                        estar em uma maquina.
+                      </span>
+
+                      {user?.role === "admin" && editingMachineId ? (
+                        <div className="mt-3 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">
+                          <span className="block text-sm font-semibold text-[var(--color-text)]">
+                            Criar o usuario automaticamente
+                          </span>
+                          <p className="mt-1 text-xs leading-5 text-[var(--color-text-soft)]">
+                            O sistema cria um usuario so desta maquininha na conta SumUp do cliente e preenche o campo
+                            acima. Depois, na maquininha, saia da conta atual e entre com o login e a senha mostrados.
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="pill-button pill-button--primary px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                              onClick={() => handleCriarUsuarioSumup(false)}
+                              disabled={usuarioSumup.carregando}
+                            >
+                              {usuarioSumup.carregando ? "Aguarde..." : "Criar usuario da maquininha"}
+                            </button>
+                            <button
+                              type="button"
+                              className="pill-button px-4 py-2 text-sm font-semibold"
+                              onClick={handleVerLoginSumup}
+                              disabled={usuarioSumup.carregando}
+                            >
+                              Ver login
+                            </button>
+                            <button
+                              type="button"
+                              className="pill-button px-4 py-2 text-sm font-semibold"
+                              onClick={() => handleCriarUsuarioSumup(true)}
+                              disabled={usuarioSumup.carregando}
+                            >
+                              Criar outro
+                            </button>
+                          </div>
+                          {usuarioSumup.login ? (
+                            <div className="mt-3 rounded-[12px] bg-white px-3 py-2 text-sm">
+                              <div>
+                                Login: <strong className="select-all">{usuarioSumup.login.usuario}</strong>
+                              </div>
+                              <div>
+                                Senha: <strong className="select-all font-mono">{usuarioSumup.login.senha}</strong>
+                              </div>
+                            </div>
+                          ) : null}
+                          {usuarioSumup.erro ? (
+                            <p className="mt-2 text-xs font-medium text-rose-600">{usuarioSumup.erro}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </label>

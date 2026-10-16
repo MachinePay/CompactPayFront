@@ -2,10 +2,10 @@
   "rewrites": [
     {
       "source": "/favicon.ico",
-      "destination": "/favicon.svg"
+      "destination": "/favicon-48.png"
     },
     {
-      "source": "/((?!assets/|icons.svg|favicon.svg|vite.svg).*)",
+      "source": "/((?!assets/|icons.svg|favicon.svg|favicon-32.png|favicon-48.png|apple-touch-icon.png|icon-192.png|icon-512.png|icon-512-maskable.png|manifest.webmanifest|vite.svg).*)",
       "destination": "/index.html"
     }
   ]
