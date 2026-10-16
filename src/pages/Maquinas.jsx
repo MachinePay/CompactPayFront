@@ -46,6 +46,8 @@ const emptyForm = {
   nome: "",
   localizacao: "",
   localizacao_mapa: "",
+  maquina_ficha: false,
+  valor_ficha: "",
   cliente_id: "",
   banco_pagamento: "",
   sumup_reader_id: "",
@@ -570,6 +572,8 @@ export default function Maquinas() {
         // Opcional (admin): link do Google Maps ou "lat, lng". Vazio na edicao
         // tira a maquina do mapa; quem nao e admin nao manda (nao mexe).
         ...(user?.role === "admin" ? { localizacao_mapa: form.localizacao_mapa.trim() } : {}),
+        maquina_ficha: Boolean(form.maquina_ficha),
+        valor_ficha: form.maquina_ficha ? Number(String(form.valor_ficha).replace(",", ".")) : null,
         banco_pagamento: selectedProvider,
         cliente_id:
           user?.role === "admin"
@@ -650,6 +654,8 @@ export default function Maquinas() {
       localizacao: machine.localizacao || "",
       localizacao_mapa:
         machine.latitude != null && machine.longitude != null ? `${machine.latitude}, ${machine.longitude}` : "",
+      maquina_ficha: Boolean(machine.maquina_ficha),
+      valor_ficha: machine.valor_ficha != null ? String(machine.valor_ficha) : "",
       cliente_id: machine.cliente_id == null ? "" : String(machine.cliente_id),
       banco_pagamento: machine.banco_pagamento || "mercado_pago",
       sumup_reader_id: machine.sumup_reader_id || "",
@@ -1917,6 +1923,14 @@ export default function Maquinas() {
                                 ? `R$ ${m.faturamento.toFixed(2)}`
                                 : "--"}
                             </div>
+                            {m.maquina_ficha ? (
+                              <div
+                                className="mt-1 text-[var(--color-text-soft)]"
+                                title={`Valor real das fichas: ${m.fisico_quantidade ?? 0} x R$ ${Number(m.valor_ficha || 0).toFixed(2)}`}
+                              >
+                                {m.fisico_quantidade ?? 0} fichas = R$ {Number(m.faturamento_fisico || 0).toFixed(2)}
+                              </div>
+                            ) : null}
                             <div className="mt-1 text-[var(--color-text-soft)]">
                               {m.quantidade_saidas ?? 0} pelucias
                             </div>
@@ -2390,6 +2404,50 @@ export default function Maquinas() {
                 />
               </label>
 
+              <div className="block rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-3">
+                <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold text-[var(--color-text)]">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-[var(--color-primary)]"
+                    checked={form.maquina_ficha}
+                    onChange={(e) =>
+                      setForm((current) => ({
+                        ...current,
+                        maquina_ficha: e.target.checked,
+                      }))
+                    }
+                  />
+                  Maquina de ficha
+                </label>
+                <p className="mt-1 text-xs text-[var(--color-text-soft)]">
+                  Marque se a entrada fisica desta maquina recebe fichas. Cada ficha que entrar passa a valer o valor
+                  abaixo no faturamento.
+                </p>
+                {form.maquina_ficha ? (
+                  <label className="mt-3 block">
+                    <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
+                      Valor de cada ficha (R$)
+                    </span>
+                    <input
+                      className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                      placeholder="Ex.: 2,50"
+                      inputMode="decimal"
+                      value={form.valor_ficha}
+                      onChange={(e) =>
+                        setForm((current) => ({
+                          ...current,
+                          valor_ficha: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                    <span className="mt-1 block text-xs text-[var(--color-text-soft)]">
+                      Vale para as fichas que entrarem daqui em diante.
+                    </span>
+                  </label>
+                ) : null}
+              </div>
+
               {user?.role === "admin" ? (
                 <label className="block">
                   <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
@@ -2593,6 +2651,12 @@ function MachineMobileCard({
               : "--"
           }
         />
+        {machine.maquina_ficha ? (
+          <InfoPill
+            label={`Fichas (R$ ${Number(machine.valor_ficha || 0).toFixed(2)} cada)`}
+            value={`${machine.fisico_quantidade ?? 0} = R$ ${Number(machine.faturamento_fisico || 0).toFixed(2)}`}
+          />
+        ) : null}
         <InfoPill
           label="Pelucias"
           value={String(machine.quantidade_saidas ?? 0)}
