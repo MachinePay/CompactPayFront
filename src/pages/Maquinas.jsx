@@ -2434,9 +2434,9 @@ export default function Maquinas() {
                       />
                       <span className="mt-2 block text-xs leading-5 text-[var(--color-text-soft)]">
                         O Pix feito na maquininha nao informa qual maquininha foi usada - so o usuario
-                        logado nela. Com mais de uma maquina SumUp no mesmo cliente, logue cada maquininha
-                        com um usuario (operador) diferente e coloque aqui o e-mail dele. Cada usuario so pode
-                        estar em uma maquina.
+                        logado nela. Mesmo com uma maquina so, logue a maquininha com um usuario (operador) proprio
+                        e coloque aqui o e-mail dele: so o Pix desse usuario libera pulso. Sem este campo o Pix
+                        nao e' creditado (fica pendente). Cada usuario so pode estar em uma maquina.
                       </span>
 
                       {user?.role === "admin" && editingMachineId ? (
