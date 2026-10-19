@@ -299,6 +299,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
             <div class="card"><strong>Total fisico</strong><br />R$ ${Number(snapshot.resumo.total_fisico).toFixed(2)}</div>
             <div class="card"><strong>Valor devolvido</strong><br />R$ ${Number(snapshot.resumo.total_devolvido || 0).toFixed(2)}</div>
             <div class="card"><strong>Qtde pagamentos</strong><br />${snapshot.resumo.quantidade_pagamentos}</div>
+            ${snapshot.resumo.quantidade_fichas != null ? `<div class="card"><strong>Qtde fichas</strong><br />${snapshot.resumo.quantidade_fichas}</div>` : ""}
             <div class="card"><strong>Qtde testes</strong><br />${snapshot.resumo.quantidade_testes}</div>
             <div class="card"><strong>Qtde de pelucias entregues</strong><br />${snapshot.resumo.quantidade_saidas}</div>
           </div>
@@ -648,6 +649,8 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
   };
 
   const maquina = historico.maquina;
+  // So vem preenchido para maquina marcada como "Maquina de ficha".
+  const temFichas = historico.resumo.quantidade_fichas != null;
 
   return (
     <div className="flex min-h-full min-w-0 flex-col gap-4">
@@ -939,7 +942,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className={`grid gap-4 ${temFichas ? "md:grid-cols-2 xl:grid-cols-4" : "md:grid-cols-3"}`}>
         <SummaryCard
           label="Total pagamentos"
           value={`R$ ${Number(historico.resumo.total_pagamentos).toFixed(2)}`}
@@ -951,6 +954,13 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
           value={String(historico.resumo.quantidade_pagamentos)}
           helper={formatResumoData(historico.resumo.ultimo_pagamento_em, "Ultimo pagamento")}
         />
+        {temFichas ? (
+          <SummaryCard
+            label="Qtde fichas"
+            value={String(historico.resumo.quantidade_fichas)}
+            helper="Fichas que entraram no periodo"
+          />
+        ) : null}
         <SummaryCard
           label="Qtde testes"
           value={String(historico.resumo.quantidade_testes)}
@@ -1483,6 +1493,11 @@ function SalesReportTable({ vendas, searchTerm, filters, maquina, onRefund, refu
                   </td>
                   <td className="px-4 py-4 lg:py-5 xl:py-6">
                     <MoneyBadge value={item.valor} />
+                    {item.fichas != null ? (
+                      <div className="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">
+                        {item.fichas} {item.fichas === 1 ? "ficha" : "fichas"}
+                      </div>
+                    ) : null}
                     <div className="mt-1 text-xs text-[var(--color-primary)]">Cliente pagou</div>
                   </td>
                   <td className="px-4 py-4 lg:py-5 xl:py-6 min-w-[190px]">
