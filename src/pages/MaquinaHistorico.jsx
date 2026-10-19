@@ -534,7 +534,10 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const rangeSlug = dateRange.start && dateRange.end ? `${dateRange.start}_${dateRange.end}` : periodo || "periodo";
+    const rangeSlug =
+      dateRange.start && dateRange.end
+        ? `${dateRange.start}_${dateRange.end}`.replace(/:/g, "h")
+        : periodo || "periodo";
     link.href = url;
     link.download = `historico-${maquina.id_hardware}-${rangeSlug}-${dayjs().format("YYYYMMDD-HHmmss")}.csv`;
     document.body.appendChild(link);
@@ -844,6 +847,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
           ) : (
             <div className="w-full min-w-0 sm:w-auto">
               <DateRangePicker
+                withTime
                 value={dateRange}
                 onChange={(range) => {
                   setDateRange(range);
@@ -2120,14 +2124,20 @@ function formatResumoData(value, label) {
   return `${label}: ${brasiliaDate(value).format("DD/MM/YYYY HH:mm:ss")}`;
 }
 
+// start/end podem vir com hora ("2026-10-19T14:30") quando o filtro de horario
+// foi usado - ai a hora aparece no rotulo (PDF, CSV, fechamento).
+function formatRangeValue(value) {
+  return dayjs(value).format(value.includes("T") ? "DD/MM/YYYY HH:mm" : "DD/MM/YYYY");
+}
+
 function formatPeriodoLabel(periodo, range) {
   if (range?.start && range?.end) {
-    const startLabel = dayjs(range.start).format("DD/MM/YYYY");
-    const endLabel = dayjs(range.end).format("DD/MM/YYYY");
+    const startLabel = formatRangeValue(range.start);
+    const endLabel = formatRangeValue(range.end);
     return range.start === range.end ? startLabel : `${startLabel} ate ${endLabel}`;
   }
-  if (range?.start) return `A partir de ${dayjs(range.start).format("DD/MM/YYYY")}`;
-  if (range?.end) return `Ate ${dayjs(range.end).format("DD/MM/YYYY")}`;
+  if (range?.start) return `A partir de ${formatRangeValue(range.start)}`;
+  if (range?.end) return `Ate ${formatRangeValue(range.end)}`;
   if (periodo === "dia") return dayjs().format("DD/MM/YYYY");
   if (periodo === "fechamento") return "Desde o ultimo fechamento";
   return "Mes atual";

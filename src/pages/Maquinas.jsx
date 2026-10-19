@@ -399,8 +399,8 @@ export default function Maquinas() {
       if (!silent) setLoading(true);
       const params = [];
       if (periodo) params.push(`periodo=${periodo}`);
-      if (dateRange.start) params.push(`data_inicio=${dateRange.start}`);
-      if (dateRange.end) params.push(`data_fim=${dateRange.end}`);
+      if (dateRange.start) params.push(`data_inicio=${encodeURIComponent(dateRange.start)}`);
+      if (dateRange.end) params.push(`data_fim=${encodeURIComponent(dateRange.end)}`);
       if (user.role === "admin" && selectedClienteId) {
         params.push(`cliente_id=${encodeURIComponent(selectedClienteId)}`);
       }
@@ -1746,7 +1746,7 @@ export default function Maquinas() {
                 <option value="mes">Mes</option>
               </select>
             </label>
-            <DateRangePicker value={dateRange} onChange={setDateRange} />
+            <DateRangePicker value={dateRange} onChange={setDateRange} withTime />
           </div>
 
           <button
