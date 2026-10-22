@@ -348,7 +348,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
     setRefundingId(String(venda.id));
     try {
       await api.post(`/maquinas/${machineId}/pagamentos/${venda.id}/extorno`);
-      setToast({ message: "Extorno solicitado no Mercado Pago com sucesso.", type: "success" });
+      setToast({ message: `Extorno solicitado no ${formatProvider(venda.provider)} com sucesso.`, type: "success" });
       setRefundState({ open: false, venda: null, confirmationText: "" });
       await loadHistorico();
     } catch (error) {
@@ -662,7 +662,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       <ConfirmModal
         open={refundState.open}
         title="Devolver pagamento"
-        description={`O sistema vai solicitar o extorno automatico no Mercado Pago para o pagamento ${refundState.venda?.provider_payment_id || refundState.venda?.id || ""}. Digite estornar para confirmar.`}
+        description={`O sistema vai solicitar o extorno automatico no ${formatProvider(refundState.venda?.provider)} para o pagamento ${refundState.venda?.provider_payment_id || refundState.venda?.id || ""}. Digite estornar para confirmar.`}
         confirmLabel="Confirmar extorno"
         loading={Boolean(refundingId)}
         requireText="estornar"
@@ -1989,6 +1989,8 @@ function formatProvider(provider) {
     fisico: "Pagamento fisico",
     pagbank: "PagBank",
     s6pay: "S6Pay",
+    sumup: "SumUp",
+    stone: "Stone",
   };
   return labels[provider] || provider || "Nao informado";
 }

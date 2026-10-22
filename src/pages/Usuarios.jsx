@@ -82,6 +82,9 @@ export default function Usuarios() {
     mp_pos_category: "7994",
     sumup_api_key: "",
     sumup_merchant_code: "",
+    cliente_stone: false,
+    stone_secret_key: "",
+    stone_service_referer_name: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -130,6 +133,9 @@ export default function Usuarios() {
       mp_pos_category: "7994",
       sumup_api_key: "",
       sumup_merchant_code: "",
+      cliente_stone: false,
+      stone_secret_key: "",
+      stone_service_referer_name: "",
     });
   };
 
@@ -171,6 +177,9 @@ export default function Usuarios() {
       mp_pos_category: currentUser.mp_pos_category ?? "7994",
       sumup_api_key: currentUser.sumup_api_key || "",
       sumup_merchant_code: currentUser.sumup_merchant_code || "",
+      cliente_stone: Boolean(currentUser.cliente_stone || currentUser.stone_secret_key),
+      stone_secret_key: currentUser.stone_secret_key || "",
+      stone_service_referer_name: currentUser.stone_service_referer_name || "",
     });
     setShowModal(true);
   };
@@ -240,6 +249,8 @@ export default function Usuarios() {
       mp_pos_category: form.cliente_mercado_pago && form.mp_pos_category !== "" ? Number(form.mp_pos_category) : null,
       sumup_api_key: form.cliente_sumup ? form.sumup_api_key : "",
       sumup_merchant_code: form.cliente_sumup ? form.sumup_merchant_code : "",
+      stone_secret_key: form.cliente_stone ? form.stone_secret_key : "",
+      stone_service_referer_name: form.cliente_stone ? form.stone_service_referer_name : "",
       cliente_id: null,
     };
 
@@ -748,6 +759,13 @@ export default function Usuarios() {
                       setForm((current) => ({ ...current, cliente_sumup: checked }))
                     }
                   />
+                  <ProviderCheckbox
+                    label="Cliente Stone"
+                    checked={form.cliente_stone}
+                    onChange={(checked) =>
+                      setForm((current) => ({ ...current, cliente_stone: checked }))
+                    }
+                  />
                 </div>
 
                 {form.cliente_mercado_pago ? (
@@ -836,6 +854,34 @@ export default function Usuarios() {
                         placeholder="Preenchido sozinho ao salvar a API key"
                         value={form.sumup_merchant_code}
                         onChange={(e) => setForm((current) => ({ ...current, sumup_merchant_code: e.target.value }))}
+                      />
+                    </Field>
+                  </>
+                ) : null}
+
+                {form.cliente_stone ? (
+                  <>
+                    <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
+                      Cole a Secret Key (sk_...) da conta Stone do cliente: Partner Hub (Integracao &gt; Setup &gt; Connect Stone) ou Dashboard Pagar.me (Desenvolvimento &gt; Chaves). A chave e' testada ao salvar. Na Pagar.me, cadastre o webhook /api/v1/callback-stone com os eventos charge.paid e charge.refunded.
+                    </div>
+
+                    <Field label="Stone Secret Key">
+                      <input
+                        type="password"
+                        autoComplete="off"
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder="sk_..."
+                        value={form.stone_secret_key}
+                        onChange={(e) => setForm((current) => ({ ...current, stone_secret_key: e.target.value }))}
+                      />
+                    </Field>
+
+                    <Field label="ServiceRefererName (opcional)">
+                      <input
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder="Id de parceiro do Partner Hub, se tiver"
+                        value={form.stone_service_referer_name}
+                        onChange={(e) => setForm((current) => ({ ...current, stone_service_referer_name: e.target.value }))}
                       />
                     </Field>
                   </>
