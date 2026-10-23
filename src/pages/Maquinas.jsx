@@ -28,6 +28,7 @@ import api, { getApiErrorMessage } from "../api/axios";
 import { useAuth } from "../context/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
 import DateRangePicker from "../components/DateRangePicker";
+import PointApkChaves from "../components/PointApkChaves";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
 import Toast from "../components/Toast";
@@ -2396,6 +2397,13 @@ export default function Maquinas() {
                         pode estar em uma maquina. Estorno e' feito na propria maquininha ou no Portal Stone.
                       </span>
                     </div>
+                  ) : null}
+                  {form.cliente_id && form.banco_pagamento === "mercado_pago_apk" ? (
+                    <PointApkChaves
+                      clienteId={form.cliente_id}
+                      maquinaId={editingMachineId || form.id_hardware}
+                      maquinaNome={form.nome}
+                    />
                   ) : null}
                 </label>
               ) : null}
