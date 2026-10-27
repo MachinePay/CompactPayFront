@@ -31,6 +31,7 @@ export default function AdminWhatsapp() {
   const [salvandoCliente, setSalvandoCliente] = useState(null);
   const [teste, setTeste] = useState({ telefone: "", tipo: "offline", enviando: false });
   const [toast, setToast] = useState(null);
+  const [erroCarga, setErroCarga] = useState("");
   const fecharToast = useCallback(() => setToast(null), []);
 
   const aplicarConfig = (data) => {
@@ -61,8 +62,11 @@ export default function AdminWhatsapp() {
   }, []);
 
   useEffect(() => {
-    api.get("/whatsapp/config").then(({ data }) => aplicarConfig(data));
-    api.get("/whatsapp/clientes").then(({ data }) => setClientes(data || []));
+    api
+      .get("/whatsapp/config")
+      .then(({ data }) => aplicarConfig(data))
+      .catch((err) => setErroCarga(getApiErrorMessage(err, "Nao foi possivel carregar a configuracao do WhatsApp")));
+    api.get("/whatsapp/clientes").then(({ data }) => setClientes(data || [])).catch(() => {});
     carregarConexao();
     carregarEnvios();
   }, [carregarConexao, carregarEnvios]);
@@ -143,6 +147,11 @@ export default function AdminWhatsapp() {
     return [...lista].sort((a, b) => Number(b.ativo) - Number(a.ativo));
   }, [clientes, busca]);
 
+  if (erroCarga && !config) {
+    return (
+      <section className="app-panel rounded-[30px] p-8 text-center text-sm text-[var(--color-error)]">{erroCarga}</section>
+    );
+  }
   if (!config || !form) return <LoadingSpinner className="min-h-[60vh]" />;
 
   const estado = ESTADOS[conexao?.estado] || ["Nao configurado", "bg-slate-100 text-slate-600"];
