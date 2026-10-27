@@ -47,8 +47,16 @@ function paraHorarios(dias) {
 
 /** Dias e horarios em que o ponto da maquina fica fechado. Sem sinal nesse
  * horario a maquina aparece como "Fechado" em vez de "Offline". */
+function hojeLocal(hora) {
+  const agora = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${agora.getFullYear()}-${pad(agora.getMonth() + 1)}-${pad(agora.getDate())}T${hora}`;
+}
+
 export default function HorarioFechadoModal({ machine, onClose, onSaved }) {
   const [dias, setDias] = useState(diasVazios);
+  const [pontuais, setPontuais] = useState([]);
+  const [aplicarTodas, setAplicarTodas] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [erro, setErro] = useState("");
@@ -61,7 +69,10 @@ export default function HorarioFechadoModal({ machine, onClose, onSaved }) {
     api
       .get(`/maquinas/${machine.id_hardware}/horario-fechado`)
       .then((res) => {
-        if (ativo) setDias(paraDias(res.data?.horarios));
+        if (!ativo) return;
+        setDias(paraDias(res.data?.horarios));
+        setPontuais(res.data?.pontuais || []);
+        setAplicarTodas(false);
       })
       .catch((err) => {
         if (ativo) setErro(getApiErrorMessage(err, "Nao foi possivel carregar o horario"));
@@ -74,6 +85,9 @@ export default function HorarioFechadoModal({ machine, onClose, onSaved }) {
     };
   }, [machine]);
 
+  const alterarPontual = (indice, campos) =>
+    setPontuais((atual) => atual.map((item, i) => (i === indice ? { ...item, ...campos } : item)));
+
   const alterar = (indice, campos) =>
     setDias((atual) => atual.map((dia, i) => (i === indice ? { ...dia, ...campos } : dia)));
 
@@ -83,6 +97,8 @@ export default function HorarioFechadoModal({ machine, onClose, onSaved }) {
     try {
       await api.put(`/maquinas/${machine.id_hardware}/horario-fechado`, {
         horarios: paraHorarios(dias),
+        pontuais,
+        aplicar_todas_do_cliente: aplicarTodas,
       });
       onSaved?.();
       onClose();
@@ -162,6 +178,83 @@ export default function HorarioFechadoModal({ machine, onClose, onSaved }) {
             ))}
           </div>
         )}
+
+        {!loading ? (
+          <div className="space-y-3">
+            <div>
+              <div className="text-sm font-bold text-[var(--color-text)]">Fechamentos pontuais</div>
+              <p className="text-xs leading-5 text-[var(--color-text-soft)]">
+                Feriado, reforma ou qualquer dia fora do normal. Vale junto com o horario da semana,
+                sem mudar ele. Fechamentos que ja acabaram somem depois de 30 dias.
+              </p>
+            </div>
+            {pontuais.map((item, indice) => (
+              <div
+                key={indice}
+                className="flex flex-wrap items-center gap-2 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-2 text-sm"
+              >
+                <span className="text-[var(--color-text-soft)]">de</span>
+                <input
+                  type="datetime-local"
+                  className="rounded-lg border border-[var(--color-border)] px-2 py-1"
+                  value={item.inicio}
+                  onChange={(e) => alterarPontual(indice, { inicio: e.target.value })}
+                />
+                <span className="text-[var(--color-text-soft)]">ate</span>
+                <input
+                  type="datetime-local"
+                  className="rounded-lg border border-[var(--color-border)] px-2 py-1"
+                  value={item.fim}
+                  onChange={(e) => alterarPontual(indice, { fim: e.target.value })}
+                />
+                <input
+                  className="min-w-[140px] flex-1 rounded-lg border border-[var(--color-border)] px-2 py-1"
+                  placeholder="Motivo (ex.: Natal)"
+                  maxLength={80}
+                  value={item.motivo || ""}
+                  onChange={(e) => alterarPontual(indice, { motivo: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-[var(--color-error)]"
+                  onClick={() => setPontuais((atual) => atual.filter((_, i) => i !== indice))}
+                >
+                  Remover
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="pill-button px-4 py-2 text-sm font-semibold"
+              onClick={() =>
+                setPontuais((atual) => [
+                  ...atual,
+                  { inicio: hojeLocal("00:00"), fim: hojeLocal("23:59"), motivo: "" },
+                ])
+              }
+            >
+              + Adicionar fechamento pontual
+            </button>
+          </div>
+        ) : null}
+
+        {!loading && machine?.cliente_id ? (
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={aplicarTodas}
+              onChange={(e) => setAplicarTodas(e.target.checked)}
+            />
+            <span>
+              Aplicar este horario e os fechamentos pontuais a <strong>todas as maquinas</strong>
+              {machine.cliente_nome ? ` de ${machine.cliente_nome}` : " deste cliente"}
+              <span className="block text-xs text-[var(--color-text-soft)]">
+                Substitui o que estiver configurado nas outras maquinas.
+              </span>
+            </span>
+          </label>
+        ) : null}
 
         {erro ? <div className="text-sm font-semibold text-[var(--color-error)]">{erro}</div> : null}
 

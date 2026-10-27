@@ -15,12 +15,22 @@ const ESTADOS = {
   erro: ["Erro ao consultar", "bg-rose-100 text-rose-700"],
 };
 
+const TIPOS = [
+  { id: "offline", nome: "Offline", ajuda: "Maquinas do cliente que ficaram sem sinal alem do limite (juntas numa mensagem so)." },
+  { id: "lembrete", nome: "Lembrete", ajuda: "Repetido a cada X horas enquanto a maquina continuar offline." },
+  { id: "voltou", nome: "Voltou", ajuda: "Quando a maquina avisada volta a ficar online." },
+  { id: "resumo", nome: "Resumo diario", ajuda: "Faturamento do dia por maquina, no horario escolhido." },
+];
+
+const TIPO_ENVIO = { offline: "Offline", lembrete: "Lembrete", voltou: "Voltou", resumo: "Resumo", teste: "Teste" };
+
 const inputClass =
   "w-full rounded-[14px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)]";
 
 export default function AdminWhatsapp() {
   const [config, setConfig] = useState(null);
   const [form, setForm] = useState(null);
+  const [tipoMensagem, setTipoMensagem] = useState("offline");
   const [conexao, setConexao] = useState(null);
   const [qr, setQr] = useState(null);
   const [clientes, setClientes] = useState([]);
@@ -29,7 +39,7 @@ export default function AdminWhatsapp() {
   const [salvando, setSalvando] = useState(false);
   const [conectando, setConectando] = useState(false);
   const [salvandoCliente, setSalvandoCliente] = useState(null);
-  const [teste, setTeste] = useState({ telefone: "", tipo: "offline", enviando: false });
+  const [teste, setTeste] = useState({ telefone: "", enviando: false });
   const [toast, setToast] = useState(null);
   const [erroCarga, setErroCarga] = useState("");
   const fecharToast = useCallback(() => setToast(null), []);
@@ -41,9 +51,9 @@ export default function AdminWhatsapp() {
       api_key: "",
       instancia: data.instancia || "",
       minutos_offline: data.minutos_offline,
-      mensagem_offline: data.mensagem_offline,
-      enviar_voltou: data.enviar_voltou,
-      mensagem_voltou: data.mensagem_voltou,
+      lembrete_horas: data.lembrete_horas,
+      resumo_horario: data.resumo_horario,
+      mensagens: { ...data.mensagens },
     });
   };
 
@@ -112,13 +122,18 @@ export default function AdminWhatsapp() {
     }
   };
 
-  const salvarCliente = async (cliente, ativo) => {
+  const salvarCliente = async (cliente, campos) => {
+    const novo = { ...cliente, ...campos };
     setSalvandoCliente(cliente.cliente_id);
     try {
-      const { data } = await api.put(`/whatsapp/clientes/${cliente.cliente_id}`, { ativo });
-      setClientes((atual) =>
-        atual.map((item) => (item.cliente_id === cliente.cliente_id ? { ...item, ...data } : item)),
-      );
+      const { data } = await api.put(`/whatsapp/clientes/${cliente.cliente_id}`, {
+        ativo: novo.ativo,
+        recebe_lembrete: novo.recebe_lembrete,
+        recebe_voltou: novo.recebe_voltou,
+        resumo_diario: novo.resumo_diario,
+        resumo_horario: novo.resumo_horario || null,
+      });
+      setClientes((atual) => atual.map((item) => (item.cliente_id === cliente.cliente_id ? data : item)));
     } catch (err) {
       setToast({ message: getApiErrorMessage(err, "Nao foi possivel salvar o cliente"), type: "error" });
     } finally {
@@ -129,7 +144,7 @@ export default function AdminWhatsapp() {
   const enviarTeste = async () => {
     setTeste((t) => ({ ...t, enviando: true }));
     try {
-      await api.post("/whatsapp/teste", { telefone: teste.telefone, tipo: teste.tipo });
+      await api.post("/whatsapp/teste", { telefone: teste.telefone, tipo: tipoMensagem });
       setToast({ message: "Mensagem de teste enviada", type: "success" });
     } catch (err) {
       setToast({ message: getApiErrorMessage(err, "Falha ao enviar o teste"), type: "error" });
@@ -144,7 +159,8 @@ export default function AdminWhatsapp() {
     const lista = termo
       ? clientes.filter((c) => `${c.nome} ${(c.numeros_envio || []).join(" ")}`.toLowerCase().includes(termo))
       : clientes;
-    return [...lista].sort((a, b) => Number(b.ativo) - Number(a.ativo));
+    const peso = (c) => Number(c.ativo) + Number(c.resumo_diario);
+    return [...lista].sort((a, b) => peso(b) - peso(a));
   }, [clientes, busca]);
 
   if (erroCarga && !config) {
@@ -155,7 +171,9 @@ export default function AdminWhatsapp() {
   if (!config || !form) return <LoadingSpinner className="min-h-[60vh]" />;
 
   const estado = ESTADOS[conexao?.estado] || ["Nao configurado", "bg-slate-100 text-slate-600"];
-  const selecionados = clientes.filter((c) => c.ativo).length;
+  const comOffline = clientes.filter((c) => c.ativo).length;
+  const comResumo = clientes.filter((c) => c.resumo_diario).length;
+  const tipoAtual = TIPOS.find((t) => t.id === tipoMensagem);
 
   return (
     <div className="flex min-h-full flex-col gap-4">
@@ -167,9 +185,9 @@ export default function AdminWhatsapp() {
           WhatsApp
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-text-soft)] md:text-base">
-          Avisa o cliente pelo WhatsApp quando uma maquina dele fica offline por mais tempo que o limite.
-          So recebem os clientes marcados abaixo. Maquina com o ponto fechado (horario configurado na maquina)
-          nao gera aviso. Cada queda gera um aviso so.
+          Avisos automaticos para o telefone do perfil do cliente: maquina offline, lembrete enquanto continuar
+          offline, aviso de que voltou e resumo diario do faturamento. Cada cliente escolhe o que recebe na lista
+          abaixo. Maquina com o ponto fechado (horario ou fechamento pontual configurado na maquina) nao gera aviso.
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
           <span
@@ -178,7 +196,9 @@ export default function AdminWhatsapp() {
             Envio {config.ativo ? "ativado" : "desativado"}
           </span>
           <span className={`rounded-full px-3 py-1.5 font-bold ${estado[1]}`}>{estado[0]}</span>
-          <span className="text-[var(--color-text-soft)]">{selecionados} cliente(s) recebendo</span>
+          <span className="text-[var(--color-text-soft)]">
+            {comOffline} cliente(s) com aviso de offline · {comResumo} com resumo diario
+          </span>
         </div>
       </section>
 
@@ -259,53 +279,74 @@ export default function AdminWhatsapp() {
               Envio automatico ativado
             </label>
             <p className="mt-1 text-xs text-[var(--color-text-soft)]">
-              Maquinas que ja estavam offline antes de ativar nao recebem aviso.
+              Desligado, nenhuma mensagem automatica sai. Maquinas que ja estavam offline antes de ativar nao recebem aviso.
             </p>
           </div>
         </section>
 
         <section className="app-panel space-y-4 rounded-[30px] p-6">
-          <h2 className="text-xl font-extrabold text-[var(--color-text)]">Mensagens</h2>
-          <Campo label="Avisar depois de quantos minutos offline">
-            <input
-              className={inputClass}
-              type="number"
-              min={5}
-              max={1440}
-              value={form.minutos_offline}
-              onChange={(e) => setForm({ ...form, minutos_offline: Number(e.target.value) })}
-            />
-          </Campo>
-          <Campo label="Mensagem de maquina offline">
-            <textarea
-              className={`${inputClass} min-h-[200px] font-mono`}
-              value={form.mensagem_offline}
-              onChange={(e) => setForm({ ...form, mensagem_offline: e.target.value })}
-            />
-          </Campo>
-          <label className="flex items-center gap-3 text-sm font-semibold">
-            <input
-              type="checkbox"
-              checked={form.enviar_voltou}
-              onChange={(e) => setForm({ ...form, enviar_voltou: e.target.checked })}
-            />
-            Avisar tambem quando a maquina voltar
-          </label>
-          {form.enviar_voltou ? (
-            <Campo label="Mensagem de maquina que voltou">
-              <textarea
-                className={`${inputClass} min-h-[120px] font-mono`}
-                value={form.mensagem_voltou}
-                onChange={(e) => setForm({ ...form, mensagem_voltou: e.target.value })}
+          <h2 className="text-xl font-extrabold text-[var(--color-text)]">Tempos</h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Campo label="Avisar apos (min offline)">
+              <input
+                className={inputClass}
+                type="number"
+                min={5}
+                max={1440}
+                value={form.minutos_offline}
+                onChange={(e) => setForm({ ...form, minutos_offline: Number(e.target.value) })}
               />
             </Campo>
-          ) : null}
+            <Campo label="Lembrete a cada (horas)" ajuda="0 desliga para todos">
+              <input
+                className={inputClass}
+                type="number"
+                min={0}
+                max={168}
+                value={form.lembrete_horas}
+                onChange={(e) => setForm({ ...form, lembrete_horas: Number(e.target.value) })}
+              />
+            </Campo>
+            <Campo label="Resumo diario as" ajuda="Padrao; cada cliente pode ter outro">
+              <input
+                className={inputClass}
+                type="time"
+                value={form.resumo_horario}
+                onChange={(e) => setForm({ ...form, resumo_horario: e.target.value })}
+              />
+            </Campo>
+          </div>
+
+          <h2 className="pt-2 text-xl font-extrabold text-[var(--color-text)]">Mensagens</h2>
+          <div className="flex flex-wrap gap-2">
+            {TIPOS.map((tipo) => (
+              <button
+                key={tipo.id}
+                type="button"
+                className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                  tipoMensagem === tipo.id
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "border border-[var(--color-border)] bg-white text-[var(--color-text)]"
+                }`}
+                onClick={() => setTipoMensagem(tipo.id)}
+              >
+                {tipo.nome}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-[var(--color-text-soft)]">{tipoAtual.ajuda}</p>
+          <textarea
+            className={`${inputClass} min-h-[200px] font-mono`}
+            value={form.mensagens[tipoMensagem] || ""}
+            onChange={(e) => setForm({ ...form, mensagens: { ...form.mensagens, [tipoMensagem]: e.target.value } })}
+          />
           <div className="text-xs leading-6 text-[var(--color-text-soft)]">
-            Variaveis: {config.variaveis.map((v) => `{${v}}`).join(" ")}. Use *texto* para negrito.
+            Variaveis: {(config.variaveis[tipoMensagem] || []).map((v) => `{${v}}`).join(" ")}.{" "}
+            <code>{"{maquinas}"}</code> vira a lista das maquinas. Use *texto* para negrito.
           </div>
           <div className="flex flex-wrap gap-3">
             <Button type="button" onClick={() => salvarConfig()} disabled={salvando}>
-              {salvando ? "Salvando..." : "Salvar mensagens"}
+              {salvando ? "Salvando..." : "Salvar tempos e mensagens"}
             </Button>
             <button
               type="button"
@@ -313,8 +354,7 @@ export default function AdminWhatsapp() {
               onClick={() =>
                 setForm({
                   ...form,
-                  mensagem_offline: config.mensagem_offline_padrao,
-                  mensagem_voltou: config.mensagem_voltou_padrao,
+                  mensagens: { ...form.mensagens, [tipoMensagem]: config.mensagens_padrao[tipoMensagem] },
                 })
               }
             >
@@ -323,7 +363,7 @@ export default function AdminWhatsapp() {
           </div>
 
           <div className="border-t border-[var(--color-border)] pt-4">
-            <div className="text-sm font-semibold">Enviar teste (com dados de exemplo)</div>
+            <div className="text-sm font-semibold">Enviar teste da mensagem &quot;{tipoAtual.nome}&quot; (dados de exemplo)</div>
             <div className="mt-2 flex flex-wrap gap-2">
               <input
                 className={`${inputClass} max-w-[220px]`}
@@ -331,14 +371,6 @@ export default function AdminWhatsapp() {
                 value={teste.telefone}
                 onChange={(e) => setTeste({ ...teste, telefone: e.target.value })}
               />
-              <select
-                className={`${inputClass} max-w-[160px]`}
-                value={teste.tipo}
-                onChange={(e) => setTeste({ ...teste, tipo: e.target.value })}
-              >
-                <option value="offline">Offline</option>
-                <option value="voltou">Voltou</option>
-              </select>
               <button
                 type="button"
                 className="pill-button inline-flex items-center gap-2 px-5 py-3 font-semibold"
@@ -357,7 +389,7 @@ export default function AdminWhatsapp() {
 
       <section className="app-panel rounded-[30px] p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-extrabold text-[var(--color-text)]">Clientes que recebem o aviso</h2>
+          <h2 className="text-xl font-extrabold text-[var(--color-text)]">O que cada cliente recebe</h2>
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-soft)]" />
             <input
@@ -369,38 +401,90 @@ export default function AdminWhatsapp() {
           </div>
         </div>
         <p className="mt-1 text-xs text-[var(--color-text-soft)]">
-          O aviso vai para o telefone cadastrado no perfil do cliente (tela Usuarios). Para mudar o numero, edite o perfil.
+          Vai para o telefone cadastrado no perfil do cliente (tela Usuarios). Lembrete e &quot;voltou&quot; dependem do
+          aviso de offline. Horario do resumo vazio = padrao ({config.resumo_horario}).
         </p>
-        <div className="mt-4 divide-y divide-[var(--color-border)] rounded-[18px] border border-[var(--color-border)] bg-white">
-          {clientesFiltrados.map((cliente) => {
-            const semTelefone = !cliente.numeros_envio?.length;
-            return (
-              <div key={cliente.cliente_id} className="flex flex-wrap items-center gap-3 px-4 py-3">
-                <label className="flex min-w-[220px] flex-1 items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={cliente.ativo}
-                    disabled={salvandoCliente === cliente.cliente_id || (semTelefone && !cliente.ativo)}
-                    onChange={(e) => salvarCliente(cliente, e.target.checked)}
-                  />
-                  <span>
-                    <span className="block font-semibold text-[var(--color-text)]">{cliente.nome}</span>
-                    <span className="block text-xs text-[var(--color-text-soft)]">
-                      {cliente.maquinas} maquina(s) ·{" "}
-                      {semTelefone ? (
-                        <span className="text-[var(--color-error)]">sem telefone valido no perfil</span>
-                      ) : (
-                        `envia para ${cliente.numeros_envio.join(", ")}`
-                      )}
-                    </span>
-                  </span>
-                </label>
-              </div>
-            );
-          })}
-          {!clientesFiltrados.length ? (
-            <div className="px-4 py-6 text-center text-sm text-[var(--color-text-soft)]">Nenhum cliente encontrado</div>
-          ) : null}
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[760px] text-sm">
+            <thead className="text-left text-[11px] uppercase tracking-[0.14em] text-[var(--color-text-soft)]">
+              <tr>
+                <th className="px-3 py-2">Cliente</th>
+                <th className="px-3 py-2 text-center">Offline</th>
+                <th className="px-3 py-2 text-center">Lembrete</th>
+                <th className="px-3 py-2 text-center">Voltou</th>
+                <th className="px-3 py-2">Resumo diario</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)] bg-white">
+              {clientesFiltrados.map((cliente) => {
+                const semTelefone = !cliente.numeros_envio?.length;
+                const ocupado = salvandoCliente === cliente.cliente_id;
+                return (
+                  <tr key={cliente.cliente_id}>
+                    <td className="px-3 py-3">
+                      <span className="block font-semibold text-[var(--color-text)]">{cliente.nome}</span>
+                      <span className="block text-xs text-[var(--color-text-soft)]">
+                        {cliente.maquinas} maquina(s) ·{" "}
+                        {semTelefone ? (
+                          <span className="text-[var(--color-error)]">sem telefone valido no perfil</span>
+                        ) : (
+                          cliente.numeros_envio.join(", ")
+                        )}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={cliente.ativo}
+                        disabled={ocupado || (semTelefone && !cliente.ativo)}
+                        onChange={(e) => salvarCliente(cliente, { ativo: e.target.checked })}
+                      />
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={cliente.recebe_lembrete}
+                        disabled={ocupado || !cliente.ativo}
+                        onChange={(e) => salvarCliente(cliente, { recebe_lembrete: e.target.checked })}
+                      />
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={cliente.recebe_voltou}
+                        disabled={ocupado || !cliente.ativo}
+                        onChange={(e) => salvarCliente(cliente, { recebe_voltou: e.target.checked })}
+                      />
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={cliente.resumo_diario}
+                          disabled={ocupado || (semTelefone && !cliente.resumo_diario)}
+                          onChange={(e) => salvarCliente(cliente, { resumo_diario: e.target.checked })}
+                        />
+                        <input
+                          type="time"
+                          className="rounded-lg border border-[var(--color-border)] px-2 py-1 disabled:opacity-50"
+                          value={cliente.resumo_horario || ""}
+                          disabled={ocupado || !cliente.resumo_diario}
+                          onChange={(e) => salvarCliente(cliente, { resumo_horario: e.target.value })}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {!clientesFiltrados.length ? (
+                <tr>
+                  <td colSpan={5} className="px-3 py-6 text-center text-[var(--color-text-soft)]">
+                    Nenhum cliente encontrado
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -421,7 +505,7 @@ export default function AdminWhatsapp() {
               <tr>
                 <th className="px-3 py-2">Quando</th>
                 <th className="px-3 py-2">Tipo</th>
-                <th className="px-3 py-2">Cliente / maquina</th>
+                <th className="px-3 py-2">Cliente / maquinas</th>
                 <th className="px-3 py-2">Numero</th>
                 <th className="px-3 py-2">Status</th>
               </tr>
@@ -432,10 +516,10 @@ export default function AdminWhatsapp() {
                   <td className="whitespace-nowrap px-3 py-2">
                     {brasiliaDate(envio.created_at).format("DD/MM HH:mm")}
                   </td>
-                  <td className="px-3 py-2">{envio.tipo}</td>
+                  <td className="px-3 py-2">{TIPO_ENVIO[envio.tipo] || envio.tipo}</td>
                   <td className="px-3 py-2">
                     {envio.cliente_nome || "-"}
-                    {envio.maquina_id ? ` · ${envio.maquina_nome || envio.maquina_id}` : ""}
+                    {envio.maquinas ? ` · ${envio.maquinas}` : ""}
                   </td>
                   <td className="px-3 py-2">{envio.telefone}</td>
                   <td className="px-3 py-2">
