@@ -13,6 +13,7 @@ import {
   Home,
   LogOut,
   Menu,
+  MessageCircle,
   Server,
   Users,
   Wifi,
@@ -165,6 +166,15 @@ export default function Sidebar() {
                   onClick={closeMobile}
                 >
                   <Cpu size={16} /> Firmwares
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/whatsapp"
+                  className={linkClassName}
+                  onClick={closeMobile}
+                >
+                  <MessageCircle size={16} /> WhatsApp
                 </NavLink>
               </li>
               <li>

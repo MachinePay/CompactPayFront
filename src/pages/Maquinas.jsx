@@ -5,6 +5,7 @@ import {
   Copy,
   Cpu,
   Download,
+  Moon,
   FileText,
   Pencil,
   Plus,
@@ -29,6 +30,7 @@ import { useAuth } from "../context/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
 import DateRangePicker from "../components/DateRangePicker";
 import PointApkChaves from "../components/PointApkChaves";
+import HorarioFechadoModal from "../components/HorarioFechadoModal";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
 import Toast from "../components/Toast";
@@ -312,6 +314,7 @@ export default function Maquinas() {
   const [diagnosticoState, setDiagnosticoState] = useState(
     emptyDiagnosticoState,
   );
+  const [horarioFechadoMachine, setHorarioFechadoMachine] = useState(null);
   const [dispositivoConfigState, setDispositivoConfigState] = useState(
     emptyDispositivoConfigState,
   );
@@ -1561,6 +1564,12 @@ export default function Maquinas() {
         </div>
       </Modal>
 
+      <HorarioFechadoModal
+        machine={horarioFechadoMachine}
+        onClose={() => setHorarioFechadoMachine(null)}
+        onSaved={() => loadMaquinas({ silent: true })}
+      />
+
       <CardSectionHeader
         title="Maquinas"
         description="Cadastre novas unidades, gere IDs para o ESP e crie automaticamente o caixa no Mercado Pago do cliente."
@@ -1701,6 +1710,7 @@ export default function Maquinas() {
                       togglingFiltroSaidaId === m.id_hardware
                     }
                     onAbrirDiagnostico={() => handleAbrirDiagnostico(m)}
+                    onAbrirHorarioFechado={() => setHorarioFechadoMachine(m)}
                   />
                 ))}
               </div>
@@ -1742,17 +1752,28 @@ export default function Maquinas() {
                                   ? "var(--color-primary-soft)"
                                   : m.status_operacional === "atencao"
                                     ? "#fff2d8"
-                                    : "#fee2e2",
+                                    : m.status_operacional === "fechado"
+                                      ? "#e2e8f0"
+                                      : "#fee2e2",
                               color:
                                 m.status_operacional === "operando"
                                   ? "var(--color-success)"
                                   : m.status_operacional === "atencao"
                                     ? "var(--color-warning)"
-                                    : "var(--color-error)",
+                                    : m.status_operacional === "fechado"
+                                      ? "#475569"
+                                      : "var(--color-error)",
                             }}
+                            title={
+                              m.status_operacional === "fechado"
+                                ? "Sem sinal dentro do horario em que o ponto fica fechado"
+                                : undefined
+                            }
                           >
                             {m.status_online ? (
                               <CheckCircle2 size={13} />
+                            ) : m.status_operacional === "fechado" ? (
+                              <Moon size={13} />
                             ) : (
                               <XCircle size={13} />
                             )}
@@ -1760,7 +1781,9 @@ export default function Maquinas() {
                               ? "Online"
                               : m.status_operacional === "operando"
                                 ? "Operando"
-                                : "Offline"}
+                                : m.status_operacional === "fechado"
+                                  ? "Fechado"
+                                  : "Offline"}
                           </span>
                           <button
                             type="button"
@@ -1960,6 +1983,14 @@ export default function Maquinas() {
                                     togglingFiltroSaidaId === m.id_hardware
                                   }
                                   busy={togglingFiltroSaidaId === m.id_hardware}
+                                />
+                                <IconActionButton
+                                  icon={Moon}
+                                  label="Horario do ponto fechado"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setHorarioFechadoMachine(m);
+                                  }}
                                 />
                                 <IconActionButton
                                   icon={Terminal}
@@ -2661,6 +2692,7 @@ function MachineMobileCard({
   onToggleFiltroSaida,
   togglingFiltroSaida,
   onAbrirDiagnostico,
+  onAbrirHorarioFechado,
 }) {
   return (
     <article className="min-w-0 rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
@@ -2860,6 +2892,14 @@ function MachineMobileCard({
             </button>
             <button
               type="button"
+              className="col-span-2 pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+              onClick={onAbrirHorarioFechado}
+            >
+              <Moon size={15} />
+              Horario do ponto fechado
+            </button>
+            <button
+              type="button"
               className="col-span-2 inline-flex min-h-[42px] items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-semibold text-[var(--color-error)]"
               onClick={onDelete}
             >
@@ -3030,14 +3070,18 @@ function MachineStatusBadge({ status }) {
       ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
       : status === "atencao"
         ? "bg-amber-50 text-[var(--color-warning)]"
-        : "bg-rose-50 text-[var(--color-error)]";
+        : status === "fechado"
+          ? "bg-slate-100 text-slate-600"
+          : "bg-rose-50 text-[var(--color-error)]";
   const label =
     status === "offline"
       ? "Offline"
-      : status === "operando"
-        ? "Operando"
-        : "Online";
-  const Icon = status === "offline" ? XCircle : CheckCircle2;
+      : status === "fechado"
+        ? "Fechado"
+        : status === "operando"
+          ? "Operando"
+          : "Online";
+  const Icon = status === "offline" ? XCircle : status === "fechado" ? Moon : CheckCircle2;
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold ${tone}`}

@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Cpu,
+  Moon,
   Radio,
   RefreshCcw,
   Search,
@@ -282,11 +283,12 @@ export default function SaudeMaquinas() {
         </p>
       </section>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-8">
         <HealthCard label="Total" value={health.resumo.total} icon={<Server size={18} />} />
         <HealthCard label="Online" value={health.resumo.online} icon={<CheckCircle2 size={18} />} tone="success" />
         <HealthCard label="Atencao" value={health.resumo.atencao} icon={<AlertTriangle size={18} />} tone="warning" />
         <HealthCard label="Offline" value={health.resumo.offline} icon={<XCircle size={18} />} tone="danger" />
+        <HealthCard label="Fechado" value={health.resumo.fechado ?? 0} icon={<Moon size={18} />} />
         <HealthCard label="Wi-Fi ruim" value={health.resumo.wifi_ruim} icon={<Wifi size={18} />} tone="warning" />
         <HealthCard label="Pulso ausente" value={health.resumo.pulso_ausente} icon={<Zap size={18} />} tone="danger" />
         <HealthCard label="Firmware" value={health.resumo.firmware_pendente} icon={<Cpu size={18} />} tone="warning" />
@@ -309,7 +311,7 @@ export default function SaudeMaquinas() {
             label="Estado"
             value={filters.status}
             onChange={(value) => setFilters((current) => ({ ...current, status: value }))}
-            options={[["todos", "Todos"], ["online", "Online"], ["atencao", "Atencao"], ["offline", "Offline"]]}
+            options={[["todos", "Todos"], ["online", "Online"], ["atencao", "Atencao"], ["offline", "Offline"], ["fechado", "Fechado"]]}
           />
           <FilterSelect
             label="Wi-Fi"
@@ -557,6 +559,7 @@ function StatusBadge({ status }) {
     online: ["Online", "bg-emerald-100 text-emerald-700", CheckCircle2],
     atencao: ["Atencao", "bg-amber-100 text-amber-800", AlertTriangle],
     offline: ["Offline", "bg-rose-100 text-rose-700", XCircle],
+    fechado: ["Fechado", "bg-slate-100 text-slate-600", Moon],
   }[status] || ["Sem status", "bg-slate-100 text-slate-600", AlertTriangle];
   const Icon = meta[2];
   return (

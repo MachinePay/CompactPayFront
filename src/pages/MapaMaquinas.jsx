@@ -12,6 +12,8 @@ import { GPS_PRECISAO_MAXIMA_M, obterGps, salvarGpsDaMaquina } from "../utils/lo
 
 const COR_ONLINE = "#1f7a4c";
 const COR_OFFLINE = "#b64545";
+// Sem sinal dentro do horario em que o ponto fica fechado.
+const COR_FECHADO = "#64748b";
 const COR_MISTO = "#b7791f";
 const ATUALIZAR_MS = 30000;
 const CHAVE_ESTILO = "compactpay.mapa.estilo";
@@ -53,7 +55,17 @@ function agruparPorLocal(maquinas) {
 
 function etiquetaIcone(grupo) {
   const online = grupo.filter((m) => m.online).length;
-  const cor = online === grupo.length ? COR_ONLINE : online === 0 ? COR_OFFLINE : COR_MISTO;
+  const fechadas = grupo.filter((m) => m.fechado).length;
+  const cor =
+    online === grupo.length
+      ? COR_ONLINE
+      : fechadas === grupo.length
+        ? COR_FECHADO
+        : online + fechadas === grupo.length
+          ? COR_ONLINE
+          : online === 0
+            ? COR_OFFLINE
+            : COR_MISTO;
   const total = grupo.reduce((soma, m) => soma + Number(m.faturamento_hoje || 0), 0);
   const nome = grupo.length === 1 ? escaparHtml(grupo[0].maquina_id) : `${grupo.length} maquinas`;
   const html = `
@@ -77,7 +89,9 @@ function escaparHtml(texto) {
 function popupHtml(m, admin = false) {
   const status = m.online
     ? `<span style="color:${COR_ONLINE};font-weight:700">● Online</span>`
-    : `<span style="color:${COR_OFFLINE};font-weight:700">● Offline</span>`;
+    : m.fechado
+      ? `<span style="color:${COR_FECHADO};font-weight:700">● Fechado</span>`
+      : `<span style="color:${COR_OFFLINE};font-weight:700">● Offline</span>`;
   const ultima = m.ultima_venda_em ? brasiliaDate(m.ultima_venda_em).format("DD/MM HH:mm") : "sem vendas";
   return `
     <div style="min-width:180px;font-family:inherit">
@@ -230,6 +244,7 @@ export default function MapaMaquinas() {
   }, [admin, carregar]);
 
   const online = dados.maquinas.filter((m) => m.online).length;
+  const fechadas = dados.maquinas.filter((m) => m.fechado).length;
 
   const irParaMaquina = (maquina) => {
     const mapa = mapaRef.current;
@@ -270,8 +285,13 @@ export default function MapaMaquinas() {
             <span className="h-3 w-3 rounded-full" style={{ background: COR_ONLINE }} /> Online ({online})
           </span>
           <span className="inline-flex items-center gap-2 font-semibold text-[var(--color-text)]">
-            <span className="h-3 w-3 rounded-full" style={{ background: COR_OFFLINE }} /> Offline ({dados.maquinas.length - online})
+            <span className="h-3 w-3 rounded-full" style={{ background: COR_OFFLINE }} /> Offline ({dados.maquinas.length - online - fechadas})
           </span>
+          {fechadas ? (
+            <span className="inline-flex items-center gap-2 font-semibold text-[var(--color-text)]">
+              <span className="h-3 w-3 rounded-full" style={{ background: COR_FECHADO }} /> Fechado ({fechadas})
+            </span>
+          ) : null}
           <BuscaMaquina maquinas={dados.maquinas} onEscolher={irParaMaquina} />
           <div className="inline-flex rounded-full border border-[var(--color-border)] bg-white p-1">
             {Object.entries(ESTILOS).map(([chave, item]) => (
@@ -358,7 +378,7 @@ function BuscaMaquina({ maquinas, onEscolher }) {
                   setAberto(false);
                 }}
               >
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: m.online ? COR_ONLINE : COR_OFFLINE }} />
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: m.online ? COR_ONLINE : m.fechado ? COR_FECHADO : COR_OFFLINE }} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold text-[var(--color-text)]">{m.maquina_nome}</span>
                   <span className="block truncate text-xs text-[var(--color-text-soft)]">

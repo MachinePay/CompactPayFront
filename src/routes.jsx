@@ -29,6 +29,7 @@ const RankingMaquinas = lazy(() => import("./pages/RankingMaquinas"));
 const HorariosPico = lazy(() => import("./pages/HorariosPico"));
 const MapaMaquinas = lazy(() => import("./pages/MapaMaquinas"));
 const Usuarios = lazy(() => import("./pages/Usuarios"));
+const AdminWhatsapp = lazy(() => import("./pages/AdminWhatsapp"));
 const Login = lazy(() => import("./pages/Login"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -212,6 +213,14 @@ function RouteContent() {
             element={
               <AdminPage>
                 <FirmwareVersions />
+              </AdminPage>
+            }
+          />
+          <Route
+            path="/whatsapp"
+            element={
+              <AdminPage>
+                <AdminWhatsapp />
               </AdminPage>
             }
           />
