@@ -31,6 +31,8 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import DateRangePicker from "../components/DateRangePicker";
 import PointApkChaves from "../components/PointApkChaves";
 import HorarioFechadoModal from "../components/HorarioFechadoModal";
+import { CabecalhoOrdenavel, FiltroStatus, OrdenacaoMobile } from "../components/MaquinasFiltros";
+import { FILTROS_STATUS, buscarMaquinas, ordenarMaquinas } from "../utils/maquinasLista";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
 import Toast from "../components/Toast";
@@ -295,6 +297,10 @@ export default function Maquinas() {
     persistedFilters.cliente_id || "",
   );
   const [buscaMaquina, setBuscaMaquina] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("todos");
+  // So a ordenacao fica salva (filtro de status escondido entre sessoes
+  // confundiria, igual o periodo - ver comentario acima).
+  const [ordem, setOrdem] = useState(persistedFilters.ordem || null);
   const [showModal, setShowModal] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState("");
   const [form, setForm] = useState(emptyForm);
@@ -383,9 +389,9 @@ export default function Maquinas() {
   useEffect(() => {
     localStorage.setItem(
       "compactpay.maquinas.filters",
-      JSON.stringify({ cliente_id: selectedClienteId }),
+      JSON.stringify({ cliente_id: selectedClienteId, ordem }),
     );
-  }, [selectedClienteId]);
+  }, [selectedClienteId, ordem]);
 
   const loadMaquinas = useCallback(
     async (options = {}) => {
@@ -1065,15 +1071,13 @@ export default function Maquinas() {
 
   const onlineCount = maquinas.filter((m) => m.status_online).length;
 
+  // A contagem dos botoes de status respeita a busca; a lista respeita os dois.
+  const maquinasBuscadas = useMemo(() => buscarMaquinas(maquinas, buscaMaquina), [maquinas, buscaMaquina]);
   const maquinasVisiveis = useMemo(() => {
-    const termo = buscaMaquina.trim().toLowerCase();
-    if (!termo) return maquinas;
-    return maquinas.filter((m) =>
-      [m.id_hardware, m.nome, m.localizacao]
-        .filter(Boolean)
-        .some((campo) => String(campo).toLowerCase().includes(termo)),
-    );
-  }, [maquinas, buscaMaquina]);
+    const filtro = FILTROS_STATUS.find((item) => item.id === filtroStatus) || FILTROS_STATUS[0];
+    return ordenarMaquinas(maquinasBuscadas.filter(filtro.testa), ordem);
+  }, [maquinasBuscadas, filtroStatus, ordem]);
+  const filtrando = Boolean(buscaMaquina.trim()) || filtroStatus !== "todos";
 
   return (
     <div className="flex min-h-full flex-col gap-4">
@@ -1615,7 +1619,8 @@ export default function Maquinas() {
               />
               <input
                 className="min-w-0 flex-1 bg-transparent outline-none"
-                placeholder="Buscar maquina (nome, ID ou local)"
+                placeholder="Buscar: nome, ID, local, cliente, Wi-Fi, IP, serial..."
+                title="Busca em ID, nome, local, cliente, rede Wi-Fi, IP, firmware, banco e serial/usuario da maquininha. Varias palavras: todas precisam aparecer."
                 value={buscaMaquina}
                 onChange={(event) => setBuscaMaquina(event.target.value)}
               />
@@ -1663,7 +1668,21 @@ export default function Maquinas() {
           </button>
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-white">
+        {maquinas.length > 0 && !(user?.role === "admin" && !selectedClienteId) ? (
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+            <FiltroStatus maquinas={maquinasBuscadas} valor={filtroStatus} onChange={setFiltroStatus} />
+            <div className="flex items-center gap-3">
+              {filtrando ? (
+                <span className="text-xs text-[var(--color-text-soft)]">
+                  {maquinasVisiveis.length} de {maquinas.length} maquina(s)
+                </span>
+              ) : null}
+              <OrdenacaoMobile ordem={ordem} onChange={setOrdem} />
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-4 overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-white">
           {user?.role === "admin" && !selectedClienteId ? (
             <div className="flex h-48 flex-col items-center justify-center gap-2 px-6 text-center">
               <div className="text-base font-semibold text-[var(--color-text)]">
@@ -1677,10 +1696,22 @@ export default function Maquinas() {
           ) : loading ? (
             <LoadingSpinner className="h-40" />
           ) : maquinasVisiveis.length === 0 ? (
-            <div className="flex h-40 items-center justify-center px-6 text-center text-sm text-[var(--color-text-soft)]">
-              {buscaMaquina.trim()
-                ? "Nenhuma maquina encontrada para essa busca."
+            <div className="flex h-40 flex-col items-center justify-center gap-3 px-6 text-center text-sm text-[var(--color-text-soft)]">
+              {filtrando
+                ? "Nenhuma maquina encontrada para essa busca/filtro."
                 : "Nenhuma maquina cadastrada ainda. Gere um ID, configure o ESP e crie a unidade por aqui."}
+              {filtrando ? (
+                <button
+                  type="button"
+                  className="pill-button px-4 py-2 text-xs font-semibold"
+                  onClick={() => {
+                    setBuscaMaquina("");
+                    setFiltroStatus("todos");
+                  }}
+                >
+                  Limpar busca e filtro
+                </button>
+              ) : null}
             </div>
           ) : (
             <>
@@ -1718,13 +1749,13 @@ export default function Maquinas() {
                 <table className="w-full table-fixed text-sm">
                   <thead className="bg-[var(--color-bg-muted)] text-left text-[11px] uppercase tracking-[0.14em] text-[var(--color-text-soft)]">
                     <tr>
-                      <th className="px-3 py-3 w-[15%]">Maquina</th>
-                      <th className="px-3 py-3 w-[11%]">Status</th>
-                      <th className="px-3 py-3 w-[10%]">Sinal</th>
-                      <th className="px-3 py-3 w-[13%]">Atividade</th>
-                      <th className="px-3 py-3 w-[13%]">Local / Banco</th>
-                      <th className="px-3 py-3 w-[14%]">Caixa / Firmware</th>
-                      <th className="px-3 py-3 w-[10%]">Resultados</th>
+                      <CabecalhoOrdenavel coluna="maquina" ordem={ordem} onChange={setOrdem} className="px-3 py-3 w-[15%]">Maquina</CabecalhoOrdenavel>
+                      <CabecalhoOrdenavel coluna="status" ordem={ordem} onChange={setOrdem} className="px-3 py-3 w-[11%]">Status</CabecalhoOrdenavel>
+                      <CabecalhoOrdenavel coluna="sinal" ordem={ordem} onChange={setOrdem} className="px-3 py-3 w-[10%]">Sinal</CabecalhoOrdenavel>
+                      <CabecalhoOrdenavel coluna="atividade" ordem={ordem} onChange={setOrdem} className="px-3 py-3 w-[13%]">Atividade</CabecalhoOrdenavel>
+                      <CabecalhoOrdenavel coluna="local" ordem={ordem} onChange={setOrdem} className="px-3 py-3 w-[13%]">Local / Banco</CabecalhoOrdenavel>
+                      <CabecalhoOrdenavel coluna="firmware" ordem={ordem} onChange={setOrdem} className="px-3 py-3 w-[14%]">Caixa / Firmware</CabecalhoOrdenavel>
+                      <CabecalhoOrdenavel coluna="resultados" ordem={ordem} onChange={setOrdem} className="px-3 py-3 w-[10%]">Resultados</CabecalhoOrdenavel>
                       <th className="px-3 py-3 w-[14%]">Acoes</th>
                     </tr>
                   </thead>
