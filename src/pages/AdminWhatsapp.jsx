@@ -42,10 +42,13 @@ export default function AdminWhatsapp() {
   const [teste, setTeste] = useState({ telefone: "", enviando: false });
   const [toast, setToast] = useState(null);
   const [erroCarga, setErroCarga] = useState("");
+  const [ciclo, setCiclo] = useState(null);
+  const [enviandoResumo, setEnviandoResumo] = useState(null);
   const fecharToast = useCallback(() => setToast(null), []);
 
   const aplicarConfig = (data) => {
     setConfig(data);
+    setCiclo({ em: data.ultimo_ciclo_em, status: data.ultimo_ciclo_status });
     setForm({
       evolution_url: data.evolution_url || "",
       api_key: "",
@@ -80,6 +83,18 @@ export default function AdminWhatsapp() {
     carregarConexao();
     carregarEnvios();
   }, [carregarConexao, carregarEnvios]);
+
+  // Diagnostico do envio automatico: atualiza a cada 30 s sem mexer no formulario.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      api
+        .get("/whatsapp/config")
+        .then(({ data }) => setCiclo({ em: data.ultimo_ciclo_em, status: data.ultimo_ciclo_status }))
+        .catch(() => {});
+      carregarEnvios();
+    }, 30000);
+    return () => window.clearInterval(timer);
+  }, [carregarEnvios]);
 
   // Enquanto o QR code esta na tela, confere a cada 5 s se ja conectou.
   useEffect(() => {
@@ -141,6 +156,19 @@ export default function AdminWhatsapp() {
     }
   };
 
+  const enviarResumoAgora = async (cliente) => {
+    setEnviandoResumo(cliente.cliente_id);
+    try {
+      await api.post(`/whatsapp/clientes/${cliente.cliente_id}/resumo-agora`);
+      setToast({ message: `Resumo de hoje enviado para ${cliente.nome}`, type: "success" });
+    } catch (err) {
+      setToast({ message: getApiErrorMessage(err, "Nao foi possivel enviar o resumo"), type: "error" });
+    } finally {
+      setEnviandoResumo(null);
+      carregarEnvios();
+    }
+  };
+
   const enviarTeste = async () => {
     setTeste((t) => ({ ...t, enviando: true }));
     try {
@@ -199,6 +227,16 @@ export default function AdminWhatsapp() {
           <span className="text-[var(--color-text-soft)]">
             {comOffline} cliente(s) com aviso de offline · {comResumo} com resumo diario
           </span>
+        </div>
+        <div
+          className={`mt-3 text-sm ${
+            ciclo?.status?.startsWith("Erro") || ciclo?.status?.includes("desconectado")
+              ? "font-semibold text-[var(--color-error)]"
+              : "text-[var(--color-text-soft)]"
+          }`}
+        >
+          Ultima verificacao automatica:{" "}
+          {ciclo?.em ? `${brasiliaDate(ciclo.em).format("DD/MM HH:mm")} — ${ciclo.status || "-"}` : "ainda nao rodou"}
         </div>
       </section>
 
@@ -464,13 +502,21 @@ export default function AdminWhatsapp() {
                           disabled={ocupado || (semTelefone && !cliente.resumo_diario)}
                           onChange={(e) => salvarCliente(cliente, { resumo_diario: e.target.checked })}
                         />
-                        <input
-                          type="time"
-                          className="rounded-lg border border-[var(--color-border)] px-2 py-1 disabled:opacity-50"
-                          value={cliente.resumo_horario || ""}
+                        <HorarioResumo
+                          key={`${cliente.cliente_id}-${cliente.resumo_horario || ""}`}
+                          valor={cliente.resumo_horario || ""}
                           disabled={ocupado || !cliente.resumo_diario}
-                          onChange={(e) => salvarCliente(cliente, { resumo_horario: e.target.value })}
+                          onSalvar={(valor) => salvarCliente(cliente, { resumo_horario: valor })}
                         />
+                        <button
+                          type="button"
+                          className="text-xs font-semibold text-[var(--color-primary)] disabled:opacity-50"
+                          disabled={semTelefone || enviandoResumo === cliente.cliente_id}
+                          onClick={() => enviarResumoAgora(cliente)}
+                          title="Envia agora o resumo de hoje com os dados reais (nao conta como o resumo do dia)"
+                        >
+                          {enviandoResumo === cliente.cliente_id ? "Enviando..." : "Enviar agora"}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -546,6 +592,24 @@ export default function AdminWhatsapp() {
         </div>
       </section>
     </div>
+  );
+}
+
+// So salva ao sair do campo: salvar a cada tecla gravava horarios
+// intermediarios (10:00 antes de 10:08) e o resumo podia disparar no meio.
+function HorarioResumo({ valor, disabled, onSalvar }) {
+  const [texto, setTexto] = useState(valor);
+  return (
+    <input
+      type="time"
+      className="rounded-lg border border-[var(--color-border)] px-2 py-1 disabled:opacity-50"
+      value={texto}
+      disabled={disabled}
+      onChange={(e) => setTexto(e.target.value)}
+      onBlur={() => {
+        if (texto !== valor) onSalvar(texto);
+      }}
+    />
   );
 }
 
