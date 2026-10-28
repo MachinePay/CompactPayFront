@@ -66,6 +66,7 @@ export default function Dashboard() {
     faturamento_mes: 0,
     premios_entregues: 0,
     maquinas_ativas: 0,
+    maquinas_fechadas: 0,
     total_maquinas: 0,
     total_fisico: 0,
     faturamento_digital: 0,
@@ -172,6 +173,7 @@ export default function Dashboard() {
           faturamento_mes: data?.stats?.faturamento_mes ?? 0,
           premios_entregues: data?.stats?.premios_entregues ?? 0,
           maquinas_ativas: data?.stats?.maquinas_ativas ?? 0,
+          maquinas_fechadas: data?.stats?.maquinas_fechadas ?? 0,
           total_maquinas: data?.stats?.total_maquinas ?? 0,
           total_fisico: data?.stats?.total_fisico ?? 0,
           faturamento_digital: data?.stats?.faturamento_digital ?? 0,
@@ -803,11 +805,15 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="mt-6 grid gap-3 text-sm sm:mt-8 sm:grid-cols-3">
+            <div className="mt-6 grid grid-cols-2 gap-3 text-sm sm:mt-8 sm:grid-cols-4">
               {[
                 ["Total de maquinas", stats.total_maquinas],
                 ["Online", stats.maquinas_ativas],
-                ["Offline", Math.max(0, stats.total_maquinas - stats.maquinas_ativas)],
+                ["Fechadas", stats.maquinas_fechadas],
+                [
+                  "Offline",
+                  Math.max(0, stats.total_maquinas - stats.maquinas_ativas - stats.maquinas_fechadas),
+                ],
               ].map(([label, value]) => (
                 <div
                   key={label}
