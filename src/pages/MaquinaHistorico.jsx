@@ -600,6 +600,14 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       });
       return;
     }
+    if (value === "mes_anterior") {
+      const anterior = hoje.subtract(1, "month");
+      setDateRange({
+        start: anterior.startOf("month").format("YYYY-MM-DD"),
+        end: anterior.endOf("month").format("YYYY-MM-DD"),
+      });
+      return;
+    }
     if (value === "mes_escolhido") {
       const referencia = dayjs(`${selectedMonth}-01`);
       setDateRange({
@@ -837,6 +845,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               <option value="">Ultimos 30 dias</option>
               <option value="dia">Hoje</option>
               <option value="mes">Mes atual</option>
+              <option value="mes_anterior">Mes anterior</option>
               <option value="mes_escolhido">Escolher mes</option>
             </select>
           </label>
