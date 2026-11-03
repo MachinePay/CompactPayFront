@@ -636,11 +636,12 @@ export default function Usuarios() {
               <Field label={editUser ? "Nova senha (opcional)" : "Senha"}>
                 <input
                   className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                  placeholder={editUser ? "Atualize somente se precisar" : "Digite a senha de acesso"}
+                  placeholder={editUser ? "Atualize somente se precisar" : "Minimo de 10 caracteres"}
                   type="password"
                   value={form.password}
                   onChange={(e) => setForm((current) => ({ ...current, password: e.target.value }))}
                   required={!editUser}
+                  minLength={10}
                 />
               </Field>
 
