@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Clock, Copy, Cpu, Download, Globe, PlugZap, Power, RefreshCcw, Settings, Wifi, WifiOff, Zap } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
@@ -119,7 +119,15 @@ export default function HistoricoQuedas() {
     }
   };
 
+  // Cada mudanca de filtro dispara uma busca nova; a anterior e' cancelada e,
+  // se responder mesmo assim, e' ignorada - senao uma busca mais lenta (ex.:
+  // "todas as maquinas do cliente") chegava depois e sobrescrevia a tabela.
+  const requestRef = useRef(null);
+
   const loadQuedas = useCallback(async () => {
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -128,16 +136,18 @@ export default function HistoricoQuedas() {
       if (dateRange.start) params.set("data_inicio", dateRange.start);
       if (dateRange.end) params.set("data_fim", `${dateRange.end}T23:59:59`);
       params.set("limit", limite);
-      const { data } = await api.get(`/maquinas/quedas?${params.toString()}`);
+      const { data } = await api.get(`/maquinas/quedas?${params.toString()}`, { signal: controller.signal });
+      if (requestRef.current !== controller) return;
       setQuedas(data.quedas || []);
       setTotal(data.total || 0);
     } catch (error) {
+      if (requestRef.current !== controller) return;
       setToast({
         message: getApiErrorMessage(error, "Nao foi possivel carregar o historico de quedas."),
         type: "error",
       });
     } finally {
-      setLoading(false);
+      if (requestRef.current === controller) setLoading(false);
     }
   }, [clienteId, maquinaId, dateRange, limite]);
 

@@ -475,8 +475,8 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         "criado_em",
       ],
       ...historico.fechamentos.map((item) => [
-        dayjs(item.periodo_inicio).format("YYYY-MM-DD"),
-        dayjs(item.periodo_fim).format("YYYY-MM-DD"),
+        brasiliaDate(item.periodo_inicio).format("YYYY-MM-DD"),
+        brasiliaDate(item.periodo_fim).format("YYYY-MM-DD"),
         Number(item.total_pagamentos || 0).toFixed(2),
         Number(item.total_digital || 0).toFixed(2),
         Number(item.total_fisico || 0).toFixed(2),
@@ -689,7 +689,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
         title="Desfazer fechamento"
         description={
           desfazerFechamentoState.fechamento
-            ? `Isso remove o fechamento salvo de ${dayjs(desfazerFechamentoState.fechamento.periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${dayjs(desfazerFechamentoState.fechamento.periodo_fim).format("DD/MM/YYYY HH:mm")} (total R$ ${Number(desfazerFechamentoState.fechamento.total_pagamentos).toFixed(2)}). Os pagamentos e vendas desse periodo continuam no historico normalmente - so o registro do fechamento e' apagado.`
+            ? `Isso remove o fechamento salvo de ${brasiliaDate(desfazerFechamentoState.fechamento.periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${brasiliaDate(desfazerFechamentoState.fechamento.periodo_fim).format("DD/MM/YYYY HH:mm")} (total R$ ${Number(desfazerFechamentoState.fechamento.total_pagamentos).toFixed(2)}). Os pagamentos e vendas desse periodo continuam no historico normalmente - so o registro do fechamento e' apagado.`
             : ""
         }
         confirmLabel="Desfazer fechamento"
@@ -894,7 +894,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100 sm:w-auto disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => requestDesfazerFechamento(historico.fechamentos[0])}
               disabled={desfazendoFechamentoId === String(historico.fechamentos[0]?.id)}
-              title={`Desfaz o fechamento de ${dayjs(historico.fechamentos[0].periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${dayjs(historico.fechamentos[0].periodo_fim).format("DD/MM/YYYY HH:mm")}`}
+              title={`Desfaz o fechamento de ${brasiliaDate(historico.fechamentos[0].periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${brasiliaDate(historico.fechamentos[0].periodo_fim).format("DD/MM/YYYY HH:mm")}`}
             >
               <Undo2 size={16} />
               Desfazer ultimo fechamento
@@ -1116,7 +1116,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               rows={historico.fechamentos.map((item) => {
                 const row = [
                   brasiliaDate(item.created_at).format("DD/MM/YYYY HH:mm:ss"),
-                  `${dayjs(item.periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${dayjs(item.periodo_fim).format("DD/MM/YYYY HH:mm")}`,
+                  `${brasiliaDate(item.periodo_inicio).format("DD/MM/YYYY HH:mm")} ate ${brasiliaDate(item.periodo_fim).format("DD/MM/YYYY HH:mm")}`,
                   `R$ ${Number(item.total_pagamentos).toFixed(2)}`,
                   item.criado_por_email,
                 ];

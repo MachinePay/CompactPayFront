@@ -8,7 +8,10 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import Button from "../components/Button";
 import ConfirmModal from "../components/ConfirmModal";
 
-const PROTECTED_ADMIN_EMAILS = new Set(["admin@compactpay.com.br"]);
+// IPN e webhook do Mercado Pago usam a mesma rota do backend.
+const MP_IPN_URL = `${api.defaults.baseURL}/callback-mercado-pago`;
+
+const PROTECTED_ADMIN_EMAILS =new Set(["admin@compactpay.com.br"]);
 
 function isProtectedUser(item) {
   return PROTECTED_ADMIN_EMAILS.has(String(item?.email || "").trim().toLowerCase());
@@ -772,6 +775,21 @@ export default function Usuarios() {
                   <>
                     <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
                       Preferencialmente use o botao Conectar MP na tabela depois de criar o usuario. O Mercado Pago devolve o token de producao pela aplicacao vinculada e o sistema salva automaticamente.
+                    </div>
+
+                    <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
+                      <div className="font-semibold text-[var(--color-text)]">Link para IPN / Webhook do Mercado Pago</div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <code className="break-all rounded-[12px] bg-white px-3 py-2 text-[var(--color-text)]">{MP_IPN_URL}</code>
+                        <button
+                          type="button"
+                          className="rounded-[12px] border border-[var(--color-border)] bg-white px-3 py-2 font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)]"
+                          onClick={() => navigator.clipboard?.writeText(MP_IPN_URL)}
+                        >
+                          Copiar
+                        </button>
+                      </div>
+                      <div className="mt-2">Cole este mesmo link no campo de IPN e no de Webhooks da aplicacao do cliente no Mercado Pago.</div>
                     </div>
 
                     <Field label="MP Public Key (fallback)">
