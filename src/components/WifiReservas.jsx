@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, CheckCircle2, Eye, EyeOff, Loader2, Plus, Save, Shuffle, Trash2, XCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Clock, Eye, EyeOff, Loader2, Plus, Save, Shuffle, Trash2, XCircle } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
 import { brasiliaDate } from "../utils/dateTime";
@@ -7,7 +7,8 @@ import { brasiliaDate } from "../utils/dateTime";
 // Redes reserva do rodizio de Wi-Fi (firmware 2.9.0+). A placa tenta cada
 // rede 3 vezes e passa para a proxima: principal -> reserva 1 -> ... -> volta
 // para a principal. A lista fica gravada na placa (o reset do Wi-Fi pelo
-// botao nao apaga).
+// botao nao apaga). Da para salvar com a maquina offline ou com firmware
+// antigo: o servidor manda quando ela ligar com o firmware 2.9.0+.
 
 const inputClassName =
   "min-w-0 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]";
@@ -91,13 +92,18 @@ export default function WifiReservas({ maquina, onToast }) {
         // Senha em branco numa rede que ja tinha senha = mantem a salva.
         senha: linha.temSenhaSalva && !linha.senha ? null : linha.senha,
       }));
-      await api.put(`/maquinas/${machineId}/wifi/reservas`, { redes });
+      const { data } = await api.put(`/maquinas/${machineId}/wifi/reservas`, { redes });
       setAlterado(false);
       setLinhas((atual) =>
         atual.map((linha) => ({ ...linha, ssid: linha.ssid.trim(), senha: "", temSenhaSalva: linha.temSenhaSalva || Boolean(linha.senha) })),
       );
-      onToast({ message: "Redes reserva enviadas para a placa.", type: "success" });
-      acompanhar(Date.now());
+      if (data.enviado_agora) {
+        onToast({ message: "Redes reserva enviadas para a placa.", type: "success" });
+        acompanhar(Date.now());
+      } else {
+        onToast({ message: "Redes reserva salvas. Vao para a placa assim que ela ficar online.", type: "success" });
+        carregar().catch(() => {});
+      }
     } catch (error) {
       onToast({ message: getApiErrorMessage(error, "Nao foi possivel salvar as redes reserva."), type: "error" });
     } finally {
@@ -110,7 +116,7 @@ export default function WifiReservas({ maquina, onToast }) {
   const max = dados?.max || 4;
   const online = Boolean(maquina.status_online);
   const suporta = Boolean(dados?.suporta);
-  const podeSalvar = suporta && online && alterado && !salvando && linhas.every((linha) => linha.ssid.trim());
+  const podeSalvar = alterado && !salvando && linhas.every((linha) => linha.ssid.trim());
 
   return (
     <div className="mt-6 rounded-[22px] border border-[var(--color-border)] bg-white p-4 md:p-5">
@@ -141,8 +147,8 @@ export default function WifiReservas({ maquina, onToast }) {
         <>
           {!suporta ? (
             <div className="mt-4 rounded-[14px] bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-              Firmware {maquina.firmware_version || "desconhecido"}: atualize para {dados.versao_minima} ou mais novo para
-              usar redes reserva.
+              Firmware {maquina.firmware_version || "desconhecido"}: as redes ficam salvas aqui e vao para a placa
+              quando ela estiver com o firmware {dados.versao_minima} ou mais novo.
             </div>
           ) : null}
 
@@ -162,7 +168,7 @@ export default function WifiReservas({ maquina, onToast }) {
                   data-lpignore="true"
                   maxLength={32}
                   value={linha.ssid}
-                  disabled={!suporta}
+                  
                   onChange={(event) => mudarLinha(indice, { ssid: event.target.value })}
                 />
                 <div className="relative">
@@ -174,7 +180,7 @@ export default function WifiReservas({ maquina, onToast }) {
                     data-lpignore="true"
                     maxLength={63}
                     value={linha.senha}
-                    disabled={!suporta}
+                    
                     onChange={(event) => mudarLinha(indice, { senha: event.target.value })}
                   />
                   <button
@@ -187,13 +193,13 @@ export default function WifiReservas({ maquina, onToast }) {
                   </button>
                 </div>
                 <div className="flex items-center gap-1">
-                  <BotaoIcone titulo="Subir" onClick={() => mover(indice, -1)} disabled={!suporta || indice === 0}>
+                  <BotaoIcone titulo="Subir" onClick={() => mover(indice, -1)} disabled={indice === 0}>
                     <ArrowUp size={16} />
                   </BotaoIcone>
-                  <BotaoIcone titulo="Descer" onClick={() => mover(indice, 1)} disabled={!suporta || indice === linhas.length - 1}>
+                  <BotaoIcone titulo="Descer" onClick={() => mover(indice, 1)} disabled={indice === linhas.length - 1}>
                     <ArrowDown size={16} />
                   </BotaoIcone>
-                  <BotaoIcone titulo="Remover" onClick={() => remover(indice)} disabled={!suporta}>
+                  <BotaoIcone titulo="Remover" onClick={() => remover(indice)}>
                     <Trash2 size={16} />
                   </BotaoIcone>
                 </div>
@@ -209,7 +215,7 @@ export default function WifiReservas({ maquina, onToast }) {
                 setLinhas((atual) => [...atual, linhaVazia()]);
                 setAlterado(true);
               }}
-              disabled={!suporta || linhas.length >= max}
+              disabled={linhas.length >= max}
             >
               <Plus size={15} /> Adicionar rede ({linhas.length}/{max})
             </button>
@@ -222,7 +228,9 @@ export default function WifiReservas({ maquina, onToast }) {
               {salvando ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
               Salvar na placa
             </button>
-            {!online && suporta ? <span className="text-xs text-[var(--color-text-soft)]">A maquina precisa estar online para salvar.</span> : null}
+            {!online ? (
+              <span className="text-xs text-[var(--color-text-soft)]">Maquina offline: salva aqui e vai para a placa quando ela ligar.</span>
+            ) : null}
             {dados.atualizado_em ? (
               <span className="text-xs text-[var(--color-text-soft)]">
                 Ultima alteracao {brasiliaDate(dados.atualizado_em).format("DD/MM/YYYY HH:mm")}
@@ -257,6 +265,13 @@ function NaPlaca({ situacao }) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
         <CheckCircle2 size={13} /> Gravado na placa
+      </span>
+    );
+  }
+  if (situacao.situacao === "pendente") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
+        <Clock size={13} /> Salvo - vai para a placa quando ela ligar
       </span>
     );
   }
