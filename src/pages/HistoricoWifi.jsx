@@ -6,6 +6,7 @@ import api, { getApiErrorMessage } from "../api/axios";
 import DateRangePicker from "../components/DateRangePicker";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Toast from "../components/Toast";
+import WifiReservas from "../components/WifiReservas";
 import { confirmar } from "../utils/confirmar";
 import { brasiliaDate } from "../utils/dateTime";
 
@@ -531,6 +532,8 @@ function TrocarWifi({
       {procura ? <RedesProximas procura={procura} redeEscolhida={ssid} onEscolher={escolherRede} /> : null}
 
       {acompanhamento ? <ResultadoTroca acompanhamento={acompanhamento} /> : null}
+
+      {maquina ? <WifiReservas maquina={maquina} onToast={onToast} /> : null}
     </section>
   );
 }
