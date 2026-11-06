@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, CheckCircle2, Clock, Eye, EyeOff, Loader2, Plus, Save, Shuffle, Trash2, XCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, Clock, Eye, EyeOff, Loader2, Plus, Save, Shuffle, Trash2, Wifi, XCircle } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
 import { brasiliaDate } from "../utils/dateTime";
@@ -14,9 +14,11 @@ const inputClassName =
   "min-w-0 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]";
 
 const LIMITE_ACOMPANHAMENTO_MS = 60 * 1000;
+// O teste na placa leva no maximo ~2 min (igual ao "Testar e trocar").
+const LIMITE_TESTE_MS = 3 * 60 * 1000;
 
 function linhaVazia() {
-  return { chave: Math.random().toString(36).slice(2), ssid: "", senha: "", temSenhaSalva: false, mostrar: false };
+  return { chave: Math.random().toString(36).slice(2), ssid: "", senha: "", temSenhaSalva: false, mostrar: false, teste: null };
 }
 
 export default function WifiReservas({ maquina, onToast }) {
@@ -26,8 +28,20 @@ export default function WifiReservas({ maquina, onToast }) {
   const [alterado, setAlterado] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const timerRef = useRef(null);
+  const testeTimerRef = useRef(null);
+  const linhasRef = useRef(linhas);
 
-  useEffect(() => () => window.clearTimeout(timerRef.current), []);
+  useEffect(() => {
+    linhasRef.current = linhas;
+  }, [linhas]);
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(timerRef.current);
+      window.clearTimeout(testeTimerRef.current);
+    },
+    [],
+  );
 
   const carregar = useCallback(() => {
     if (!machineId) return Promise.resolve(null);
@@ -39,6 +53,7 @@ export default function WifiReservas({ maquina, onToast }) {
 
   useEffect(() => {
     window.clearTimeout(timerRef.current);
+    window.clearTimeout(testeTimerRef.current);
     setDados(null);
     setLinhas([]);
     setAlterado(false);
@@ -84,10 +99,10 @@ export default function WifiReservas({ maquina, onToast }) {
     setAlterado(true);
   };
 
-  const handleSalvar = async () => {
+  const salvarLista = async (lista) => {
     setSalvando(true);
     try {
-      const redes = linhas.map((linha) => ({
+      const redes = lista.map((linha) => ({
         ssid: linha.ssid.trim(),
         // Senha em branco numa rede que ja tinha senha = mantem a salva.
         senha: linha.temSenhaSalva && !linha.senha ? null : linha.senha,
@@ -111,12 +126,63 @@ export default function WifiReservas({ maquina, onToast }) {
     }
   };
 
+  const handleSalvar = () => salvarLista(linhas);
+
+  const mudarTeste = (chave, teste) =>
+    setLinhas((atual) => atual.map((linha) => (linha.chave === chave ? { ...linha, teste } : linha)));
+
+  // Testar e salvar: a placa testa a rede (Wi-Fi + servidor) e volta para a
+  // rede atual; so salva a lista se o teste passou.
+  const acompanharTeste = (chave, commandId, inicio) => {
+    api
+      .get(`/maquinas/${machineId}/wifi/troca/${commandId}`)
+      .then(({ data }) => {
+        if (data.resultado === "testado") {
+          mudarTeste(chave, { estado: "ok" });
+          salvarLista(linhasRef.current.map((linha) => (linha.chave === chave ? { ...linha, teste: { estado: "ok" } } : linha)));
+          return;
+        }
+        if (data.resultado !== "testando") {
+          mudarTeste(chave, { estado: "falhou", motivo: data.motivo_texto || "A placa nao conseguiu usar esta rede." });
+          return;
+        }
+        if (Date.now() - inicio > LIMITE_TESTE_MS) {
+          mudarTeste(chave, { estado: "falhou", motivo: "A placa nao respondeu o resultado do teste." });
+          return;
+        }
+        testeTimerRef.current = window.setTimeout(() => acompanharTeste(chave, commandId, inicio), 3000);
+      })
+      .catch(() => {
+        testeTimerRef.current = window.setTimeout(() => acompanharTeste(chave, commandId, inicio), 5000);
+      });
+  };
+
+  const handleTestar = async (linha) => {
+    mudarTeste(linha.chave, { estado: "testando" });
+    try {
+      const { data } = await api.post(`/maquinas/${machineId}/wifi/reservas/testar`, {
+        ssid: linha.ssid.trim(),
+        senha: linha.temSenhaSalva && !linha.senha ? null : linha.senha,
+      });
+      acompanharTeste(linha.chave, data.command_id, Date.now());
+    } catch (error) {
+      mudarTeste(linha.chave, { estado: "falhou", motivo: getApiErrorMessage(error, "Nao foi possivel testar a rede.") });
+    }
+  };
+
   if (!maquina) return null;
 
   const max = dados?.max || 4;
   const online = Boolean(maquina.status_online);
   const suporta = Boolean(dados?.suporta);
-  const podeSalvar = alterado && !salvando && linhas.every((linha) => linha.ssid.trim());
+  const testando = linhas.some((linha) => linha.teste?.estado === "testando");
+  const podeSalvar = alterado && !salvando && !testando && linhas.every((linha) => linha.ssid.trim());
+  const suportaTeste = Boolean(dados?.suporta_teste);
+  const motivoSemTeste = !suportaTeste
+    ? `Para testar, a placa precisa do firmware 2.9.2 ou mais novo`
+    : !online
+      ? "A maquina precisa estar online para testar"
+      : "";
 
   return (
     <div className="mt-6 rounded-[22px] border border-[var(--color-border)] bg-white p-4 md:p-5">
@@ -159,7 +225,7 @@ export default function WifiReservas({ maquina, onToast }) {
               <span className="text-xs text-[var(--color-text-soft)]">principal - troque pelo formulario acima</span>
             </div>
             {linhas.map((linha, indice) => (
-              <div key={linha.chave} className="grid items-center gap-2 md:grid-cols-[24px_1fr_1fr_auto]">
+              <div key={linha.chave} className="grid items-center gap-2 md:grid-cols-[24px_1fr_1fr_auto_auto]">
                 <span className="text-center text-sm font-extrabold text-[var(--color-text-soft)]">{indice + 1}</span>
                 <input
                   className={inputClassName}
@@ -168,7 +234,6 @@ export default function WifiReservas({ maquina, onToast }) {
                   data-lpignore="true"
                   maxLength={32}
                   value={linha.ssid}
-                  
                   onChange={(event) => mudarLinha(indice, { ssid: event.target.value })}
                 />
                 <div className="relative">
@@ -180,7 +245,6 @@ export default function WifiReservas({ maquina, onToast }) {
                     data-lpignore="true"
                     maxLength={63}
                     value={linha.senha}
-                    
                     onChange={(event) => mudarLinha(indice, { senha: event.target.value })}
                   />
                   <button
@@ -199,10 +263,21 @@ export default function WifiReservas({ maquina, onToast }) {
                   <BotaoIcone titulo="Descer" onClick={() => mover(indice, 1)} disabled={indice === linhas.length - 1}>
                     <ArrowDown size={16} />
                   </BotaoIcone>
-                  <BotaoIcone titulo="Remover" onClick={() => remover(indice)}>
+                  <BotaoIcone titulo="Remover" onClick={() => remover(indice)} disabled={linha.teste?.estado === "testando"}>
                     <Trash2 size={16} />
                   </BotaoIcone>
                 </div>
+                <button
+                  type="button"
+                  title={motivoSemTeste || "A placa testa a rede e volta para a atual; se funcionar, salva a lista"}
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-primary)] disabled:opacity-40"
+                  onClick={() => handleTestar(linha)}
+                  disabled={Boolean(motivoSemTeste) || testando || salvando || !linha.ssid.trim()}
+                >
+                  {linha.teste?.estado === "testando" ? <Loader2 size={15} className="animate-spin" /> : <Wifi size={15} />}
+                  Testar e salvar
+                </button>
+                {linha.teste ? <ResultadoTeste teste={linha.teste} /> : null}
               </div>
             ))}
           </div>
@@ -242,6 +317,16 @@ export default function WifiReservas({ maquina, onToast }) {
       )}
     </div>
   );
+}
+
+function ResultadoTeste({ teste }) {
+  const estilos = {
+    testando: ["bg-sky-50 text-sky-800", "Testando... a maquina fica offline por ate 2 minutos e volta sozinha para a rede atual."],
+    ok: ["bg-emerald-50 text-emerald-800", "Teste ok: a placa conectou e chegou no servidor. Lista salva."],
+    falhou: ["bg-rose-50 text-rose-800", `Teste falhou: ${String(teste.motivo).replace(/\.$/, "")}. A rede nao foi salva.`],
+  };
+  const [estilo, texto] = estilos[teste.estado] || estilos.falhou;
+  return <div className={`rounded-[12px] px-3 py-2 text-xs font-semibold md:col-span-5 md:ml-8 ${estilo}`}>{texto}</div>;
 }
 
 function BotaoIcone({ titulo, onClick, disabled, children }) {

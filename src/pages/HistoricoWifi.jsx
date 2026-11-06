@@ -31,6 +31,7 @@ function suportaWifiRemoto(versao) {
 
 const RESULTADO_ESTILO = {
   trocado: ["Trocou", "bg-emerald-50 text-emerald-700"],
+  testado: ["Teste ok", "bg-emerald-50 text-emerald-700"],
   falhou: ["Falhou", "bg-rose-50 text-rose-700"],
   recusado: ["Recusada", "bg-amber-50 text-amber-700"],
   testando: ["Testando", "bg-sky-50 text-sky-700"],
@@ -242,7 +243,9 @@ export default function HistoricoWifi() {
                   {item.motivo_texto ? <div className="mt-1 text-xs text-[var(--color-text-soft)]">{item.motivo_texto}</div> : null}
                 </div>,
                 <div key="q" className="text-xs text-[var(--color-text-soft)]">
-                  <div className="font-semibold text-[var(--color-text)]">{item.origem === "portal" ? "Portal (celular)" : "Painel"}</div>
+                  <div className="font-semibold text-[var(--color-text)]">
+                    {item.origem === "portal" ? "Portal (celular)" : item.origem === "teste" ? "Painel (so teste)" : "Painel"}
+                  </div>
                   {item.origem === "portal" ? null : <div>{item.solicitado_por || "--"}</div>}
                 </div>,
               ],
@@ -501,6 +504,9 @@ function TrocarWifi({
         </button>
       </div>
 
+      {/* Resultado logo abaixo do formulario, sem precisar rolar a pagina. */}
+      {acompanhamento ? <ResultadoTroca acompanhamento={acompanhamento} /> : null}
+
       {maquina ? (
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-[var(--color-text-soft)]">
           <span>
@@ -530,8 +536,6 @@ function TrocarWifi({
       ) : null}
 
       {procura ? <RedesProximas procura={procura} redeEscolhida={ssid} onEscolher={escolherRede} /> : null}
-
-      {acompanhamento ? <ResultadoTroca acompanhamento={acompanhamento} /> : null}
 
       {maquina ? <WifiReservas maquina={maquina} onToast={onToast} /> : null}
     </section>
