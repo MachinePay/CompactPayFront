@@ -620,6 +620,7 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
       setDateRange({ start: "", end: "" });
       return;
     }
+    if (value === "personalizado") return;
     setDateRange({
       start: hoje.subtract(30, "day").format("YYYY-MM-DD"),
       end: hoje.format("YYYY-MM-DD"),
@@ -842,11 +843,12 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
               onChange={(e) => handlePeriodoChange(e.target.value)}
             >
               <option value="fechamento">Desde o ultimo fechamento</option>
-              <option value="">Ultimos 30 dias</option>
+              <option value="30dias">Ultimos 30 dias</option>
               <option value="dia">Hoje</option>
               <option value="mes">Mes atual</option>
               <option value="mes_anterior">Mes anterior</option>
               <option value="mes_escolhido">Escolher mes</option>
+              <option value="personalizado">Personalizado</option>
             </select>
           </label>
           {periodo === "mes_escolhido" ? (
@@ -863,7 +865,8 @@ export default function MaquinaHistorico({ detailed = false, selectable = false 
                 value={dateRange}
                 onChange={(range) => {
                   setDateRange(range);
-                  setPeriodo("");
+                  // So o "ate" (ou nada) = desde o ultimo fechamento ate ali.
+                  setPeriodo(range.start ? "personalizado" : "fechamento");
                 }}
               />
             </div>
@@ -2163,7 +2166,7 @@ function formatPeriodoLabel(periodo, range) {
     return range.start === range.end ? startLabel : `${startLabel} ate ${endLabel}`;
   }
   if (range?.start) return `A partir de ${formatRangeValue(range.start)}`;
-  if (range?.end) return `Ate ${formatRangeValue(range.end)}`;
+  if (range?.end) return `Desde o ultimo fechamento ate ${formatRangeValue(range.end)}`;
   if (periodo === "dia") return dayjs().format("DD/MM/YYYY");
   if (periodo === "fechamento") return "Desde o ultimo fechamento";
   return "Mes atual";
