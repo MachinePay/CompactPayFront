@@ -7,6 +7,7 @@ import {
   Download,
   Moon,
   FileText,
+  Layers,
   Pencil,
   Plus,
   QrCode,
@@ -31,6 +32,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import DateRangePicker from "../components/DateRangePicker";
 import PointApkChaves from "../components/PointApkChaves";
 import HorarioFechadoModal from "../components/HorarioFechadoModal";
+import FechamentoLoteModal from "../components/FechamentoLoteModal";
 import { CabecalhoOrdenavel, FiltroStatus, OrdenacaoMobile } from "../components/MaquinasFiltros";
 import { FILTROS_STATUS, buscarMaquinas, ordenarMaquinas } from "../utils/maquinasLista";
 import Modal from "../components/Modal";
@@ -321,6 +323,7 @@ export default function Maquinas() {
     emptyDiagnosticoState,
   );
   const [horarioFechadoMachine, setHorarioFechadoMachine] = useState(null);
+  const [fechamentoLoteAberto, setFechamentoLoteAberto] = useState(false);
   const [dispositivoConfigState, setDispositivoConfigState] = useState(
     emptyDispositivoConfigState,
   );
@@ -1574,6 +1577,17 @@ export default function Maquinas() {
         onSaved={() => loadMaquinas({ silent: true })}
       />
 
+      <FechamentoLoteModal
+        open={fechamentoLoteAberto}
+        clienteId={selectedClienteId}
+        clienteNome={(() => {
+          const cliente = usuarios.find((item) => String(item.cliente_id) === String(selectedClienteId));
+          return cliente ? cliente.nome || cliente.email : "";
+        })()}
+        onClose={() => setFechamentoLoteAberto(false)}
+        onDone={() => loadMaquinas({ silent: true })}
+      />
+
       <CardSectionHeader
         title="Maquinas"
         description="Cadastre novas unidades, gere IDs para o ESP e crie automaticamente o caixa no Mercado Pago do cliente."
@@ -1658,14 +1672,26 @@ export default function Maquinas() {
             <DateRangePicker value={dateRange} onChange={setDateRange} withTime />
           </div>
 
-          <button
-            className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
-            onClick={loadMaquinas}
-            type="button"
-          >
-            <RefreshCcw size={16} />
-            Recarregar
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {user?.role === "admin" && selectedClienteId ? (
+              <button
+                className="pill-button pill-button--primary inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
+                onClick={() => setFechamentoLoteAberto(true)}
+                type="button"
+              >
+                <Layers size={16} />
+                Fechamento em lote
+              </button>
+            ) : null}
+            <button
+              className="pill-button inline-flex items-center justify-center gap-2 px-5 py-3 font-semibold"
+              onClick={loadMaquinas}
+              type="button"
+            >
+              <RefreshCcw size={16} />
+              Recarregar
+            </button>
+          </div>
         </div>
 
         {maquinas.length > 0 && !(user?.role === "admin" && !selectedClienteId) ? (
