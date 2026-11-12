@@ -62,6 +62,23 @@ const emptyForm = {
   stone_serial_number: "",
 };
 
+const DOMINIO_USUARIO_SUMUP = "compactpay.com.br";
+const emptyLoginSumupNovo = { prefixo: "", senha: "", confirmar: "", mostrar: false };
+
+// Mesmas regras do backend (sumup_usuarios.py). Devolve a mensagem de erro ou "".
+function validarLoginSumupNovo({ prefixo, senha, confirmar }) {
+  const p = prefixo.trim().toLowerCase();
+  if (!p) return `Digite a parte do email antes do @${DOMINIO_USUARIO_SUMUP}.`;
+  if (!/^[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/.test(p) || p.includes("..")) {
+    return "Email invalido: use so letras, numeros, ponto, hifen ou underline (comecando e terminando com letra ou numero).";
+  }
+  if (senha.length < 8 || senha.length > 64) return "A senha precisa ter de 8 a 64 caracteres.";
+  if (/\s/.test(senha)) return "A senha nao pode ter espacos.";
+  if (!/[a-zA-Z]/.test(senha) || !/[0-9]/.test(senha)) return "A senha precisa ter pelo menos uma letra e um numero.";
+  if (senha !== confirmar) return "A confirmacao da senha nao confere.";
+  return "";
+}
+
 const paymentProviderLabels = {
   mercado_pago: "Mercado Pago",
   pagbank: "PagBank",
@@ -327,67 +344,13 @@ export default function Maquinas() {
   const [dispositivoConfigState, setDispositivoConfigState] = useState(
     emptyDispositivoConfigState,
   );
-  const [sumupReaders, setSumupReaders] = useState([]);
-  const [loadingSumupReaders, setLoadingSumupReaders] = useState(false);
-  const [pairingSumup, setPairingSumup] = useState(false);
   const [usuarioSumup, setUsuarioSumup] = useState({ carregando: false, login: null, erro: "" });
-  const [pairingCode, setPairingCode] = useState("");
-  const [pairingName, setPairingName] = useState("");
-  const [pairingMessage, setPairingMessage] = useState({ text: "", type: "" });
+  // Login que o operador escolhe para a maquininha (email = prefixo@compactpay.com.br).
+  const [loginSumupNovo, setLoginSumupNovo] = useState(emptyLoginSumupNovo);
   const selectedCliente = usuarios.find(
     (item) => String(item.cliente_id) === String(form.cliente_id),
   );
   const paymentProviders = getPaymentProviders(selectedCliente);
-
-  const loadSumupReaders = useCallback(() => {
-    if (!form.cliente_id) {
-      setSumupReaders([]);
-      return;
-    }
-    setLoadingSumupReaders(true);
-    api
-      .get(`/clientes/${form.cliente_id}/sumup/readers`)
-      .then(({ data }) => setSumupReaders(Array.isArray(data) ? data : []))
-      .catch(() => setSumupReaders([]))
-      .finally(() => setLoadingSumupReaders(false));
-  }, [form.cliente_id]);
-
-  useEffect(() => {
-    if (!showModal || form.banco_pagamento !== "sumup" || !form.cliente_id) {
-      setSumupReaders([]);
-      return;
-    }
-    loadSumupReaders();
-  }, [showModal, form.banco_pagamento, form.cliente_id, loadSumupReaders]);
-
-  const handlePairSumupReader = async () => {
-    if (!pairingCode.trim()) {
-      setPairingMessage({ text: "Informe o codigo de pareamento.", type: "error" });
-      return;
-    }
-    setPairingSumup(true);
-    setPairingMessage({ text: "", type: "" });
-    try {
-      const { data } = await api.post(`/clientes/${form.cliente_id}/sumup/readers`, {
-        pairing_code: pairingCode.trim(),
-        name: pairingName.trim() || undefined,
-      });
-      setPairingMessage({
-        text: `Reader "${data.name || data.id}" pareado! (status: ${data.status || "processing"})`,
-        type: "success",
-      });
-      setPairingCode("");
-      setPairingName("");
-      loadSumupReaders();
-    } catch (error) {
-      setPairingMessage({
-        text: getApiErrorMessage(error, "Nao foi possivel parear o reader."),
-        type: "error",
-      });
-    } finally {
-      setPairingSumup(false);
-    }
-  };
 
   useEffect(() => {
     localStorage.setItem(
@@ -508,6 +471,8 @@ export default function Maquinas() {
 
   const openCreateMachineModal = () => {
     setEditingMachineId("");
+    setUsuarioSumup({ carregando: false, login: null, erro: "" });
+    setLoginSumupNovo(emptyLoginSumupNovo);
     const cliente = usuarios.find(
       (item) => String(item.cliente_id) === String(selectedClienteId),
     );
@@ -594,14 +559,33 @@ export default function Maquinas() {
             : user.cliente_id,
       };
       if (selectedProvider === "sumup") {
-        if (!form.sumup_reader_id && !form.sumup_device_code) {
+        // Readers ja vinculados em maquinas antigas continuam sendo enviados
+        // como estao (nao some nada); o vinculo agora e' pelo login.
+        if (
+          !form.sumup_usuario.trim() &&
+          !form.sumup_reader_id &&
+          !form.sumup_device_code &&
+          !(user?.role === "admin" && !editingMachineId && loginSumupNovo.prefixo.trim())
+        ) {
           throw new Error(
-            "Escolha qual reader SumUp fica vinculado a esta maquina, ou informe o codigo do reader.",
+            "Informe o usuario SumUp logado nesta maquininha (ou crie o login da maquininha abaixo).",
           );
         }
         payload.sumup_reader_id = form.sumup_reader_id;
         payload.sumup_device_code = form.sumup_device_code;
         payload.sumup_usuario = form.sumup_usuario.trim();
+      }
+      // Maquina nova com login da maquininha escolhido: valida antes de salvar,
+      // cria a maquina e logo depois o usuario na SumUp (que precisa da maquina salva).
+      const criarLoginAoSalvar =
+        !editingMachineId &&
+        user?.role === "admin" &&
+        selectedProvider === "sumup" &&
+        Boolean(loginSumupNovo.prefixo.trim() || loginSumupNovo.senha);
+      if (criarLoginAoSalvar) {
+        const erroLogin = validarLoginSumupNovo(loginSumupNovo);
+        if (erroLogin) throw new Error(erroLogin);
+        payload.sumup_usuario = "";
       }
       if (selectedProvider === "stone") {
         if (!form.stone_serial_number.trim()) {
@@ -641,6 +625,21 @@ export default function Maquinas() {
           id_hardware: form.id_hardware,
           ...payload,
         });
+        const maquinaCriadaId = form.id_hardware;
+        if (criarLoginAoSalvar) {
+          // Modal fica aberto, agora em modo edicao, mostrando o login criado
+          // (ou o erro, para tentar de novo pelo botao).
+          setEditingMachineId(maquinaCriadaId);
+          const login = await criarUsuarioSumupNaMaquina(maquinaCriadaId, false);
+          setToast({
+            message: login
+              ? "Maquina cadastrada e usuario da maquininha criado. Entre com esse login na maquininha."
+              : "Maquina cadastrada, mas o usuario da maquininha nao foi criado. Veja o erro e tente de novo.",
+            type: login ? "success" : "error",
+          });
+          await loadMaquinas();
+          return;
+        }
         setToast({
           message: "Maquina cadastrada com sucesso.",
           type: "success",
@@ -664,8 +663,36 @@ export default function Maquinas() {
     }
   };
 
+  // Cria o usuario da maquininha com o login digitado. Devolve o login ou null.
+  const criarUsuarioSumupNaMaquina = async (machineId, recriar) => {
+    setUsuarioSumup({ carregando: true, login: null, erro: "" });
+    try {
+      const { data } = await api.post(`/maquinas/${machineId}/sumup/usuario`, {
+        ...(recriar ? { recriar: true } : {}),
+        email_prefixo: loginSumupNovo.prefixo.trim().toLowerCase(),
+        senha: loginSumupNovo.senha,
+      });
+      setUsuarioSumup({ carregando: false, login: data, erro: "" });
+      setForm((current) => ({ ...current, sumup_usuario: data.usuario }));
+      setLoginSumupNovo(emptyLoginSumupNovo);
+      return data;
+    } catch (error) {
+      setUsuarioSumup({
+        carregando: false,
+        login: null,
+        erro: getApiErrorMessage(error, "Nao foi possivel criar o usuario na SumUp."),
+      });
+      return null;
+    }
+  };
+
   const handleCriarUsuarioSumup = async (recriar = false) => {
     if (!editingMachineId) return;
+    const erroLogin = validarLoginSumupNovo(loginSumupNovo);
+    if (erroLogin) {
+      setUsuarioSumup({ carregando: false, login: null, erro: erroLogin });
+      return;
+    }
     if (recriar) {
       const ok = await confirmar({
         titulo: "Criar outro usuario para esta maquininha?",
@@ -677,18 +704,8 @@ export default function Maquinas() {
       });
       if (!ok) return;
     }
-    setUsuarioSumup({ carregando: true, login: null, erro: "" });
-    try {
-      const { data } = await api.post(`/maquinas/${editingMachineId}/sumup/usuario`, recriar ? { recriar: true } : {});
-      setUsuarioSumup({ carregando: false, login: data, erro: "" });
-      setForm((current) => ({ ...current, sumup_usuario: data.usuario }));
+    if (await criarUsuarioSumupNaMaquina(editingMachineId, recriar)) {
       await loadMaquinas({ silent: true });
-    } catch (error) {
-      setUsuarioSumup({
-        carregando: false,
-        login: null,
-        erro: getApiErrorMessage(error, "Nao foi possivel criar o usuario na SumUp."),
-      });
     }
   };
 
@@ -710,6 +727,7 @@ export default function Maquinas() {
   const handleEditMachine = (machine) => {
     setEditingMachineId(machine.id_hardware);
     setUsuarioSumup({ carregando: false, login: null, erro: "" });
+    setLoginSumupNovo(emptyLoginSumupNovo);
     setForm({
       id_hardware: machine.id_hardware,
       nome: machine.nome || "",
@@ -2288,106 +2306,7 @@ export default function Maquinas() {
                   {form.cliente_id && form.banco_pagamento === "sumup" ? (
                     <div className="mt-3">
                       <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                        Reader (maquininha) SumUp
-                      </span>
-                      <select
-                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                        value={form.sumup_reader_id}
-                        onChange={(e) =>
-                          setForm((current) => ({
-                            ...current,
-                            sumup_reader_id: e.target.value,
-                          }))
-                        }
-                        disabled={loadingSumupReaders}
-                      >
-                        <option value="">
-                          {loadingSumupReaders
-                            ? "Carregando readers..."
-                            : sumupReaders.length === 0
-                              ? "Nenhum reader encontrado"
-                              : "Selecione o reader ja pareado"}
-                        </option>
-                        {sumupReaders.map((reader) => (
-                          <option key={reader.id} value={reader.id}>
-                            {reader.label || reader.id}
-                          </option>
-                        ))}
-                      </select>
-                      {!loadingSumupReaders && sumupReaders.length === 0 ? (
-                        <span className="mt-2 block rounded-[14px] bg-amber-50 px-3 py-2 text-xs font-medium leading-5 text-[var(--color-warning)]">
-                          Nenhum reader pareado nessa conta SumUp ainda - pareie a
-                          maquininha pelo app do SumUp antes de continuar.
-                        </span>
-                      ) : null}
-
-                      <div className="mt-4 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">
-                        <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
-                          Parear nova maquininha (pra aparecer na lista acima)
-                        </span>
-                        <p className="mb-3 text-xs leading-5 text-[var(--color-text-soft)]">
-                          No aparelho: menu (gaveta de cima) → Connections → conecta no
-                          Wi-Fi → selecione &quot;API&quot; → Connect. O codigo aparece na
-                          tela e expira em 5 minutos.
-                        </p>
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                          <input
-                            type="text"
-                            className="flex-1 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3 text-sm text-[var(--color-text)] outline-none"
-                            placeholder="Codigo de pareamento"
-                            value={pairingCode}
-                            onChange={(e) => setPairingCode(e.target.value)}
-                          />
-                          <input
-                            type="text"
-                            className="flex-1 rounded-[14px] border border-[var(--color-border)] bg-white px-3 py-3 text-sm text-[var(--color-text)] outline-none"
-                            placeholder="Nome (opcional)"
-                            value={pairingName}
-                            onChange={(e) => setPairingName(e.target.value)}
-                          />
-                          <button
-                            type="button"
-                            className="pill-button whitespace-nowrap px-4 py-3 text-sm font-semibold"
-                            onClick={handlePairSumupReader}
-                            disabled={pairingSumup}
-                          >
-                            {pairingSumup ? "Pareando..." : "Parear"}
-                          </button>
-                        </div>
-                        {pairingMessage.text ? (
-                          <p
-                            className={`mt-2 text-xs font-medium ${
-                              pairingMessage.type === "error" ? "text-rose-600" : "text-emerald-600"
-                            }`}
-                          >
-                            {pairingMessage.text}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      <span className="mb-2 mt-4 block text-sm font-semibold text-[var(--color-text)]">
-                        Ou codigo do reader (sem pareamento Cloud)
-                      </span>
-                      <input
-                        type="text"
-                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
-                        placeholder="Ex: 200300136586"
-                        value={form.sumup_device_code}
-                        onChange={(e) =>
-                          setForm((current) => ({
-                            ...current,
-                            sumup_device_code: e.target.value,
-                          }))
-                        }
-                      />
-                      <span className="mt-2 block text-xs leading-5 text-[var(--color-text-soft)]">
-                        Faca um pagamento de teste nessa maquininha e peça o codigo que
-                        aparece no log do servidor (campo "card_reader.code" do recibo) -
-                        util quando a maquininha nao esta pareada na Cloud API da SumUp.
-                      </span>
-
-                      <span className="mb-2 mt-4 block text-sm font-semibold text-[var(--color-text)]">
-                        Usuario SumUp logado nesta maquininha (para Pix)
+                        Usuario SumUp logado nesta maquininha
                       </span>
                       <input
                         type="text"
@@ -2403,21 +2322,81 @@ export default function Maquinas() {
                         }
                       />
                       <span className="mt-2 block text-xs leading-5 text-[var(--color-text-soft)]">
-                        O Pix feito na maquininha nao informa qual maquininha foi usada - so o usuario
-                        logado nela. Mesmo com uma maquina so, logue a maquininha com um usuario (operador) proprio
-                        e coloque aqui o e-mail dele: so o Pix desse usuario libera pulso. Sem este campo o Pix
-                        nao e' creditado (fica pendente). Cada usuario so pode estar em uma maquina.
+                        E' pelo usuario logado na maquininha que o sistema sabe de qual maquina veio o
+                        pagamento. Mesmo com uma maquina so, logue a maquininha com um usuario (operador) proprio
+                        e coloque aqui o e-mail dele: so o pagamento desse usuario libera pulso. Sem este campo o
+                        pagamento nao e' creditado (fica pendente). Cada usuario so pode estar em uma maquina.
                       </span>
 
-                      {user?.role === "admin" && editingMachineId ? (
+                      {user?.role === "admin" ? (
                         <div className="mt-3 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">
                           <span className="block text-sm font-semibold text-[var(--color-text)]">
                             Criar o usuario automaticamente
                           </span>
                           <p className="mt-1 text-xs leading-5 text-[var(--color-text-soft)]">
-                            O sistema cria um usuario so desta maquininha na conta SumUp do cliente e preenche o campo
-                            acima. Depois, na maquininha, saia da conta atual e entre com o login e a senha mostrados.
+                            {editingMachineId
+                              ? "O sistema cria um usuario so desta maquininha na conta SumUp do cliente, com o email e a senha abaixo, e preenche o campo acima. Depois, na maquininha, saia da conta atual e entre com esse login."
+                              : "Opcional: preencha o email e a senha e, ao cadastrar a maquina, o sistema ja cria o usuario so desta maquininha na conta SumUp do cliente. Depois, na maquininha, entre com esse login."}
                           </p>
+                          <span className="mb-1 mt-3 block text-xs font-semibold text-[var(--color-text)]">
+                            Email do usuario
+                          </span>
+                          <div className="flex items-stretch overflow-hidden rounded-[12px] border border-[var(--color-border)] bg-white focus-within:border-[var(--color-primary)]">
+                            <input
+                              type="text"
+                              className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-[var(--color-text)] outline-none"
+                              placeholder={form.id_hardware ? `maquina${form.id_hardware}`.toLowerCase() : "maquina1"}
+                              autoComplete="off"
+                              autoCapitalize="none"
+                              spellCheck={false}
+                              value={loginSumupNovo.prefixo}
+                              onChange={(e) =>
+                                setLoginSumupNovo((current) => ({
+                                  ...current,
+                                  prefixo: e.target.value.replace(/@.*$/, "").toLowerCase(),
+                                }))
+                              }
+                            />
+                            <span className="flex items-center border-l border-[var(--color-border)] bg-[var(--color-bg-muted)] px-3 text-sm text-[var(--color-text-soft)]">
+                              @{DOMINIO_USUARIO_SUMUP}
+                            </span>
+                          </div>
+                          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                            <label className="block">
+                              <span className="mb-1 block text-xs font-semibold text-[var(--color-text)]">Senha</span>
+                              <input
+                                type={loginSumupNovo.mostrar ? "text" : "password"}
+                                className="w-full rounded-[12px] border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+                                autoComplete="new-password"
+                                value={loginSumupNovo.senha}
+                                onChange={(e) => setLoginSumupNovo((current) => ({ ...current, senha: e.target.value }))}
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="mb-1 block text-xs font-semibold text-[var(--color-text)]">
+                                Confirmar senha
+                              </span>
+                              <input
+                                type={loginSumupNovo.mostrar ? "text" : "password"}
+                                className="w-full rounded-[12px] border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+                                autoComplete="new-password"
+                                value={loginSumupNovo.confirmar}
+                                onChange={(e) => setLoginSumupNovo((current) => ({ ...current, confirmar: e.target.value }))}
+                              />
+                            </label>
+                          </div>
+                          <label className="mt-2 flex items-center gap-2 text-xs text-[var(--color-text-soft)]">
+                            <input
+                              type="checkbox"
+                              checked={loginSumupNovo.mostrar}
+                              onChange={(e) => setLoginSumupNovo((current) => ({ ...current, mostrar: e.target.checked }))}
+                            />
+                            Mostrar senha
+                          </label>
+                          <p className="mt-1 text-xs leading-5 text-[var(--color-text-soft)]">
+                            Senha de 8 a 64 caracteres, com pelo menos uma letra e um numero, sem espacos.
+                          </p>
+                          {editingMachineId ? (
                           <div className="mt-3 flex flex-wrap gap-2">
                             <button
                               type="button"
@@ -2444,6 +2423,7 @@ export default function Maquinas() {
                               Criar outro
                             </button>
                           </div>
+                          ) : null}
                           {usuarioSumup.login ? (
                             <div className="mt-3 rounded-[12px] bg-white px-3 py-2 text-sm">
                               <div>
