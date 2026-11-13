@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Copy, MonitorSmartphone, RefreshCcw, Trash2, Zap } from "lucide-react";
+import { CheckCircle2, Copy, MonitorSmartphone, RefreshCcw, Store, Trash2, Zap } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
 
@@ -8,6 +8,7 @@ import api, { getApiErrorMessage } from "../api/axios";
 // tem uma tela; a chave so aparece uma vez, logo apos gerar.
 export default function TelaPointConfig({ clienteId, maquinaId, maquinaSalva }) {
   const [points, setPoints] = useState([]);
+  const [caixa, setCaixa] = useState(undefined); // undefined = carregando, null = sem caixa
   const [telas, setTelas] = useState([]);
   const [pointEscolhida, setPointEscolhida] = useState("");
   const [carregando, setCarregando] = useState(false);
@@ -18,22 +19,36 @@ export default function TelaPointConfig({ clienteId, maquinaId, maquinaSalva }) 
   const [erro, setErro] = useState("");
 
   const carregar = useCallback(async () => {
-    if (!clienteId) return;
+    if (!clienteId || !maquinaSalva) return;
     setCarregando(true);
-    try {
-      const [pointsResp, telasResp] = await Promise.all([
-        api.get("/tela/point/terminais", { params: { cliente_id: Number(clienteId) } }),
-        api.get("/tela/telas"),
-      ]);
-      setPoints(pointsResp.data);
-      setTelas(telasResp.data.filter((t) => t.maquina_id === maquinaId && t.ativo));
-      setErro("");
-    } catch (error) {
-      setErro(getApiErrorMessage(error, "Nao foi possivel carregar as Points do Mercado Pago"));
-    } finally {
-      setCarregando(false);
+    // Cada parte carrega sozinha: um erro do Mercado Pago na lista de Points
+    // nao esconde o caixa nem as telas.
+    const [caixaResp, pointsResp, telasResp] = await Promise.allSettled([
+      api.get(`/tela/maquinas/${encodeURIComponent(maquinaId)}/caixa`),
+      api.get("/tela/point/terminais", { params: { cliente_id: Number(clienteId), maquina_id: maquinaId } }),
+      api.get("/tela/telas"),
+    ]);
+    const erros = [];
+    if (caixaResp.status === "fulfilled") {
+      setCaixa(caixaResp.value.data.caixa);
+    } else {
+      setCaixa(null);
+      erros.push(getApiErrorMessage(caixaResp.reason, "Nao foi possivel ver o caixa da maquina"));
     }
-  }, [clienteId, maquinaId]);
+    if (pointsResp.status === "fulfilled") {
+      setPoints(pointsResp.value.data);
+      const doCaixa = pointsResp.value.data.find((p) => p.neste_caixa);
+      if (doCaixa) setPointEscolhida((atual) => atual || doCaixa.id);
+    } else {
+      setPoints([]);
+      erros.push(getApiErrorMessage(pointsResp.reason, "Nao foi possivel carregar as Points do Mercado Pago"));
+    }
+    if (telasResp.status === "fulfilled") {
+      setTelas(telasResp.value.data.filter((t) => t.maquina_id === maquinaId && t.ativo));
+    }
+    setErro(erros.join(" "));
+    setCarregando(false);
+  }, [clienteId, maquinaId, maquinaSalva]);
 
   useEffect(() => {
     setNovaChave(null);
@@ -42,6 +57,21 @@ export default function TelaPointConfig({ clienteId, maquinaId, maquinaSalva }) 
   }, [carregar]);
 
   const point = points.find((p) => p.id === pointEscolhida);
+
+  const criarCaixa = async () => {
+    setOcupado(true);
+    try {
+      const { data } = await api.post(`/tela/maquinas/${encodeURIComponent(maquinaId)}/caixa`);
+      setCaixa(data.caixa);
+      setAviso("Caixa criado. Agora vincule a Point a esse caixa no Mercado Pago.");
+      setErro("");
+      await carregar();
+    } catch (error) {
+      setErro(getApiErrorMessage(error, "Nao foi possivel criar o caixa no Mercado Pago"));
+    } finally {
+      setOcupado(false);
+    }
+  };
 
   const ativarIntegrado = async () => {
     if (!point) return;
@@ -116,10 +146,41 @@ export default function TelaPointConfig({ clienteId, maquinaId, maquinaSalva }) 
         Tela touch + Point (modo integrado)
       </span>
       <p className="mb-3 text-xs leading-5 text-[var(--color-text-soft)]">
-        Escolha a Point desta maquina, deixe-a em modo integrado e gere a chave da tela. Os valores que
-        aparecem na tela sao os produtos cadastrados para{" "}
+        1) A maquina tem um caixa no Mercado Pago. 2) Vincule a Point a esse caixa. 3) Deixe a Point em modo
+        integrado (frente de caixa). 4) Gere a chave da tela. Os valores que aparecem na tela sao os produtos
+        cadastrados para{" "}
         <strong className="font-mono text-[var(--color-text)]">{maquinaId}</strong>.
       </p>
+
+      <div className="mb-3 flex items-center justify-between gap-2 rounded-[10px] bg-white px-3 py-2 text-xs">
+        <span className="flex min-w-0 items-center gap-2">
+          <Store size={14} className="shrink-0" />
+          {caixa === undefined ? (
+            <span className="text-[var(--color-text-soft)]">Carregando caixa...</span>
+          ) : caixa ? (
+            <span>
+              <span className="font-semibold text-[var(--color-text)]">Caixa Mercado Pago</span>{" "}
+              <span className="font-mono text-[var(--color-text-soft)]">
+                {caixa.pos_external_id || caixa.pos_id}
+              </span>
+            </span>
+          ) : (
+            <span className="text-[var(--color-text-soft)]">
+              Esta maquina ainda nao tem caixa no Mercado Pago.
+            </span>
+          )}
+        </span>
+        {caixa === null ? (
+          <button
+            type="button"
+            onClick={criarCaixa}
+            disabled={ocupado}
+            className="shrink-0 rounded-full bg-[var(--color-primary)] px-3 py-1 font-semibold text-white disabled:opacity-60"
+          >
+            Criar caixa
+          </button>
+        ) : null}
+      </div>
 
       <label className="mb-3 block">
         <span className="mb-1 block text-xs font-semibold text-[var(--color-text)]">Point</span>
@@ -132,10 +193,18 @@ export default function TelaPointConfig({ clienteId, maquinaId, maquinaSalva }) 
           {points.map((p) => (
             <option key={p.id} value={p.id}>
               {p.id} {p.operating_mode === "PDV" ? "(integrada)" : "(nao integrada)"}
+              {p.neste_caixa ? " - neste caixa" : ""}
             </option>
           ))}
         </select>
       </label>
+
+      {point && caixa && !point.neste_caixa ? (
+        <p className="mb-3 text-xs font-medium text-amber-700">
+          Esta Point nao esta vinculada ao caixa desta maquina. No Mercado Pago, vincule a Point ao caixa{" "}
+          <strong className="font-mono">{caixa.pos_external_id || caixa.pos_id}</strong> antes de usar a tela.
+        </p>
+      ) : null}
 
       {novaChave ? (
         <div className="mb-3 rounded-[14px] border border-emerald-300 bg-emerald-50 p-3">
