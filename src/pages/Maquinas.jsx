@@ -31,6 +31,7 @@ import { useAuth } from "../context/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
 import DateRangePicker from "../components/DateRangePicker";
 import PointApkChaves from "../components/PointApkChaves";
+import TelaPointConfig from "../components/TelaPointConfig";
 import HorarioFechadoModal from "../components/HorarioFechadoModal";
 import FechamentoLoteModal from "../components/FechamentoLoteModal";
 import { CabecalhoOrdenavel, FiltroStatus, OrdenacaoMobile } from "../components/MaquinasFiltros";
@@ -87,6 +88,7 @@ const paymentProviderLabels = {
   sumup: "SumUp",
   stone: "Stone",
   mercado_pago_apk: "Mercado Pago APK",
+  mercado_pago_point: "Mercado Pago Point (tela)",
 };
 
 function getPaymentProviders(cliente) {
@@ -101,6 +103,7 @@ function getPaymentProviders(cliente) {
     cliente.cliente_sumup || cliente.sumup_configurado ? "sumup" : null,
     cliente.cliente_stone || cliente.stone_configurado ? "stone" : null,
     cliente.mp_configurado ? "mercado_pago_apk" : null,
+    cliente.mp_configurado ? "mercado_pago_point" : null,
   ].filter(Boolean);
 }
 
@@ -2259,7 +2262,8 @@ export default function Maquinas() {
                         provider === "token_play" ||
                         provider === "sumup" ||
                         provider === "stone" ||
-                        provider === "mercado_pago_apk";
+                        provider === "mercado_pago_apk" ||
+                        provider === "mercado_pago_point";
                       return (
                         <option
                           key={provider}
@@ -2471,6 +2475,13 @@ export default function Maquinas() {
                       clienteId={form.cliente_id}
                       maquinaId={editingMachineId || form.id_hardware}
                       maquinaNome={form.nome}
+                    />
+                  ) : null}
+                  {form.cliente_id && form.banco_pagamento === "mercado_pago_point" ? (
+                    <TelaPointConfig
+                      clienteId={form.cliente_id}
+                      maquinaId={editingMachineId || form.id_hardware}
+                      maquinaSalva={Boolean(editingMachineId)}
                     />
                   ) : null}
                 </label>
