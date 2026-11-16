@@ -5,6 +5,7 @@ const BANCOS = {
   mercado_pago: "Mercado Pago",
   mercado_pago_apk: "Mercado Pago APK Point SmartApp",
   mercado_pago_point: "Mercado Pago Point (tela)",
+  confrapag_sdk: "ConfraPag SDK (maquininha PAX)",
   sumup: "SumUp",
   stone: "Stone",
   pagbank: "PagBank",

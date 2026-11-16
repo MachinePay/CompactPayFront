@@ -32,6 +32,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import DateRangePicker from "../components/DateRangePicker";
 import PointApkChaves from "../components/PointApkChaves";
 import TelaPointConfig from "../components/TelaPointConfig";
+import ConfrapagChaves from "../components/ConfrapagChaves";
 import HorarioFechadoModal from "../components/HorarioFechadoModal";
 import FechamentoLoteModal from "../components/FechamentoLoteModal";
 import { CabecalhoOrdenavel, FiltroStatus, OrdenacaoMobile } from "../components/MaquinasFiltros";
@@ -89,6 +90,7 @@ const paymentProviderLabels = {
   stone: "Stone",
   mercado_pago_apk: "Mercado Pago APK",
   mercado_pago_point: "Mercado Pago Point (tela)",
+  confrapag_sdk: "ConfraPag SDK (maquininha PAX)",
 };
 
 function getPaymentProviders(cliente) {
@@ -104,6 +106,8 @@ function getPaymentProviders(cliente) {
     cliente.cliente_stone || cliente.stone_configurado ? "stone" : null,
     cliente.mp_configurado ? "mercado_pago_apk" : null,
     cliente.mp_configurado ? "mercado_pago_point" : null,
+    // Sem token: o CNPJ vai na chave de cada maquininha.
+    "confrapag_sdk",
   ].filter(Boolean);
 }
 
@@ -2263,7 +2267,8 @@ export default function Maquinas() {
                         provider === "sumup" ||
                         provider === "stone" ||
                         provider === "mercado_pago_apk" ||
-                        provider === "mercado_pago_point";
+                        provider === "mercado_pago_point" ||
+                        provider === "confrapag_sdk";
                       return (
                         <option
                           key={provider}
@@ -2482,6 +2487,13 @@ export default function Maquinas() {
                       clienteId={form.cliente_id}
                       maquinaId={editingMachineId || form.id_hardware}
                       maquinaSalva={Boolean(editingMachineId)}
+                    />
+                  ) : null}
+                  {form.cliente_id && form.banco_pagamento === "confrapag_sdk" ? (
+                    <ConfrapagChaves
+                      clienteId={form.cliente_id}
+                      maquinaId={editingMachineId || form.id_hardware}
+                      maquinaNome={form.nome}
                     />
                   ) : null}
                 </label>
