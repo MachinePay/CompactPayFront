@@ -107,7 +107,7 @@ function getPaymentProviders(cliente) {
     cliente.mp_configurado ? "mercado_pago_apk" : null,
     cliente.mp_configurado ? "mercado_pago_point" : null,
     // Sem token: o CNPJ vai na chave de cada maquininha.
-    "confrapag_sdk",
+    cliente.cliente_confrapag ? "confrapag_sdk" : null,
   ].filter(Boolean);
 }
 

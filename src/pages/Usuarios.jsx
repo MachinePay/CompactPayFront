@@ -76,6 +76,7 @@ export default function Usuarios() {
     cliente_pagbank: false,
     cliente_s6pay: false,
     cliente_token_play: false,
+    cliente_confrapag: false,
     cliente_sumup: false,
     mp_public_key: "",
     mp_access_token: "",
@@ -127,6 +128,7 @@ export default function Usuarios() {
       cliente_pagbank: false,
       cliente_s6pay: false,
       cliente_token_play: false,
+      cliente_confrapag: false,
       cliente_sumup: false,
       mp_public_key: "",
       mp_access_token: "",
@@ -169,6 +171,7 @@ export default function Usuarios() {
       cliente_pagbank: Boolean(currentUser.cliente_pagbank),
       cliente_s6pay: Boolean(currentUser.cliente_s6pay),
       cliente_token_play: Boolean(currentUser.cliente_token_play),
+      cliente_confrapag: Boolean(currentUser.cliente_confrapag),
       cliente_sumup: Boolean(
         currentUser.cliente_sumup || currentUser.sumup_api_key || currentUser.sumup_merchant_code,
       ),
@@ -768,6 +771,13 @@ export default function Usuarios() {
                     checked={form.cliente_stone}
                     onChange={(checked) =>
                       setForm((current) => ({ ...current, cliente_stone: checked }))
+                    }
+                  />
+                  <ProviderCheckbox
+                    label="Cliente ConfraPag"
+                    checked={form.cliente_confrapag}
+                    onChange={(checked) =>
+                      setForm((current) => ({ ...current, cliente_confrapag: checked }))
                     }
                   />
                 </div>
