@@ -75,6 +75,17 @@ export default function ConfrapagChaves({ clienteId, maquinaId, maquinaNome }) {
     }
   };
 
+  const alternarTeste = async (terminal) => {
+    const ligar = !terminal.modo_teste;
+    if (ligar && !window.confirm(`Ligar modo teste em "${terminal.nome}"? O app de teste libera pulso sem cobrar cartao (fica registrado como teste).`)) return;
+    try {
+      await api.patch(`/confrapag/terminais/${terminal.id}`, { modo_teste: ligar });
+      await carregar();
+    } catch (error) {
+      setErro(getApiErrorMessage(error, "Nao foi possivel alterar o modo teste"));
+    }
+  };
+
   const ativos = terminais.filter((t) => t.ativo);
 
   return (
@@ -133,6 +144,19 @@ export default function ConfrapagChaves({ clienteId, maquinaId, maquinaNome }) {
                     : "ainda nao usada"}
                 </span>
               </span>
+              <span className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => alternarTeste(terminal)}
+                title="Modo teste: o app de teste libera pulso sem cartao"
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 font-semibold ${
+                  terminal.modo_teste
+                    ? "border-amber-300 bg-amber-50 text-amber-700"
+                    : "border-[var(--color-border)] text-[var(--color-text-soft)] hover:border-[var(--color-primary)]"
+                }`}
+              >
+                {terminal.modo_teste ? "Modo teste ligado" : "Modo teste"}
+              </button>
               <button
                 type="button"
                 onClick={() => revogar(terminal)}
@@ -141,6 +165,7 @@ export default function ConfrapagChaves({ clienteId, maquinaId, maquinaNome }) {
                 <Trash2 size={13} />
                 Revogar
               </button>
+              </span>
             </li>
           ))}
         </ul>
