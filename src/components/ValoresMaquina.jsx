@@ -142,17 +142,17 @@ export default function ValoresMaquina({ maquinaId, maquinaSalva }) {
         <p className="mb-3 text-xs text-[var(--color-text-soft)]">Nenhum valor cadastrado ainda.</p>
       )}
 
-      <div className="flex flex-col gap-2 sm:flex-row">
+      <input
+        className="mb-2 w-full rounded-[10px] border border-[var(--color-border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)]"
+        placeholder="Nome, ex.: 1 jogada"
+        value={form.nome}
+        maxLength={39}
+        onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+        onKeyDown={aoTeclar}
+      />
+      <div className="flex flex-wrap gap-2">
         <input
-          className="min-w-0 flex-1 rounded-[10px] border border-[var(--color-border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)]"
-          placeholder="Nome, ex.: 1 jogada"
-          value={form.nome}
-          maxLength={39}
-          onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-          onKeyDown={aoTeclar}
-        />
-        <input
-          className="w-full rounded-[10px] border border-[var(--color-border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)] sm:w-32"
+          className="min-w-[110px] flex-1 rounded-[10px] border border-[var(--color-border)] bg-white px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)]"
           placeholder="Valor, ex.: 5,00"
           inputMode="decimal"
           value={form.valor}

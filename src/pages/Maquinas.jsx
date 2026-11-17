@@ -33,6 +33,7 @@ import DateRangePicker from "../components/DateRangePicker";
 import PointApkChaves from "../components/PointApkChaves";
 import TelaPointConfig from "../components/TelaPointConfig";
 import ValoresMaquina from "../components/ValoresMaquina";
+import VideoTela from "../components/VideoTela";
 import ConfrapagChaves from "../components/ConfrapagChaves";
 import HorarioFechadoModal from "../components/HorarioFechadoModal";
 import FechamentoLoteModal from "../components/FechamentoLoteModal";
@@ -2502,6 +2503,13 @@ export default function Maquinas() {
 
               {["mercado_pago_point", "confrapag_sdk", "mercado_pago_apk"].includes(form.banco_pagamento) ? (
                 <ValoresMaquina
+                  maquinaId={editingMachineId || form.id_hardware}
+                  maquinaSalva={Boolean(editingMachineId)}
+                />
+              ) : null}
+
+              {form.banco_pagamento === "mercado_pago_point" ? (
+                <VideoTela
                   maquinaId={editingMachineId || form.id_hardware}
                   maquinaSalva={Boolean(editingMachineId)}
                 />
