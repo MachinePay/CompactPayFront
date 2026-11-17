@@ -2505,6 +2505,12 @@ export default function Maquinas() {
                       maquinaNome={form.nome}
                     />
                   ) : null}
+                  {form.cliente_id && form.banco_pagamento === "confrapag_sdk" && user?.role === "admin" ? (
+                    <p className="mt-2 text-xs leading-5 text-[var(--color-text-soft)]">
+                      Split de pagamento (Pix, credito e debito) e&apos; configurado na conta pela ConfraPag, no portal
+                      Pulse. O app nao divide as vendas.
+                    </p>
+                  ) : null}
                 </label>
               ) : null}
 
