@@ -9,6 +9,8 @@ import api, { getApiErrorMessage } from "../api/axios";
 export default function TelaPointConfig({ clienteId, maquinaId, maquinaSalva }) {
   const [points, setPoints] = useState([]);
   const [caixa, setCaixa] = useState(undefined); // undefined = carregando, null = sem caixa
+  const [telefone, setTelefone] = useState("");
+  const [telefoneSalvo, setTelefoneSalvo] = useState(false);
   const [telas, setTelas] = useState([]);
   const [pointEscolhida, setPointEscolhida] = useState("");
   const [carregando, setCarregando] = useState(false);
@@ -23,11 +25,15 @@ export default function TelaPointConfig({ clienteId, maquinaId, maquinaSalva }) 
     setCarregando(true);
     // Cada parte carrega sozinha: um erro do Mercado Pago na lista de Points
     // nao esconde o caixa nem as telas.
-    const [caixaResp, pointsResp, telasResp] = await Promise.allSettled([
+    const [caixaResp, pointsResp, telasResp, manutResp] = await Promise.allSettled([
       api.get(`/tela/maquinas/${encodeURIComponent(maquinaId)}/caixa`),
       api.get("/tela/point/terminais", { params: { cliente_id: Number(clienteId), maquina_id: maquinaId } }),
       api.get("/tela/telas"),
+      api.get(`/tela/maquinas/${encodeURIComponent(maquinaId)}/manutencao`),
     ]);
+    if (manutResp.status === "fulfilled") {
+      setTelefone(manutResp.value.data.telefone || "");
+    }
     const erros = [];
     if (caixaResp.status === "fulfilled") {
       setCaixa(caixaResp.value.data.caixa);
@@ -57,6 +63,19 @@ export default function TelaPointConfig({ clienteId, maquinaId, maquinaSalva }) 
   }, [carregar]);
 
   const point = points.find((p) => p.id === pointEscolhida);
+
+  const salvarTelefone = async () => {
+    try {
+      const { data } = await api.put(`/tela/maquinas/${encodeURIComponent(maquinaId)}/manutencao`, {
+        telefone: telefone.trim() || null,
+      });
+      setTelefone(data.telefone || "");
+      setTelefoneSalvo(true);
+      setErro("");
+    } catch (error) {
+      setErro(getApiErrorMessage(error, "Nao foi possivel salvar o numero de manutencao"));
+    }
+  };
 
   const criarCaixa = async () => {
     setOcupado(true);
@@ -151,6 +170,38 @@ export default function TelaPointConfig({ clienteId, maquinaId, maquinaSalva }) 
         cadastrados para{" "}
         <strong className="font-mono text-[var(--color-text)]">{maquinaId}</strong>.
       </p>
+
+      <div className="mb-3 rounded-[10px] bg-white px-3 py-2 text-xs">
+        <span className="mb-1 block font-semibold text-[var(--color-text)]">Numero de manutencao</span>
+        <span className="mb-2 block text-[var(--color-text-soft)]">
+          Aparece em letra grande na tela vermelha quando a maquina fica offline. Vazio = telefone do cliente.
+        </span>
+        <div className="flex gap-2">
+          <input
+            className="min-w-0 flex-1 rounded-[10px] border border-[var(--color-border)] px-3 py-2 text-sm outline-none focus:border-[var(--color-primary)]"
+            placeholder="Ex.: (11) 99999-0000"
+            value={telefone}
+            maxLength={40}
+            onChange={(e) => {
+              setTelefone(e.target.value);
+              setTelefoneSalvo(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                salvarTelefone();
+              }
+            }}
+          />
+          <button
+            type="button"
+            onClick={salvarTelefone}
+            className="shrink-0 rounded-full bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white"
+          >
+            {telefoneSalvo ? "Salvo" : "Salvar"}
+          </button>
+        </div>
+      </div>
 
       <div className="mb-3 flex items-center justify-between gap-2 rounded-[10px] bg-white px-3 py-2 text-xs">
         <span className="flex min-w-0 items-center gap-2">
