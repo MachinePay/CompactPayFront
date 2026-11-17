@@ -77,6 +77,7 @@ export default function Usuarios() {
     cliente_s6pay: false,
     cliente_token_play: false,
     cliente_confrapag: false,
+    confrapix_token: "",
     cliente_sumup: false,
     mp_public_key: "",
     mp_access_token: "",
@@ -129,6 +130,7 @@ export default function Usuarios() {
       cliente_s6pay: false,
       cliente_token_play: false,
       cliente_confrapag: false,
+      confrapix_token: "",
       cliente_sumup: false,
       mp_public_key: "",
       mp_access_token: "",
@@ -172,6 +174,7 @@ export default function Usuarios() {
       cliente_s6pay: Boolean(currentUser.cliente_s6pay),
       cliente_token_play: Boolean(currentUser.cliente_token_play),
       cliente_confrapag: Boolean(currentUser.cliente_confrapag),
+      confrapix_token: currentUser.confrapix_token || "",
       cliente_sumup: Boolean(
         currentUser.cliente_sumup || currentUser.sumup_api_key || currentUser.sumup_merchant_code,
       ),
@@ -257,6 +260,7 @@ export default function Usuarios() {
       sumup_merchant_code: form.cliente_sumup ? form.sumup_merchant_code : "",
       stone_secret_key: form.cliente_stone ? form.stone_secret_key : "",
       stone_service_referer_name: form.cliente_stone ? form.stone_service_referer_name : "",
+      confrapix_token: form.cliente_confrapag ? form.confrapix_token : "",
       cliente_id: null,
     };
 
@@ -911,6 +915,26 @@ export default function Usuarios() {
                         placeholder="Id de parceiro do Partner Hub, se tiver"
                         value={form.stone_service_referer_name}
                         onChange={(e) => setForm((current) => ({ ...current, stone_service_referer_name: e.target.value }))}
+                      />
+                    </Field>
+                  </>
+                ) : null}
+
+                {form.cliente_confrapag ? (
+                  <>
+                    <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
+                      Maquininha ConfraPag: credito e debito vao pelo SDK (sem token). O Pix usa a API Confrapix: cole o
+                      token do estabelecimento (painel Confrapix). Sem token, o botao Pix nao aparece na maquininha.
+                    </div>
+
+                    <Field label="Token Confrapix (Pix)">
+                      <input
+                        type="password"
+                        autoComplete="off"
+                        className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-4 text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)]"
+                        placeholder="Token da API Confrapix (opcional)"
+                        value={form.confrapix_token}
+                        onChange={(e) => setForm((current) => ({ ...current, confrapix_token: e.target.value }))}
                       />
                     </Field>
                   </>
