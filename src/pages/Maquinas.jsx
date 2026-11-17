@@ -32,6 +32,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import DateRangePicker from "../components/DateRangePicker";
 import PointApkChaves from "../components/PointApkChaves";
 import TelaPointConfig from "../components/TelaPointConfig";
+import ValoresMaquina from "../components/ValoresMaquina";
 import ConfrapagChaves from "../components/ConfrapagChaves";
 import HorarioFechadoModal from "../components/HorarioFechadoModal";
 import FechamentoLoteModal from "../components/FechamentoLoteModal";
@@ -2497,6 +2498,13 @@ export default function Maquinas() {
                     />
                   ) : null}
                 </label>
+              ) : null}
+
+              {["mercado_pago_point", "confrapag_sdk", "mercado_pago_apk"].includes(form.banco_pagamento) ? (
+                <ValoresMaquina
+                  maquinaId={editingMachineId || form.id_hardware}
+                  maquinaSalva={Boolean(editingMachineId)}
+                />
               ) : null}
 
               <label className="block">
