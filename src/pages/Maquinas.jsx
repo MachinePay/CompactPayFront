@@ -34,6 +34,7 @@ import PointApkChaves from "../components/PointApkChaves";
 import TelaPointConfig from "../components/TelaPointConfig";
 import ValoresMaquina from "../components/ValoresMaquina";
 import VideoTela from "../components/VideoTela";
+import TelaSumupConfig from "../components/TelaSumupConfig";
 import ConfrapagChaves from "../components/ConfrapagChaves";
 import HorarioFechadoModal from "../components/HorarioFechadoModal";
 import FechamentoLoteModal from "../components/FechamentoLoteModal";
@@ -2491,6 +2492,12 @@ export default function Maquinas() {
                       maquinaSalva={Boolean(editingMachineId)}
                     />
                   ) : null}
+                  {form.cliente_id && form.banco_pagamento === "sumup" ? (
+                    <TelaSumupConfig
+                      maquinaId={editingMachineId || form.id_hardware}
+                      maquinaSalva={Boolean(editingMachineId)}
+                    />
+                  ) : null}
                   {form.cliente_id && form.banco_pagamento === "confrapag_sdk" ? (
                     <ConfrapagChaves
                       clienteId={form.cliente_id}
@@ -2501,14 +2508,14 @@ export default function Maquinas() {
                 </label>
               ) : null}
 
-              {["mercado_pago_point", "confrapag_sdk", "mercado_pago_apk"].includes(form.banco_pagamento) ? (
+              {["mercado_pago_point", "confrapag_sdk", "mercado_pago_apk", "sumup"].includes(form.banco_pagamento) ? (
                 <ValoresMaquina
                   maquinaId={editingMachineId || form.id_hardware}
                   maquinaSalva={Boolean(editingMachineId)}
                 />
               ) : null}
 
-              {form.banco_pagamento === "mercado_pago_point" ? (
+              {["mercado_pago_point", "sumup"].includes(form.banco_pagamento) ? (
                 <VideoTela
                   maquinaId={editingMachineId || form.id_hardware}
                   maquinaSalva={Boolean(editingMachineId)}
