@@ -39,6 +39,8 @@ import ConfrapagChaves from "../components/ConfrapagChaves";
 import EditarPontoCliente from "../components/EditarPontoCliente";
 import HorarioFechadoModal from "../components/HorarioFechadoModal";
 import FechamentoLoteModal from "../components/FechamentoLoteModal";
+import { CabecalhoPontoCard, CabecalhoPontoLinha, FiltroPontos } from "../components/PontosMaquinas";
+import { aplicarPontos, listarComPontos, usePontosMaquinas } from "../utils/pontosMaquinas";
 import { CabecalhoOrdenavel, FiltroStatus, OrdenacaoMobile } from "../components/MaquinasFiltros";
 import { FILTROS_STATUS, buscarMaquinas, ordenarMaquinas } from "../utils/maquinasLista";
 import Modal from "../components/Modal";
@@ -48,6 +50,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import { confirmar } from "../utils/confirmar";
 import { obterGps } from "../utils/localizacaoCelular";
 import { brasiliaDate } from "../utils/dateTime";
+import VendingMaquinaCampos, { vendingFormInicial, vendingPayload } from "../components/VendingMaquinaCampos";
 import {
   describePulseResultToast,
   pollComandoStatus,
@@ -60,6 +63,7 @@ const emptyForm = {
   localizacao_mapa: "",
   maquina_ficha: false,
   valor_ficha: "",
+  ...vendingFormInicial(null),
   cliente_id: "",
   banco_pagamento: "",
   sumup_reader_id: "",
@@ -568,6 +572,7 @@ export default function Maquinas() {
         ...(user?.role === "admin" ? { localizacao_mapa: form.localizacao_mapa.trim() } : {}),
         maquina_ficha: Boolean(form.maquina_ficha),
         valor_ficha: form.maquina_ficha ? Number(String(form.valor_ficha).replace(",", ".")) : null,
+        ...vendingPayload(form),
         banco_pagamento: selectedProvider,
         cliente_id:
           user?.role === "admin"
@@ -758,6 +763,7 @@ export default function Maquinas() {
         machine.latitude != null && machine.longitude != null ? `${machine.latitude}, ${machine.longitude}` : "",
       maquina_ficha: Boolean(machine.maquina_ficha),
       valor_ficha: machine.valor_ficha != null ? String(machine.valor_ficha) : "",
+      ...vendingFormInicial(machine),
       cliente_id: machine.cliente_id == null ? "" : String(machine.cliente_id),
       banco_pagamento: machine.banco_pagamento || "mercado_pago",
       sumup_reader_id: machine.sumup_reader_id || "",
@@ -1132,11 +1138,14 @@ export default function Maquinas() {
 
   // A contagem dos botoes de status respeita a busca; a lista respeita os dois.
   const maquinasBuscadas = useMemo(() => buscarMaquinas(maquinas, buscaMaquina), [maquinas, buscaMaquina]);
-  const maquinasVisiveis = useMemo(() => {
+  const maquinasFiltradas = useMemo(() => {
     const filtro = FILTROS_STATUS.find((item) => item.id === filtroStatus) || FILTROS_STATUS[0];
     return ordenarMaquinas(maquinasBuscadas.filter(filtro.testa), ordem);
   }, [maquinasBuscadas, filtroStatus, ordem]);
-  const filtrando = Boolean(buscaMaquina.trim()) || filtroStatus !== "todos";
+  // Pontos (opcional, so visual): sem pontos criados a lista fica igual.
+  const pontosEstado = usePontosMaquinas(user, selectedClienteId);
+  const maquinasVisiveis = useMemo(() => aplicarPontos(maquinasFiltradas, pontosEstado), [maquinasFiltradas, pontosEstado]);
+  const filtrando = Boolean(buscaMaquina.trim()) || filtroStatus !== "todos" || pontosEstado.filtro !== "todos";
 
   return (
     <div className="flex min-h-full flex-col gap-4">
@@ -1771,6 +1780,7 @@ export default function Maquinas() {
             </div>
           </div>
         ) : null}
+        {maquinas.length > 0 ? <FiltroPontos estado={pontosEstado} maquinas={maquinasFiltradas} /> : null}
 
         <div className="mt-4 overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-white">
           {user?.role === "admin" && !selectedClienteId ? (
@@ -1797,6 +1807,7 @@ export default function Maquinas() {
                   onClick={() => {
                     setBuscaMaquina("");
                     setFiltroStatus("todos");
+                    pontosEstado.setFiltro("todos");
                   }}
                 >
                   Limpar busca e filtro
@@ -1806,7 +1817,7 @@ export default function Maquinas() {
           ) : (
             <>
               <div className="grid gap-3 p-3 md:hidden">
-                {maquinasVisiveis.map((m) => (
+                {listarComPontos(maquinasVisiveis, pontosEstado, CabecalhoPontoCard, (m) => (
                   <MachineMobileCard
                     key={m.id_hardware}
                     machine={m}
@@ -1853,7 +1864,7 @@ export default function Maquinas() {
                     </tr>
                   </thead>
                   <tbody>
-                    {maquinasVisiveis.map((m) => (
+                    {listarComPontos(maquinasVisiveis, pontosEstado, CabecalhoPontoLinha, (m) => (
                       <tr
                         key={m.id_hardware}
                         className="cursor-pointer border-t border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-primary-soft)]"
@@ -2660,6 +2671,8 @@ export default function Maquinas() {
                   </label>
                 ) : null}
               </div>
+
+              <VendingMaquinaCampos form={form} setForm={setForm} />
 
               {user?.role === "admin" ? (
                 <label className="block">
