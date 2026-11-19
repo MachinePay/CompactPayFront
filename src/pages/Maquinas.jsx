@@ -1796,6 +1796,9 @@ export default function Maquinas() {
                     }
                     onAbrirDiagnostico={() => handleAbrirDiagnostico(m)}
                     onAbrirHorarioFechado={() => setHorarioFechadoMachine(m)}
+                    onAbrirConfigDispositivo={() =>
+                      handleAbrirConfigDispositivo(m)
+                    }
                   />
                 ))}
               </div>
@@ -2782,6 +2785,7 @@ function MachineMobileCard({
   togglingFiltroSaida,
   onAbrirDiagnostico,
   onAbrirHorarioFechado,
+  onAbrirConfigDispositivo,
 }) {
   return (
     <article className="min-w-0 rounded-[18px] border border-[var(--color-border)] bg-white p-4 shadow-[0_8px_20px_rgba(34,61,43,0.06)]">
@@ -2986,6 +2990,20 @@ function MachineMobileCard({
             >
               <Moon size={15} />
               Horario do ponto fechado
+            </button>
+            <button
+              type="button"
+              className="col-span-2 pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+              onClick={onAbrirConfigDispositivo}
+              disabled={!machineSupportsDeviceConfig(machine)}
+              title={
+                machineSupportsDeviceConfig(machine)
+                  ? "Configuracao da placa (pulso/moeda/reconexao)"
+                  : `Firmware ${machine.firmware_version || "desconhecido"} nao suporta configuracao remota - atualize a placa primeiro`
+              }
+            >
+              <Timer size={15} />
+              Configuracao da placa
             </button>
             <button
               type="button"
