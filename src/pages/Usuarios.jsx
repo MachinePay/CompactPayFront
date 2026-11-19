@@ -7,6 +7,7 @@ import Modal from "../components/Modal";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Button from "../components/Button";
 import ConfirmModal from "../components/ConfirmModal";
+import { MensalidadeCelula, MensalidadeModal } from "../components/MensalidadeUsuario";
 import {
   BadgeStatus,
   BuscaUsuarios,
@@ -73,6 +74,8 @@ export default function Usuarios() {
   const [deleteUser, setDeleteUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
   const [resumoClientes, setResumoClientes] = useState([]);
+  const [mensalidades, setMensalidades] = useState({});
+  const [mensalidadeUsuario, setMensalidadeUsuario] = useState(null);
   const [filtros, setFiltros] = useState(FILTROS_PADRAO);
   const [pagina, setPagina] = useState(1);
   const [selecionadoId, setSelecionadoId] = useState(null);
@@ -114,13 +117,15 @@ export default function Usuarios() {
   const fetchUsuarios = async () => {
     setLoading(true);
     try {
-      const [res, resumo] = await Promise.all([
+      const [res, resumo, mens] = await Promise.all([
         api.get("/usuarios"),
         // Resumo (maquinas, SumUp, ultima venda) e' extra: se falhar, a lista abre igual.
         api.get("/usuarios/resumo-clientes").catch(() => null),
+        api.get("/mensalidades").catch(() => null),
       ]);
       setUsuarios(res.data);
       if (resumo) setResumoClientes(resumo.data);
+      if (mens) setMensalidades(Object.fromEntries(mens.data.map((m) => [m.cliente_id, m])));
     } catch {
       // Erro ja e exibido pelo toast global de erros de API.
     } finally {
@@ -395,6 +400,8 @@ export default function Usuarios() {
                     item={item}
                     onEdit={() => handleEdit(item)}
                     onDelete={() => setDeleteUser(item)}
+                    mensalidade={mensalidades[item.cliente_id]}
+                    onMensalidade={() => setMensalidadeUsuario(item)}
                   />
                 ))}
               </div>
@@ -410,6 +417,7 @@ export default function Usuarios() {
                       <th className="px-3 py-3 whitespace-nowrap text-center">SumUp</th>
                       <th className="px-3 py-3 whitespace-nowrap text-center">Maquinas</th>
                       <th className="px-3 py-3 whitespace-nowrap">Ultima venda</th>
+                      <th className="px-3 py-3 whitespace-nowrap">Mensalidade</th>
                       <th className="px-3 py-3 whitespace-nowrap">Acoes</th>
                     </tr>
                   </thead>
@@ -451,6 +459,13 @@ export default function Usuarios() {
                         </td>
                         <td className="px-3 py-2.5">
                           <UltimaVenda item={item} />
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <MensalidadeCelula
+                            item={item}
+                            mensalidade={mensalidades[item.cliente_id]}
+                            onAbrir={() => setMensalidadeUsuario(item)}
+                          />
                         </td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-1.5">
@@ -500,6 +515,12 @@ export default function Usuarios() {
         ) : null}
       </section>
 
+      <MensalidadeModal
+        usuario={mensalidadeUsuario}
+        mensalidade={mensalidadeUsuario ? mensalidades[mensalidadeUsuario.cliente_id] : null}
+        onClose={() => setMensalidadeUsuario(null)}
+        onSalvo={(m) => setMensalidades((atual) => ({ ...atual, [m.cliente_id]: m }))}
+      />
       <ConfirmModal
         open={Boolean(deleteUser)}
         title="Excluir usuario"
@@ -915,7 +936,7 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
   );
 }
 
-function UserMobileCard({ item, onEdit, onDelete }) {
+function UserMobileCard({ item, onEdit, onDelete, mensalidade, onMensalidade }) {
   const protectedAccount = isProtectedUser(item);
 
   return (
@@ -950,6 +971,10 @@ function UserMobileCard({ item, onEdit, onDelete }) {
         <InfoPill
           label="Ultima venda"
           value={item.tem_venda ? formatarUltimaVenda(item.ultima_venda) : item.cliente_id != null ? "Nenhuma" : "--"}
+        />
+        <InfoPill
+          label="Mensalidade"
+          value={<MensalidadeCelula item={item} mensalidade={mensalidade} onAbrir={onMensalidade} />}
         />
       </div>
 
