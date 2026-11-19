@@ -3,6 +3,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
 import Modal from "./Modal";
+import VendingMaquinaCampos, { vendingFormInicial, vendingPayload } from "./VendingMaquinaCampos";
 
 // Edicao da maquina pelo cliente (nao admin): so nome do ponto e localizacao
 // (PATCH /maquinas/{id}/ponto). Em maquina SumUp mostra, so para ver, o usuario
@@ -18,6 +19,7 @@ export default function EditarPontoCliente({ machine, onClose, onSaved }) {
   const [login, setLogin] = useState(null); // {usuario, senha}
   const [loginErro, setLoginErro] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [vending, setVending] = useState(vendingFormInicial(null));
 
   const ehSumup = (machine?.banco_pagamento || "") === "sumup";
 
@@ -25,6 +27,7 @@ export default function EditarPontoCliente({ machine, onClose, onSaved }) {
     if (!machine) return;
     setNome(machine.nome || "");
     setLocalizacao(machine.localizacao || "");
+    setVending(vendingFormInicial(machine));
     setErro("");
     setLogin(null);
     setLoginErro("");
@@ -53,6 +56,7 @@ export default function EditarPontoCliente({ machine, onClose, onSaved }) {
         nome: nome.trim(),
         localizacao: localizacao.trim(),
       });
+      await api.patch(`/maquinas/${encodeURIComponent(machine.id_hardware)}/vending`, vendingPayload(vending));
       await onSaved?.();
       onClose();
     } catch (error) {
@@ -98,6 +102,8 @@ export default function EditarPontoCliente({ machine, onClose, onSaved }) {
               />
             </label>
           </div>
+
+          <VendingMaquinaCampos form={vending} setForm={setVending} />
 
           {ehSumup ? (
             <div className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">
