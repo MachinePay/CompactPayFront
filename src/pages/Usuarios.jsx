@@ -7,6 +7,21 @@ import Modal from "../components/Modal";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Button from "../components/Button";
 import ConfirmModal from "../components/ConfirmModal";
+import {
+  BadgeStatus,
+  BuscaUsuarios,
+  FiltrosUsuarios,
+  PaginacaoUsuarios,
+  UltimaVenda,
+} from "../components/UsuariosLista";
+import {
+  FILTROS_PADRAO,
+  POR_PAGINA,
+  casaBusca,
+  casaFiltros,
+  formatarUltimaVenda,
+  juntarResumo,
+} from "../utils/usuariosLista";
 
 // IPN e webhook do Mercado Pago usam a mesma rota do backend.
 const MP_IPN_URL = `${api.defaults.baseURL}/callback-mercado-pago`;
@@ -58,6 +73,10 @@ export default function Usuarios() {
   const [deletingUser, setDeletingUser] = useState(false);
   const [validatingClienteId, setValidatingClienteId] = useState(null);
   const [mpValidation, setMpValidation] = useState(null);
+  const [resumoClientes, setResumoClientes] = useState([]);
+  const [filtros, setFiltros] = useState(FILTROS_PADRAO);
+  const [pagina, setPagina] = useState(1);
+  const [selecionadoId, setSelecionadoId] = useState(null);
   const [form, setForm] = useState({
     email: "",
     nome: "",
@@ -96,8 +115,13 @@ export default function Usuarios() {
   const fetchUsuarios = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/usuarios");
+      const [res, resumo] = await Promise.all([
+        api.get("/usuarios"),
+        // Resumo (maquinas, SumUp, ultima venda) e' extra: se falhar, a lista abre igual.
+        api.get("/usuarios/resumo-clientes").catch(() => null),
+      ]);
       setUsuarios(res.data);
+      if (resumo) setResumoClientes(resumo.data);
     } catch {
       // Erro ja e exibido pelo toast global de erros de API.
     } finally {
@@ -287,19 +311,17 @@ export default function Usuarios() {
 
   const adminCount = usuarios.filter((item) => item.role === "admin").length;
   const clientCount = usuarios.filter((item) => item.role === "cliente").length;
-  const normalizedSearch = searchTerm.trim().toLowerCase();
-  const filteredUsuarios = usuarios.filter((item) => {
-    if (!normalizedSearch) return true;
-    return [
-      item.nome,
-      item.email,
-      item.role,
-      item.cliente_id,
-      item.mp_configurado ? "configurado" : "pendente",
-    ]
-      .filter((value) => value !== null && value !== undefined)
-      .some((value) => String(value).toLowerCase().includes(normalizedSearch));
-  });
+  // Busca e filtros rodam sobre todos os usuarios; a paginacao vem depois.
+  const usuariosComResumo = juntarResumo(usuarios, resumoClientes);
+  const filteredUsuarios = usuariosComResumo.filter((item) =>
+    selecionadoId != null
+      ? item.id === selecionadoId
+      : casaBusca(item, searchTerm) && casaFiltros(item, filtros),
+  );
+  const totalPaginas = Math.max(1, Math.ceil(filteredUsuarios.length / POR_PAGINA));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const usuariosPagina = filteredUsuarios.slice((paginaAtual - 1) * POR_PAGINA, paginaAtual * POR_PAGINA);
+  const filtrosAtivos = Object.keys(FILTROS_PADRAO).some((chave) => filtros[chave] !== FILTROS_PADRAO[chave]);
 
   return (
     <div className="flex min-h-full flex-col gap-4">
@@ -348,15 +370,45 @@ export default function Usuarios() {
           <div>
             <div className="text-sm font-semibold text-[var(--color-text)]">Buscar usuario</div>
             <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-              Filtre por nome, email, perfil, cliente ou status Mercado Pago.
+              Busque por nome, email, ID interno ou numero do cliente em todas as paginas.
             </div>
           </div>
-          <input
-            className="w-full rounded-[18px] border border-[var(--color-border)] bg-white px-4 py-3 text-sm text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] md:max-w-md"
-            placeholder="Digite para filtrar usuarios..."
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
+          <BuscaUsuarios
+            usuarios={usuariosComResumo}
+            valor={searchTerm}
+            onChange={(texto) => {
+              setSearchTerm(texto);
+              setSelecionadoId(null);
+              setPagina(1);
+            }}
+            onSelecionar={(item) => {
+              setSearchTerm(item.nome || item.email);
+              setSelecionadoId(item.id);
+              setPagina(1);
+            }}
           />
+        </div>
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <FiltrosUsuarios
+            filtros={filtros}
+            onChange={(novos) => {
+              setFiltros(novos);
+              setSelecionadoId(null);
+              setPagina(1);
+            }}
+          />
+          {filtrosAtivos ? (
+            <button
+              type="button"
+              className="text-xs font-semibold text-[var(--color-primary)] hover:underline"
+              onClick={() => {
+                setFiltros(FILTROS_PADRAO);
+                setPagina(1);
+              }}
+            >
+              Limpar filtros
+            </button>
+          ) : null}
         </div>
         <div className="overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-white">
           {loading ? (
@@ -367,12 +419,14 @@ export default function Usuarios() {
             </div>
           ) : filteredUsuarios.length === 0 ? (
             <div className="flex h-40 items-center justify-center px-6 text-center text-sm text-[var(--color-text-soft)]">
-              Nenhum usuario encontrado para "{searchTerm}".
+              {searchTerm
+                ? `Nenhum usuario encontrado para "${searchTerm}"${filtrosAtivos ? " com os filtros escolhidos" : ""}.`
+                : "Nenhum usuario com os filtros escolhidos."}
             </div>
           ) : (
             <>
               <div className="grid gap-3 p-3 md:hidden">
-                {filteredUsuarios.map((item) => (
+                {usuariosPagina.map((item) => (
                   <UserMobileCard
                     key={item.id}
                     item={item}
@@ -393,11 +447,14 @@ export default function Usuarios() {
                       <th className="px-5 py-4 whitespace-nowrap">Perfil</th>
                       <th className="px-5 py-4 whitespace-nowrap">Cliente</th>
                       <th className="px-5 py-4 whitespace-nowrap">Mercado Pago</th>
+                      <th className="px-5 py-4 whitespace-nowrap">SumUp</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Maquinas</th>
+                      <th className="px-5 py-4 whitespace-nowrap">Ultima venda</th>
                       <th className="px-5 py-4 whitespace-nowrap">Acoes</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredUsuarios.map((item) => (
+                    {usuariosPagina.map((item) => (
                       <tr
                         key={item.id}
                         className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
@@ -433,6 +490,15 @@ export default function Usuarios() {
                           >
                             {item.mp_configurado ? "Configurado" : "Pendente"}
                           </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <BadgeStatus ok={item.sumup_configurado} />
+                        </td>
+                        <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                          {item.maquinas ?? "--"}
+                        </td>
+                        <td className="px-5 py-4 min-w-[150px]">
+                          <UltimaVenda item={item} />
                         </td>
                         <td className="px-5 py-4 min-w-[190px]">
                           <div className="flex flex-wrap gap-2">
@@ -494,6 +560,15 @@ export default function Usuarios() {
             </>
           )}
         </div>
+        {!loading ? (
+          <PaginacaoUsuarios
+            pagina={paginaAtual}
+            totalPaginas={totalPaginas}
+            total={filteredUsuarios.length}
+            porPagina={POR_PAGINA}
+            onChange={setPagina}
+          />
+        ) : null}
       </section>
 
       <ConfirmModal
@@ -1037,6 +1112,12 @@ function UserMobileCard({ item, validatingClienteId, onEdit, onConnectMp, onVali
         <InfoPill label="Cliente" value={item.cliente_id ?? "--"} />
         <InfoPill label="Mercado Pago" value={item.mp_configurado ? "Configurado" : "Pendente"} />
         <InfoPill label="Perfil" value={item.role} />
+        <InfoPill label="SumUp" value={item.sumup_configurado ? "Configurado" : "Pendente"} />
+        <InfoPill label="Maquinas" value={item.maquinas ?? "--"} />
+        <InfoPill
+          label="Ultima venda"
+          value={item.tem_venda ? formatarUltimaVenda(item.ultima_venda) : item.cliente_id != null ? "Nenhuma" : "--"}
+        />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
