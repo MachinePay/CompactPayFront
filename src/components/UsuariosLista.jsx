@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 
 import { OPCOES_FILTROS, casaBusca, formatarUltimaVenda } from "../utils/usuariosLista";
 
@@ -179,29 +179,46 @@ export function PaginacaoUsuarios({ pagina, totalPaginas, total, porPagina, onCh
   );
 }
 
+/** Check verde (configurado/sim) ou X vermelho (pendente/nao). */
 export function BadgeStatus({ ok, okLabel = "Configurado", pendenteLabel = "Pendente" }) {
+  const Icone = ok ? Check : X;
   return (
     <span
-      className={`inline-flex items-center whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold ${
-        ok ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]" : "bg-amber-50 text-[var(--color-warning)]"
+      title={ok ? okLabel : pendenteLabel}
+      aria-label={ok ? okLabel : pendenteLabel}
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${
+        ok ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]" : "bg-rose-50 text-[var(--color-error)]"
       }`}
     >
-      {ok ? okLabel : pendenteLabel}
+      <Icone size={15} strokeWidth={3} />
     </span>
   );
 }
 
-/** Coluna "Vendas": sim/nao + data da ultima venda. */
+/** Email em duas linhas: usuario em cima, @dominio embaixo. */
+export function EmailDuasLinhas({ email }) {
+  const texto = String(email || "");
+  const arroba = texto.indexOf("@");
+  if (arroba <= 0) return <span className="break-all">{texto}</span>;
+  return (
+    <span className="block break-all" title={texto}>
+      <span className="block">{texto.slice(0, arroba)}</span>
+      <span className="block">{texto.slice(arroba)}</span>
+    </span>
+  );
+}
+
+/** Coluna "Ultima venda": check/X + data da ultima venda. */
 export function UltimaVenda({ item }) {
   if (item.role !== "cliente" || item.cliente_id == null) {
     return <span className="text-[var(--color-text-soft)]">--</span>;
   }
   return (
-    <div>
-      <BadgeStatus ok={item.tem_venda} okLabel="Sim" pendenteLabel="Nao" />
-      <div className="mt-1 whitespace-nowrap text-xs text-[var(--color-text-soft)]">
+    <div className="flex items-center gap-2">
+      <BadgeStatus ok={item.tem_venda} okLabel="Ja teve venda" pendenteLabel="Nenhuma venda" />
+      <span className="text-xs leading-4 text-[var(--color-text-soft)]">
         {item.tem_venda ? formatarUltimaVenda(item.ultima_venda) : "Nenhuma venda"}
-      </div>
+      </span>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Link, Plus, RefreshCcw, ShieldCheck, Trash2, UserRoundCog, Users, XCircle } from "lucide-react";
+import { Plus, ShieldCheck, Trash2, UserRoundCog, Users } from "lucide-react";
 
-import api, { getApiErrorMessage } from "../api/axios";
+import api from "../api/axios";
 import { useAuth } from "../context/useAuth";
 import Modal from "../components/Modal";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -10,6 +10,7 @@ import ConfirmModal from "../components/ConfirmModal";
 import {
   BadgeStatus,
   BuscaUsuarios,
+  EmailDuasLinhas,
   FiltrosUsuarios,
   PaginacaoUsuarios,
   UltimaVenda,
@@ -71,8 +72,6 @@ export default function Usuarios() {
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteUser, setDeleteUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(false);
-  const [validatingClienteId, setValidatingClienteId] = useState(null);
-  const [mpValidation, setMpValidation] = useState(null);
   const [resumoClientes, setResumoClientes] = useState([]);
   const [filtros, setFiltros] = useState(FILTROS_PADRAO);
   const [pagina, setPagina] = useState(1);
@@ -228,42 +227,6 @@ export default function Usuarios() {
       // Erro ja e exibido pelo toast global de erros de API.
     } finally {
       setDeletingUser(false);
-    }
-  };
-
-  const handleConnectMercadoPago = async (clienteId) => {
-    if (!clienteId) return;
-    try {
-      const { data } = await api.get(`/mercado-pago/oauth/url?cliente_id=${clienteId}`);
-      window.location.href = data.url;
-    } catch {
-      // Erro ja e exibido pelo toast global de erros de API.
-    }
-  };
-
-  const handleValidateMercadoPago = async (cliente) => {
-    if (!cliente?.cliente_id) return;
-    setValidatingClienteId(cliente.cliente_id);
-    try {
-      const { data } = await api.get(`/mercado-pago/clientes/${cliente.cliente_id}/validacao`);
-      setMpValidation(data);
-      await fetchUsuarios();
-    } catch (error) {
-      setMpValidation({
-        ok: false,
-        cliente_id: cliente.cliente_id,
-        cliente_nome: cliente.nome || cliente.email,
-        checks: [
-          {
-            key: "erro",
-            label: "Validacao Mercado Pago",
-            ok: false,
-            message: getApiErrorMessage(error, "Nao foi possivel validar o Mercado Pago."),
-          },
-        ],
-      });
-    } finally {
-      setValidatingClienteId(null);
     }
   };
 
@@ -430,27 +393,24 @@ export default function Usuarios() {
                   <UserMobileCard
                     key={item.id}
                     item={item}
-                    validatingClienteId={validatingClienteId}
                     onEdit={() => handleEdit(item)}
-                    onConnectMp={() => handleConnectMercadoPago(item.cliente_id)}
-                    onValidateMp={() => handleValidateMercadoPago(item)}
                     onDelete={() => setDeleteUser(item)}
                   />
                 ))}
               </div>
               <div className="hidden overflow-x-auto md:block">
                 <table className="min-w-full">
-                  <thead className="bg-[var(--color-bg-muted)] text-left text-xs uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+                  <thead className="bg-[var(--color-bg-muted)] text-left text-[11px] uppercase tracking-[0.12em] text-[var(--color-text-soft)]">
                     <tr>
-                      <th className="px-5 py-4 whitespace-nowrap">Nome</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Email</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Perfil</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Cliente</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Mercado Pago</th>
-                      <th className="px-5 py-4 whitespace-nowrap">SumUp</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Maquinas</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Ultima venda</th>
-                      <th className="px-5 py-4 whitespace-nowrap">Acoes</th>
+                      <th className="px-3 py-3 whitespace-nowrap">Nome</th>
+                      <th className="px-3 py-3 whitespace-nowrap">Email</th>
+                      <th className="px-3 py-3 whitespace-nowrap">Perfil</th>
+                      <th className="px-3 py-3 whitespace-nowrap text-center">Cliente</th>
+                      <th className="px-3 py-3 whitespace-nowrap text-center">MP</th>
+                      <th className="px-3 py-3 whitespace-nowrap text-center">SumUp</th>
+                      <th className="px-3 py-3 whitespace-nowrap text-center">Maquinas</th>
+                      <th className="px-3 py-3 whitespace-nowrap">Ultima venda</th>
+                      <th className="px-3 py-3 whitespace-nowrap">Acoes</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -459,16 +419,16 @@ export default function Usuarios() {
                         key={item.id}
                         className="border-t border-[var(--color-border)] text-sm text-[var(--color-text)]"
                       >
-                        <td className="px-5 py-4 min-w-[180px]">
-                          <div className="font-semibold">{item.nome || "Sem nome"}</div>
-                          <div className="mt-1 text-xs text-[var(--color-text-soft)]">
-                            ID interno #{item.id}
-                          </div>
+                        <td className="px-3 py-2.5 min-w-[150px]">
+                          <div className="font-semibold leading-5">{item.nome || "Sem nome"}</div>
+                          <div className="text-xs text-[var(--color-text-soft)]">ID interno #{item.id}</div>
                         </td>
-                        <td className="px-5 py-4 min-w-[220px] text-[var(--color-text-soft)]">{item.email}</td>
-                        <td className="px-5 py-4 min-w-[120px]">
+                        <td className="px-3 py-2.5 text-xs leading-5 text-[var(--color-text-soft)]">
+                          <EmailDuasLinhas email={item.email} />
+                        </td>
+                        <td className="px-3 py-2.5">
                           <span
-                            className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
+                            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
                               item.role === "admin"
                                 ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
                                 : "bg-[var(--color-bg-muted)] text-[var(--color-text)]"
@@ -477,77 +437,46 @@ export default function Usuarios() {
                             {item.role}
                           </span>
                         </td>
-                        <td className="px-5 py-4 min-w-[110px] text-[var(--color-text-soft)]">
+                        <td className="px-3 py-2.5 text-center text-[var(--color-text-soft)]">
                           {item.cliente_id ?? "--"}
                         </td>
-                        <td className="px-5 py-4 min-w-[150px]">
-                          <span
-                            className={`inline-flex items-center rounded-full px-3 py-2 text-xs font-semibold ${
-                              item.mp_configurado
-                                ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
-                                : "bg-amber-50 text-[var(--color-warning)]"
-                            }`}
-                          >
-                            {item.mp_configurado ? "Configurado" : "Pendente"}
-                          </span>
+                        <td className="px-3 py-2.5 text-center">
+                          <BadgeStatus ok={item.mp_configurado} />
                         </td>
-                        <td className="px-5 py-4">
+                        <td className="px-3 py-2.5 text-center">
                           <BadgeStatus ok={item.sumup_configurado} />
                         </td>
-                        <td className="px-5 py-4 text-[var(--color-text-soft)]">
+                        <td className="px-3 py-2.5 text-center text-[var(--color-text-soft)]">
                           {item.maquinas ?? "--"}
                         </td>
-                        <td className="px-5 py-4 min-w-[150px]">
+                        <td className="px-3 py-2.5">
                           <UltimaVenda item={item} />
                         </td>
-                        <td className="px-5 py-4 min-w-[190px]">
-                          <div className="flex flex-wrap gap-2">
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-1.5">
                             <button
-                              className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+                              className="pill-button inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold"
                               onClick={() => handleEdit(item)}
                               type="button"
                             >
-                              <UserRoundCog size={15} />
+                              <UserRoundCog size={14} />
                               Editar
                             </button>
-                            {item.role === "cliente" ? (
-                              <>
-                                <button
-                                  className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                                  onClick={() => handleConnectMercadoPago(item.cliente_id)}
-                                  type="button"
-                                  disabled={!item.cliente_id}
-                                >
-                                  <Link size={15} />
-                                  Conectar MP
-                                </button>
-                                <button
-                                  className="pill-button inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-                                  onClick={() => handleValidateMercadoPago(item)}
-                                  type="button"
-                                  disabled={!item.cliente_id || validatingClienteId === item.cliente_id}
-                                >
-                                  <RefreshCcw
-                                    size={15}
-                                    className={validatingClienteId === item.cliente_id ? "animate-spin" : ""}
-                                  />
-                                  {validatingClienteId === item.cliente_id ? "Validando" : "Validar MP"}
-                                </button>
-                              </>
-                            ) : null}
                             {isProtectedUser(item) ? (
-                              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
-                                <ShieldCheck size={15} />
-                                Conta protegida
+                              <span
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700"
+                                title="Conta protegida"
+                              >
+                                <ShieldCheck size={14} />
                               </span>
                             ) : (
                               <button
-                                className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-[var(--color-error)] transition hover:bg-rose-100"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-[var(--color-error)] transition hover:bg-rose-100"
                                 onClick={() => setDeleteUser(item)}
                                 type="button"
+                                title="Excluir usuario"
                               >
-                                <Trash2 size={15} />
-                                Excluir
+                                <Trash2 size={14} />
                               </button>
                             )}
                           </div>
@@ -580,98 +509,6 @@ export default function Usuarios() {
         onCancel={() => setDeleteUser(null)}
         onConfirm={handleDelete}
       />
-
-      <Modal
-        open={Boolean(mpValidation)}
-        onClose={() => setMpValidation(null)}
-      >
-        <div className="space-y-5">
-          <div>
-            <div className="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-text-soft)]">
-              Mercado Pago
-            </div>
-            <h2 className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-[var(--color-text)]">
-              Validacao da integracao
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-text-soft)]">
-              {mpValidation?.cliente_nome || "Cliente"} - cliente #{mpValidation?.cliente_id}
-            </p>
-          </div>
-
-          <div
-            className={`rounded-[24px] px-5 py-4 text-sm font-semibold ${
-              mpValidation?.ok
-                ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
-                : "bg-amber-50 text-[var(--color-warning)]"
-            }`}
-          >
-            {mpValidation?.ok
-              ? "Integracao pronta para criar maquinas com Mercado Pago."
-              : "Revise os itens abaixo antes de criar maquinas com Mercado Pago."}
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <InfoPill label="User ID" value={mpValidation?.mp_user_id || "--"} />
-            <InfoPill label="Ambiente" value={mpValidation?.mp_live_mode ? "Producao" : "Nao confirmado"} />
-            <InfoPill label="MCC" value={mpValidation?.mp_pos_category || "Fallback"} />
-          </div>
-
-          {mpValidation?.mp_account ? (
-            <div className="rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)]">
-              <div className="font-semibold text-[var(--color-text)]">Conta Mercado Pago</div>
-              <div className="mt-1">
-                {mpValidation.mp_account.email || mpValidation.mp_account.nickname || "Conta encontrada"}
-                {mpValidation.mp_account.site_id ? ` - ${mpValidation.mp_account.site_id}` : ""}
-                {mpValidation.mp_account.status ? ` - status ${mpValidation.mp_account.status}` : ""}
-              </div>
-            </div>
-          ) : null}
-
-          <div className="space-y-3">
-            {(mpValidation?.checks || []).map((check) => (
-              <div
-                key={check.key}
-                className="flex items-start gap-3 rounded-[20px] border border-[var(--color-border)] bg-white px-4 py-4"
-              >
-                <div
-                  className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                    check.ok
-                      ? "bg-[var(--color-primary-soft)] text-[var(--color-success)]"
-                      : "bg-rose-50 text-[var(--color-error)]"
-                  }`}
-                >
-                  {check.ok ? <CheckCircle2 size={17} /> : <XCircle size={17} />}
-                </div>
-                <div>
-                  <div className="font-semibold text-[var(--color-text)]">{check.label}</div>
-                  <div className="mt-1 text-sm leading-6 text-[var(--color-text-soft)]">
-                    {check.message}
-                  </div>
-                  {check.hint ? (
-                    <div className="mt-2 rounded-[14px] bg-[var(--color-bg-muted)] px-3 py-2 text-xs leading-5 text-[var(--color-text-soft)]">
-                      {check.hint}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {mpValidation?.next_step ? (
-            <div className="rounded-[20px] bg-[var(--color-bg-muted)] px-4 py-3 text-sm font-semibold leading-6 text-[var(--color-text)]">
-              {mpValidation.next_step}
-            </div>
-          ) : null}
-
-          <button
-            type="button"
-            className="pill-button pill-button--primary inline-flex w-full items-center justify-center px-5 py-3 font-semibold"
-            onClick={() => setMpValidation(null)}
-          >
-            Fechar
-          </button>
-        </div>
-      </Modal>
 
       <Modal
         open={showModal}
@@ -863,9 +700,6 @@ export default function Usuarios() {
 
                 {form.cliente_mercado_pago ? (
                   <>
-                    <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
-                      Preferencialmente use o botao Conectar MP na tabela depois de criar o usuario. O Mercado Pago devolve o token de producao pela aplicacao vinculada e o sistema salva automaticamente.
-                    </div>
 
                     <div className="rounded-[22px] bg-[var(--color-bg-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-text-soft)] md:col-span-2">
                       <div className="font-semibold text-[var(--color-text)]">Link para IPN / Webhook do Mercado Pago</div>
@@ -1081,8 +915,7 @@ function SummaryCard({ icon, label, value, helper, featured = false }) {
   );
 }
 
-function UserMobileCard({ item, validatingClienteId, onEdit, onConnectMp, onValidateMp, onDelete }) {
-  const isCliente = item.role === "cliente";
+function UserMobileCard({ item, onEdit, onDelete }) {
   const protectedAccount = isProtectedUser(item);
 
   return (
@@ -1110,9 +943,9 @@ function UserMobileCard({ item, validatingClienteId, onEdit, onConnectMp, onVali
       <div className="mt-4 grid grid-cols-2 gap-2">
         <InfoPill label="ID" value={`#${item.id}`} />
         <InfoPill label="Cliente" value={item.cliente_id ?? "--"} />
-        <InfoPill label="Mercado Pago" value={item.mp_configurado ? "Configurado" : "Pendente"} />
+        <InfoPill label="Mercado Pago" value={<BadgeStatus ok={item.mp_configurado} />} />
         <InfoPill label="Perfil" value={item.role} />
-        <InfoPill label="SumUp" value={item.sumup_configurado ? "Configurado" : "Pendente"} />
+        <InfoPill label="SumUp" value={<BadgeStatus ok={item.sumup_configurado} />} />
         <InfoPill label="Maquinas" value={item.maquinas ?? "--"} />
         <InfoPill
           label="Ultima venda"
@@ -1129,31 +962,6 @@ function UserMobileCard({ item, validatingClienteId, onEdit, onConnectMp, onVali
           <UserRoundCog size={16} />
           Editar
         </button>
-        {isCliente ? (
-          <button
-            className="pill-button inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
-            onClick={onConnectMp}
-            type="button"
-            disabled={!item.cliente_id}
-          >
-            <Link size={16} />
-            Conectar
-          </button>
-        ) : null}
-        {isCliente ? (
-          <button
-            className="pill-button inline-flex min-h-11 items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
-            onClick={onValidateMp}
-            type="button"
-            disabled={!item.cliente_id || validatingClienteId === item.cliente_id}
-          >
-            <RefreshCcw
-              size={16}
-              className={validatingClienteId === item.cliente_id ? "animate-spin" : ""}
-            />
-            {validatingClienteId === item.cliente_id ? "Validando" : "Validar"}
-          </button>
-        ) : null}
         {protectedAccount ? (
           <span className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
             <ShieldCheck size={16} />
