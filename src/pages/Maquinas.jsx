@@ -36,6 +36,7 @@ import ValoresMaquina from "../components/ValoresMaquina";
 import VideoTela from "../components/VideoTela";
 import TelaSumupConfig from "../components/TelaSumupConfig";
 import ConfrapagChaves from "../components/ConfrapagChaves";
+import EditarPontoCliente from "../components/EditarPontoCliente";
 import HorarioFechadoModal from "../components/HorarioFechadoModal";
 import FechamentoLoteModal from "../components/FechamentoLoteModal";
 import { CabecalhoOrdenavel, FiltroStatus, OrdenacaoMobile } from "../components/MaquinasFiltros";
@@ -90,6 +91,8 @@ const paymentProviderLabels = {
   s6pay: "S6Pay",
   token_play: "Token Play",
   sumup: "SumUp",
+  // So no formulario: salva como "sumup" e liga o bloco da tela touch.
+  sumup_tela: "SumUp (tela)",
   stone: "Stone",
   mercado_pago_apk: "Mercado Pago APK",
   mercado_pago_point: "Mercado Pago Point (tela)",
@@ -106,6 +109,7 @@ function getPaymentProviders(cliente) {
     cliente.cliente_s6pay ? "s6pay" : null,
     cliente.cliente_token_play ? "token_play" : null,
     cliente.cliente_sumup || cliente.sumup_configurado ? "sumup" : null,
+    cliente.cliente_sumup || cliente.sumup_configurado ? "sumup_tela" : null,
     cliente.cliente_stone || cliente.stone_configurado ? "stone" : null,
     cliente.mp_configurado ? "mercado_pago_apk" : null,
     cliente.mp_configurado ? "mercado_pago_point" : null,
@@ -332,6 +336,8 @@ export default function Maquinas() {
   const [ordem, setOrdem] = useState(persistedFilters.ordem || null);
   const [showModal, setShowModal] = useState(false);
   const [editingMachineId, setEditingMachineId] = useState("");
+  // Cliente (nao admin) edita so nome e localizacao (EditarPontoCliente).
+  const [pontoCliente, setPontoCliente] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [generatingId, setGeneratingId] = useState(false);
@@ -551,7 +557,9 @@ export default function Maquinas() {
     setSaving(true);
     try {
       const selectedProvider =
-        form.banco_pagamento || paymentProviders[0] || "mercado_pago";
+        (form.banco_pagamento || paymentProviders[0] || "mercado_pago") === "sumup_tela"
+          ? "sumup"
+          : form.banco_pagamento || paymentProviders[0] || "mercado_pago";
       const payload = {
         nome: form.nome,
         localizacao: form.localizacao,
@@ -735,6 +743,10 @@ export default function Maquinas() {
   };
 
   const handleEditMachine = (machine) => {
+    if (user?.role !== "admin") {
+      setPontoCliente(machine);
+      return;
+    }
     setEditingMachineId(machine.id_hardware);
     setUsuarioSumup({ carregando: false, login: null, erro: "" });
     setLoginSumupNovo(emptyLoginSumupNovo);
@@ -755,6 +767,22 @@ export default function Maquinas() {
     });
     setCopyFeedback("");
     setShowModal(true);
+    // Maquina SumUp com tela touch cadastrada abre como "SumUp (tela)".
+    if ((machine.banco_pagamento || "") === "sumup") {
+      api
+        .get("/tela/telas")
+        .then(({ data }) => {
+          const temTela = (data || []).some((t) => t.maquina_id === machine.id_hardware && t.ativo);
+          if (temTela) {
+            setForm((current) =>
+              current.id_hardware === machine.id_hardware && current.banco_pagamento === "sumup"
+                ? { ...current, banco_pagamento: "sumup_tela" }
+                : current,
+            );
+          }
+        })
+        .catch(() => {});
+    }
   };
 
   const handleToggleFiltroSaidaPosCredito = async (machine) => {
@@ -1599,6 +1627,14 @@ export default function Maquinas() {
         </div>
       </Modal>
 
+      <EditarPontoCliente
+        machine={pontoCliente}
+        onClose={() => setPontoCliente(null)}
+        onSaved={async () => {
+          setToast({ message: "Maquina atualizada com sucesso.", type: "success" });
+          await loadMaquinas({ silent: true });
+        }}
+      />
       <HorarioFechadoModal
         machine={horarioFechadoMachine}
         onClose={() => setHorarioFechadoMachine(null)}
@@ -2009,6 +2045,16 @@ export default function Maquinas() {
                                 handleConsultarCaixa(m);
                               }}
                             />
+                            {user?.role !== "admin" ? (
+                              <IconActionButton
+                                icon={Pencil}
+                                label="Editar nome e localizacao"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditMachine(m);
+                                }}
+                              />
+                            ) : null}
                             {user?.role === "admin" ? (
                               <>
                                 <IconActionButton
@@ -2258,7 +2304,7 @@ export default function Maquinas() {
                     disabled={
                       !form.cliente_id ||
                       paymentProviders.length === 0 ||
-                      Boolean(editingMachineId)
+                      (Boolean(editingMachineId) && !["sumup", "sumup_tela"].includes(form.banco_pagamento))
                     }
                   >
                     <option value="">
@@ -2266,11 +2312,19 @@ export default function Maquinas() {
                         ? "Selecione o banco da maquina"
                         : "Selecione um cliente primeiro"}
                     </option>
-                    {paymentProviders.map((provider) => {
+                    {paymentProviders
+                      .filter(
+                        (provider) =>
+                          !editingMachineId ||
+                          !["sumup", "sumup_tela"].includes(form.banco_pagamento) ||
+                          ["sumup", "sumup_tela"].includes(provider),
+                      )
+                      .map((provider) => {
                       const implementado =
                         provider === "mercado_pago" ||
                         provider === "token_play" ||
                         provider === "sumup" ||
+                        provider === "sumup_tela" ||
                         provider === "stone" ||
                         provider === "mercado_pago_apk" ||
                         provider === "mercado_pago_point" ||
@@ -2318,7 +2372,7 @@ export default function Maquinas() {
                         : "Validar MP deste cliente"}
                     </button>
                   ) : null}
-                  {form.cliente_id && form.banco_pagamento === "sumup" ? (
+                  {form.cliente_id && ["sumup", "sumup_tela"].includes(form.banco_pagamento) ? (
                     <div className="mt-3">
                       <span className="mb-2 block text-sm font-semibold text-[var(--color-text)]">
                         Usuario SumUp logado nesta maquininha
@@ -2495,7 +2549,7 @@ export default function Maquinas() {
                       maquinaSalva={Boolean(editingMachineId)}
                     />
                   ) : null}
-                  {form.cliente_id && form.banco_pagamento === "sumup" ? (
+                  {form.cliente_id && form.banco_pagamento === "sumup_tela" ? (
                     <TelaSumupConfig
                       maquinaId={editingMachineId || form.id_hardware}
                       maquinaSalva={Boolean(editingMachineId)}
@@ -2517,14 +2571,14 @@ export default function Maquinas() {
                 </label>
               ) : null}
 
-              {["mercado_pago_point", "confrapag_sdk", "mercado_pago_apk", "sumup"].includes(form.banco_pagamento) ? (
+              {["mercado_pago_point", "confrapag_sdk", "mercado_pago_apk", "sumup_tela"].includes(form.banco_pagamento) ? (
                 <ValoresMaquina
                   maquinaId={editingMachineId || form.id_hardware}
                   maquinaSalva={Boolean(editingMachineId)}
                 />
               ) : null}
 
-              {["mercado_pago_point", "sumup"].includes(form.banco_pagamento) ? (
+              {["mercado_pago_point", "sumup_tela"].includes(form.banco_pagamento) ? (
                 <VideoTela
                   maquinaId={editingMachineId || form.id_hardware}
                   maquinaSalva={Boolean(editingMachineId)}
@@ -2903,6 +2957,16 @@ function MachineMobileCard({
           <Server size={15} />
           Abrir
         </button>
+        {user?.role !== "admin" ? (
+          <button
+            type="button"
+            className="col-span-2 pill-button inline-flex items-center justify-center gap-2 px-3 py-2 text-sm font-semibold"
+            onClick={onEdit}
+          >
+            <Pencil size={15} />
+            Editar nome e localizacao
+          </button>
+        ) : null}
         {user?.role === "admin" ? (
           <>
             <button
