@@ -102,7 +102,12 @@ const paymentProviderLabels = {
   mercado_pago_apk: "Mercado Pago APK",
   mercado_pago_point: "Mercado Pago Point (tela)",
   confrapag_sdk: "ConfraPag SDK (maquininha PAX)",
+  // Totem vending (tablet + agente local, rotas /totem): so com a permissao "Vending machine" no cliente.
+  mercado_pago_totem: "Mercado Pago (vending machine)",
+  sumup_totem: "SumUp (vending machine)",
 };
+
+const BANCOS_TOTEM = ["mercado_pago_totem", "sumup_totem"];
 
 function getPaymentProviders(cliente) {
   if (!cliente) return [];
@@ -120,6 +125,8 @@ function getPaymentProviders(cliente) {
     cliente.mp_configurado ? "mercado_pago_point" : null,
     // Sem token: o CNPJ vai na chave de cada maquininha.
     cliente.cliente_confrapag ? "confrapag_sdk" : null,
+    cliente.cliente_totem_vending && cliente.mp_configurado ? "mercado_pago_totem" : null,
+    cliente.cliente_totem_vending && (cliente.cliente_sumup || cliente.sumup_configurado) ? "sumup_totem" : null,
   ].filter(Boolean);
 }
 
@@ -2340,7 +2347,8 @@ export default function Maquinas() {
                         provider === "stone" ||
                         provider === "mercado_pago_apk" ||
                         provider === "mercado_pago_point" ||
-                        provider === "confrapag_sdk";
+                        provider === "confrapag_sdk" ||
+                        BANCOS_TOTEM.includes(provider);
                       return (
                         <option
                           key={provider}
@@ -2567,7 +2575,7 @@ export default function Maquinas() {
                       maquinaSalva={Boolean(editingMachineId)}
                     />
                   ) : null}
-                  {form.cliente_id ? (
+                  {form.cliente_id && BANCOS_TOTEM.includes(form.banco_pagamento) ? (
                     <TotemVendingConfig
                       maquinaId={editingMachineId || form.id_hardware}
                       maquinaSalva={Boolean(editingMachineId)}

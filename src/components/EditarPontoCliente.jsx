@@ -106,7 +106,9 @@ export default function EditarPontoCliente({ machine, onClose, onSaved }) {
 
           <VendingMaquinaCampos form={vending} setForm={setVending} />
 
-          <TotemVendingConfig maquinaId={machine.id_hardware} maquinaSalva />
+          {["mercado_pago_totem", "sumup_totem"].includes(machine.banco_pagamento) ? (
+            <TotemVendingConfig maquinaId={machine.id_hardware} maquinaSalva />
+          ) : null}
 
           {ehSumup ? (
             <div className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">

@@ -247,17 +247,23 @@ export default function TotemVendingConfig({ maquinaId, maquinaSalva }) {
               <CreditCard size={14} />
               Maquininha do totem
             </span>
-            <select
-              className={`${campo} mb-2 w-full`}
-              value={pagamento.modo_cartao}
-              onChange={(e) => setPagamento((p) => ({ ...p, modo_cartao: e.target.value }))}
-            >
-              {MODOS.map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
+            {totem.modo_pelo_banco ? (
+              <span className="mb-2 block text-[var(--color-text-soft)]">
+                Definida pelo banco da maquina: <b>{MODOS.find(([v]) => v === pagamento.modo_cartao)?.[1]}</b>.
+              </span>
+            ) : (
+              <select
+                className={`${campo} mb-2 w-full`}
+                value={pagamento.modo_cartao}
+                onChange={(e) => setPagamento((p) => ({ ...p, modo_cartao: e.target.value }))}
+              >
+                {MODOS.map(([v, l]) => (
+                  <option key={v} value={v}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            )}
 
             {pagamento.modo_cartao === "mercadopago" ? (
               <>
