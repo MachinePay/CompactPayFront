@@ -4,6 +4,7 @@ import { Eye, EyeOff } from "lucide-react";
 import api, { getApiErrorMessage } from "../api/axios";
 import Modal from "./Modal";
 import VendingMaquinaCampos, { vendingFormInicial, vendingPayload } from "./VendingMaquinaCampos";
+import TotemVendingConfig from "./TotemVendingConfig";
 
 // Edicao da maquina pelo cliente (nao admin): so nome do ponto e localizacao
 // (PATCH /maquinas/{id}/ponto). Em maquina SumUp mostra, so para ver, o usuario
@@ -104,6 +105,8 @@ export default function EditarPontoCliente({ machine, onClose, onSaved }) {
           </div>
 
           <VendingMaquinaCampos form={vending} setForm={setVending} />
+
+          <TotemVendingConfig maquinaId={machine.id_hardware} maquinaSalva />
 
           {ehSumup ? (
             <div className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg-muted)] p-4">
