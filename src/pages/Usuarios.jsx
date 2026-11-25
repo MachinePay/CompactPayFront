@@ -98,6 +98,7 @@ export default function Usuarios() {
     cliente_s6pay: false,
     cliente_token_play: false,
     cliente_confrapag: false,
+    cliente_totem_vending: false,
     confrapix_token: "",
     cliente_sumup: false,
     mp_public_key: "",
@@ -158,6 +159,7 @@ export default function Usuarios() {
       cliente_s6pay: false,
       cliente_token_play: false,
       cliente_confrapag: false,
+      cliente_totem_vending: false,
       confrapix_token: "",
       cliente_sumup: false,
       mp_public_key: "",
@@ -202,6 +204,7 @@ export default function Usuarios() {
       cliente_s6pay: Boolean(currentUser.cliente_s6pay),
       cliente_token_play: Boolean(currentUser.cliente_token_play),
       cliente_confrapag: Boolean(currentUser.cliente_confrapag),
+      cliente_totem_vending: Boolean(currentUser.cliente_totem_vending),
       confrapix_token: currentUser.confrapix_token || "",
       cliente_sumup: Boolean(
         currentUser.cliente_sumup || currentUser.sumup_api_key || currentUser.sumup_merchant_code,
@@ -715,6 +718,13 @@ export default function Usuarios() {
                     checked={form.cliente_confrapag}
                     onChange={(checked) =>
                       setForm((current) => ({ ...current, cliente_confrapag: checked }))
+                    }
+                  />
+                  <ProviderCheckbox
+                    label="Cliente Vending Machine (totem)"
+                    checked={form.cliente_totem_vending}
+                    onChange={(checked) =>
+                      setForm((current) => ({ ...current, cliente_totem_vending: checked }))
                     }
                   />
                 </div>
