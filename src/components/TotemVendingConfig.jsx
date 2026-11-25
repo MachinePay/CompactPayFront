@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Copy, CreditCard, ImagePlus, Link2, MonitorSmartphone, Package, Power, RefreshCcw } from "lucide-react";
+import { CheckCircle2, Copy, CreditCard, ImagePlus, Link2, MonitorSmartphone, Package, Power, RefreshCcw, Store } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
 
@@ -138,6 +138,13 @@ export default function TotemVendingConfig({ maquinaId, maquinaSalva }) {
     }, "Nao foi possivel ativar o modo integrado");
   };
 
+  const criarCaixa = () =>
+    executar(async () => {
+      await api.post(`${base}/caixa`);
+      setAviso("Caixa e loja criados no Mercado Pago. Vincule a Point a esse caixa no app do Mercado Pago.");
+      await carregar();
+    }, "Nao foi possivel criar o caixa no Mercado Pago");
+
   const parearSolo = () =>
     executar(async () => {
       await api.post(`${base}/sumup/parear`, { pairing_code: pareamento.trim() });
@@ -270,6 +277,24 @@ export default function TotemVendingConfig({ maquinaId, maquinaSalva }) {
                 {!totem.credenciais_cliente?.mercadopago ? (
                   <p className="mb-2 text-[var(--color-error)]">Este cliente ainda nao tem o Mercado Pago conectado (tela Usuarios).</p>
                 ) : null}
+                {totem.modo_pelo_banco ? (
+                  <div className="mb-2 flex flex-wrap items-center gap-2 rounded-[10px] bg-[var(--color-bg-muted)] px-3 py-2">
+                    <Store size={14} />
+                    {totem.caixa ? (
+                      <span>
+                        Caixa no Mercado Pago: <b>{totem.caixa.pos_external_id || totem.caixa.pos_id}</b> (loja{" "}
+                        {totem.caixa.store_external_id || totem.caixa.store_id})
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-[var(--color-error)]">Esta maquina ainda nao tem caixa no Mercado Pago.</span>
+                        <button type="button" onClick={criarCaixa} disabled={ocupado} className={botaoLinha}>
+                          Criar caixa e loja
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : null}
                 <div className="mb-2 flex gap-2">
                   <input
                     className={campo}
@@ -292,7 +317,10 @@ export default function TotemVendingConfig({ maquinaId, maquinaSalva }) {
                           className={`rounded-[10px] border px-3 py-2 text-left ${pagamento.mp_terminal_id === p.id ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]" : "border-[var(--color-border)]"}`}
                         >
                           <span className="block font-mono">{p.id}</span>
-                          <span className="text-[var(--color-text-soft)]">{p.operating_mode === "PDV" ? "integrada" : "nao integrada"}</span>
+                          <span className="text-[var(--color-text-soft)]">
+                            {p.operating_mode === "PDV" ? "integrada" : "nao integrada"}
+                            {p.neste_caixa ? " - neste caixa" : ""}
+                          </span>
                         </button>
                       ))
                     ) : (
