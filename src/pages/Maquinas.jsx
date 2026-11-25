@@ -35,6 +35,7 @@ import TelaPointConfig from "../components/TelaPointConfig";
 import ValoresMaquina from "../components/ValoresMaquina";
 import VideoTela from "../components/VideoTela";
 import TelaSumupConfig from "../components/TelaSumupConfig";
+import TotemVendingConfig from "../components/TotemVendingConfig";
 import ConfrapagChaves from "../components/ConfrapagChaves";
 import EditarPontoCliente from "../components/EditarPontoCliente";
 import HorarioFechadoModal from "../components/HorarioFechadoModal";
@@ -2562,6 +2563,12 @@ export default function Maquinas() {
                   ) : null}
                   {form.cliente_id && form.banco_pagamento === "sumup_tela" ? (
                     <TelaSumupConfig
+                      maquinaId={editingMachineId || form.id_hardware}
+                      maquinaSalva={Boolean(editingMachineId)}
+                    />
+                  ) : null}
+                  {form.cliente_id ? (
+                    <TotemVendingConfig
                       maquinaId={editingMachineId || form.id_hardware}
                       maquinaSalva={Boolean(editingMachineId)}
                     />
