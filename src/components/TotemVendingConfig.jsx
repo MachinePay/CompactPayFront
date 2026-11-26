@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle2, Copy, CreditCard, ImagePlus, Link2, MonitorSmartphone, Package, Power, RefreshCcw, Store } from "lucide-react";
+import { CheckCircle2, Copy, CreditCard, Film, ImagePlus, Link2, MonitorSmartphone, Package, Power, RefreshCcw, Store, Trash2 } from "lucide-react";
 
 import api, { getApiErrorMessage } from "../api/axios";
 
@@ -50,6 +50,7 @@ export default function TotemVendingConfig({ maquinaId, maquinaSalva }) {
   const [pagamento, setPagamento] = useState({ modo_cartao: "off", mp_terminal_id: "", sumup_reader_id: "" });
   const [points, setPoints] = useState(null);
   const [pareamento, setPareamento] = useState("");
+  const [enviandoVideo, setEnviandoVideo] = useState(null); // null = parado, 0-100 = enviando
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState("");
   const [erro, setErro] = useState("");
@@ -136,6 +137,38 @@ export default function TotemVendingConfig({ maquinaId, maquinaSalva }) {
       setAviso("Modo integrado ativado. Reinicie a Point para aplicar.");
       setPoints(null);
     }, "Nao foi possivel ativar o modo integrado");
+  };
+
+  const enviarVideo = async (arquivo) => {
+    if (!arquivo) return;
+    if (arquivo.size > 80 * 1024 * 1024) {
+      setErro("Video muito grande (maximo 80 MB).");
+      return;
+    }
+    setEnviandoVideo(0);
+    try {
+      const form = new FormData();
+      form.append("arquivo", arquivo);
+      await api.post(`${base}/video`, form, {
+        timeout: 10 * 60 * 1000,
+        onUploadProgress: (e) => setEnviandoVideo(e.total ? Math.round((e.loaded / e.total) * 100) : 0),
+      });
+      setAviso("Video enviado. O tablet baixa e comeca a passar em ate 1 minuto.");
+      setErro("");
+      await carregar();
+    } catch (error) {
+      setErro(getApiErrorMessage(error, "Nao foi possivel enviar o video"));
+    } finally {
+      setEnviandoVideo(null);
+    }
+  };
+
+  const removerVideo = () => {
+    if (!window.confirm("Tirar o video da tela inicial? O tablet volta a mostrar os produtos girando.")) return;
+    executar(async () => {
+      await api.delete(`${base}/video`);
+      await carregar();
+    }, "Nao foi possivel remover o video");
   };
 
   const criarCaixa = () =>
@@ -246,6 +279,47 @@ export default function TotemVendingConfig({ maquinaId, maquinaSalva }) {
                 Desativar totem
               </button>
             </div>
+          </div>
+
+          {/* Video da tela inicial */}
+          <div className={bloco}>
+            <span className={titulo}>
+              <Film size={14} />
+              Video da tela inicial
+            </span>
+            <span className="mb-2 block text-[var(--color-text-soft)]">
+              Passa em loop no tablet com &quot;Toque para escolher&quot; por cima. MP4, ate 80 MB. Sem video, o tablet
+              mostra os produtos girando.
+            </span>
+            {totem.video ? (
+              <div className="mb-2 flex flex-wrap items-center gap-3">
+                <video
+                  src={`${api.defaults.baseURL}/totem/videos/${totem.video.hash}.mp4`}
+                  className="h-24 w-40 rounded-[10px] bg-black object-cover"
+                  muted
+                  loop
+                  autoPlay
+                  playsInline
+                />
+                <span className="text-[var(--color-text-soft)]">
+                  {totem.video.nome || "video"} - {(totem.video.tamanho / 1024 / 1024).toFixed(1)} MB
+                </span>
+                <button type="button" onClick={removerVideo} disabled={ocupado} className={botaoLinha}>
+                  <Trash2 size={13} className="mr-1 inline" />
+                  Tirar video
+                </button>
+              </div>
+            ) : null}
+            <label className={`${botaoCheio} inline-block cursor-pointer`}>
+              {enviandoVideo !== null ? `Enviando... ${enviandoVideo}%` : totem.video ? "Trocar video" : "Enviar video"}
+              <input
+                type="file"
+                accept="video/mp4,video/webm"
+                className="hidden"
+                disabled={enviandoVideo !== null}
+                onChange={(e) => enviarVideo(e.target.files?.[0])}
+              />
+            </label>
           </div>
 
           {/* Maquininha */}
